@@ -1,5 +1,5 @@
-.\output\image_boot_page.o: ..\User_Lib\LCD_Resource\Src\Image\Image_Boot_Page.c
-.\output\image_boot_page.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\image_boot_page.o: ..\User\Third_Resource\LCD_Resource\Src\Image\Image_Boot_Page.c
+.\output\image_boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\image_boot_page.o: ..\User\Inc\main.h
 .\output\image_boot_page.o: ..\Core\stm32f4xx.h
 .\output\image_boot_page.o: ..\Core\core_cm4.h

@@ -1,5 +1,5 @@
-.\output\boot_page.o: ..\User_Lib\LCD_Resource\Src\Page\Boot_Page.c
-.\output\boot_page.o: ..\User_Lib\LCD_Resource\Inc\Page.h
+.\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Src\Page\Boot_Page.c
+.\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Page.h
 .\output\boot_page.o: ..\User\Inc\main.h
 .\output\boot_page.o: ..\Core\stm32f4xx.h
 .\output\boot_page.o: ..\Core\core_cm4.h
@@ -46,8 +46,8 @@
 .\output\boot_page.o: ..\User\Inc\main.h
 .\output\boot_page.o: ..\User\Inc\delay.h
 .\output\boot_page.o: ..\BSP\Inc\ST7789.h
-.\output\boot_page.o: ..\User_Lib\LCD_Resource\Inc\Font.h
-.\output\boot_page.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
+.\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\boot_page.o: ..\User\Inc\App.h
 .\output\boot_page.o: ..\BSP\Inc\AT.h
 .\output\boot_page.o: ..\BSP\Inc\Timer.h

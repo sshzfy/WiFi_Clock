@@ -1,5 +1,5 @@
-.\output\image_weather.o: ..\User_Lib\LCD_Resource\Src\Image\Image_Weather.c
-.\output\image_weather.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\image_weather.o: ..\User\Third_Resource\LCD_Resource\Src\Image\Image_Weather.c
+.\output\image_weather.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\image_weather.o: ..\User\Inc\main.h
 .\output\image_weather.o: ..\Core\stm32f4xx.h
 .\output\image_weather.o: ..\Core\core_cm4.h

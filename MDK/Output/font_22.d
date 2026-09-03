@@ -1,5 +1,5 @@
-.\output\font_22.o: ..\User_Lib\LCD_Resource\Src\Font\Font_22.c
-.\output\font_22.o: ..\User_Lib\LCD_Resource\Inc\Font.h
+.\output\font_22.o: ..\User\Third_Resource\LCD_Resource\Src\Font\Font_22.c
+.\output\font_22.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
 .\output\font_22.o: ..\User\Inc\main.h
 .\output\font_22.o: ..\Core\stm32f4xx.h
 .\output\font_22.o: ..\Core\core_cm4.h

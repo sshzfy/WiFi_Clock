@@ -27,10 +27,12 @@ static void DHT22_GPIO_Input(void)
     GPIO_Init(DHT22_Port, &GPIO_InitStruct);
 }
 
-void DHT22_Init(void)
+bool DHT22_Init(void)
 {
     DHT22_GPIO_Output();
     DHT22_DATA_OUT_H;
+
+    return true;
 }
 
 static uint8_t DHT22_ReadByte(void)
@@ -50,6 +52,12 @@ static uint8_t DHT22_ReadByte(void)
     return data;
 }
 
+/**
+ * @brief 读取DHT22传感器数据
+ *
+ * @param data 指向存储数据的结构体指针
+ * @return uint8_t 0:成功 1:失败
+ */
 uint8_t DHT22_ReadData(DHT22_Data_t *data)
 {
     uint8_t buf[5];
@@ -102,16 +110,17 @@ uint8_t DHT22_ReadData(DHT22_Data_t *data)
         return 1;
 
     /* 解析数据 */
-    data->humidity = (float)((buf[0] << 8) | buf[1]) / 10.0f;
-    uint8_t temp_raw = (buf[2] << 8) | buf[3];
+    uint16_t humidity_raw = (buf[0] << 8) | buf[1]; // 湿度原始数据
+    data->humidity = (float)(humidity_raw / 10.0f);
+    uint16_t temp_raw = (buf[2] << 8) | buf[3]; // 温度原始数据
     if (temp_raw & 0x8000)
     {
         temp_raw &= 0x7FFF;
-        data->temperature = -((float)temp_raw) / 10.0f;
+        data->temperature = -(float)(temp_raw / 10.0f);
     }
     else
     {
-        data->temperature = (float)temp_raw / 10.0f;
+        data->temperature = (float)(temp_raw / 10.0f);
     }
 
     return 0;

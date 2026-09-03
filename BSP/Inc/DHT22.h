@@ -14,9 +14,10 @@ typedef struct
 {
     float temperature;
     float humidity;
+    bool valid;
 } DHT22_Data_t;
 
-void DHT22_Init(void);
+bool DHT22_Init(void);
 uint8_t DHT22_ReadData(DHT22_Data_t *data);
 
 #endif /* __DHT22_H__ */

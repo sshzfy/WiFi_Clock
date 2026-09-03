@@ -11,14 +11,11 @@ int main(void)
     return 0;
 }
 
-int fputc(int ch, FILE *stream)
+
+void vAssertCalled(const char *file, int line)
 {
-    (void)stream;
-
-    USART_ClearFlag(USART2, USART_FLAG_TXE);
-    USART_SendData(USART2, (uint16_t)ch);
-    while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
+    /* ¶ÏÑÔÊ§°Ü´¦Àíº¯Êý */
+    printf("Assertion failed in file %s at line %d\n", file, line);
+    while (1)
         ;
-
-    return ch;
 }

@@ -11,7 +11,7 @@ const char *weekdays[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
 static const char *weather_url = "https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=dalian&language=en&unit=c";
 const char *http_response = NULL;
 
-Room_Info_t room_info = {0};
+DHT22_Data_t room_info = {0};
 
 /* ================ 软件时钟(基于TIM5) ================ */
 static bool clock_synced = false; // 是否同步
@@ -196,6 +196,21 @@ bool Service_Init(void)
     }
     printf("City: %s, Location: %s, Weather: %s, Weather_Code: %d, Temperature: %.1f\r\n",
            weather_info.city, weather_info.location, weather_info.weather, weather_info.weather_code, weather_info.temperature);
+
+    /* 获取温湿度信息 */
+    if (!DHT22_Init())
+    {
+        printf("[DHT22_Init] failed\r\n");
+        goto err;
+    }
+    if (DHT22_ReadData(&room_info) != 0)
+    {
+
+        printf("[DHT22_ReadData] failed\r\n");
+        goto err;
+    }
+    room_info.valid = true;
+    printf("Room Temp: %.1f, Humidity: %.1f\r\n", room_info.temperature, room_info.humidity);
 
     return true;
 

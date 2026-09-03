@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\User;..\User\Inc;..\User_Lib\LCD_Resource\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\BSP\Inc</IncludePath>
+              <IncludePath>..\User;..\User\Inc;..\User\Third_Resource\LCD_Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Third_Lib\FreeRTOS\include;..\Third_Lib\FreeRTOS\portable</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -423,62 +423,62 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>USER_LIB</GroupName>
+          <GroupName>USER/Third_Resource</GroupName>
           <Files>
-            <File>
-              <FileName>Boot_Page.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Page\Boot_Page.c</FilePath>
-            </File>
-            <File>
-              <FileName>Main_Page.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Page\Main_Page.c</FilePath>
-            </File>
-            <File>
-              <FileName>Image.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Image\Image.c</FilePath>
-            </File>
-            <File>
-              <FileName>Image_Boot_Page.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Image\Image_Boot_Page.c</FilePath>
-            </File>
-            <File>
-              <FileName>Image_Main_Page.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Image\Image_Main_Page.c</FilePath>
-            </File>
-            <File>
-              <FileName>Image_Weather.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Image\Image_Weather.c</FilePath>
-            </File>
             <File>
               <FileName>Font_12.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Font\Font_12.c</FilePath>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_12.c</FilePath>
             </File>
             <File>
               <FileName>Font_16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Font\Font_16.c</FilePath>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_16.c</FilePath>
             </File>
             <File>
               <FileName>Font_22.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Font\Font_22.c</FilePath>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_22.c</FilePath>
             </File>
             <File>
               <FileName>Font_32.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Font\Font_32.c</FilePath>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_32.c</FilePath>
             </File>
             <File>
               <FileName>Font_48.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User_Lib\LCD_Resource\Src\Font\Font_48.c</FilePath>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_48.c</FilePath>
+            </File>
+            <File>
+              <FileName>Image.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image.c</FilePath>
+            </File>
+            <File>
+              <FileName>Image_Boot_Page.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image_Boot_Page.c</FilePath>
+            </File>
+            <File>
+              <FileName>Image_Main_Page.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image_Main_Page.c</FilePath>
+            </File>
+            <File>
+              <FileName>Image_Weather.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image_Weather.c</FilePath>
+            </File>
+            <File>
+              <FileName>Boot_Page.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Page\Boot_Page.c</FilePath>
+            </File>
+            <File>
+              <FileName>Main_Page.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Page\Main_Page.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -774,6 +774,56 @@
               <FileName>stm32f4xx_wwdg.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_wwdg.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>THIRD_LIB/FreeRTOS</GroupName>
+          <Files>
+            <File>
+              <FileName>croutine.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\croutine.c</FilePath>
+            </File>
+            <File>
+              <FileName>event_groups.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\event_groups.c</FilePath>
+            </File>
+            <File>
+              <FileName>list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>stream_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\stream_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\tasks.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\timers.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap_4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\portable\heap_4.c</FilePath>
+            </File>
+            <File>
+              <FileName>port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\portable\port.c</FilePath>
             </File>
           </Files>
         </Group>

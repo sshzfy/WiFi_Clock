@@ -46,6 +46,6 @@
 .\output\main.o: ..\User\Inc\Board.h
 .\output\main.o: ..\User\Inc\delay.h
 .\output\main.o: ..\BSP\Inc\ST7789.h
-.\output\main.o: ..\User_Lib\LCD_Resource\Inc\Font.h
-.\output\main.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\main.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
+.\output\main.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\main.o: ..\User\Inc\loop.h

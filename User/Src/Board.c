@@ -6,10 +6,11 @@ void Board_Peripheral_Init(void)
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);  // 使能GPIOA时钟,用于调试输出
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);  // 使能GPIOB时钟,LCD,LED测试
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);  // 使能GPIOC时钟,LCD,LED测试
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);  // 使能GPIOE时钟,LCD
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);  // 使能GPIOE时钟,LCD,DHT22
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE); // 使能USART1时钟,传输AT命令
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); // 使能USART2时钟,用于调试输出
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);   // 使能SPI2时钟,用于与ST7789通信
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);   // 使能DMA1时钟,用于SPI2 DMA传输
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);   // 使能TIM5时钟,用于替代RTC时间基准
 }
 
@@ -44,4 +45,16 @@ void Test(void)
     Test_LED_GPIO_init();
     GPIO_ResetBits(GPIOC, GPIO_Pin_5);
     GPIO_ResetBits(GPIOB, GPIO_Pin_2);
+}
+
+int fputc(int ch, FILE *stream)
+{
+    (void)stream;
+
+    USART_ClearFlag(USART2, USART_FLAG_TXE);
+    USART_SendData(USART2, (uint16_t)ch);
+    while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
+        ;
+
+    return ch;
 }

@@ -1,41 +1,229 @@
 #include "ST7789.h"
 
-static void ST7789_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len);
+#define GRAM_DMA_MAX_HALFWORD 65535U // DMA NDTR(16bit)单次最大半字数
+#define SCRATCH_H_PX 48              // 最大渲染行高(对齐Font_48)
+
 static void ST7789_Rest(void);
 static void ST7789_Set_Backlight(bool state);
 static void ST7789_Display_Init(void);
 static void ST7789_GPIO_Init(void);
 static void ST7789_SPI_Init(void);
+static void ST7789_DMA_Init(void);
 static bool Is_in_Screen(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 static bool Is_GB2312(char ch);
+static void ST7789_SPI_SetDataSize(uint8_t size);
+static void ST7789_Wait_TXE(void);
+static void ST7789_Wait_BSY(void);
+static void ST7789_Send8(const uint8_t *data, uint16_t len);
+static void ST7789_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len);
 static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
-static void ST7789_Draw_Bitmap(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color_font, uint16_t color_back, const uint8_t *model);
-static void ST7789_Write_Ascii(uint16_t x, uint16_t y, char ch, uint16_t color_font, uint16_t color_back, const Font_t *font);
-static void ST7789_Write_Chinese(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uint16_t color_back, const Font_t *font);
+static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc);
+static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase);
+static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold);
 
-static void ST7789_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len)
+/* 渲染缓冲: 一满行(240px)*最高48px*2字节, 字符串整行与图标共用 */
+static uint8_t s_scratch[WIDTH * SCRATCH_H_PX * 2];
+
+/* ============ SPI 数据宽度(8位命令/16位像素) ============ */
+static uint8_t s_spi_datasize = 0; // 0=未设置 8=8位 16=16位
+
+static void ST7789_Wait_TXE(void)
 {
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
-    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
-    SPI_SendData(SPI2, reg);
-
     while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
         ;
+}
+
+static void ST7789_Wait_BSY(void)
+{
     while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
         ;
+}
 
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+/**
+ * @brief 设置SPI数据宽度(8位命令/16位像素),只在需要切换时切换; 且先等SPI空闲再在SPE=0下修改, 保证可靠
+ *
+ * @param size 8=8位 16=16位
+ */
+static void ST7789_SPI_SetDataSize(uint8_t size)
+{
+    if (s_spi_datasize == size)
+        return;
 
+    ST7789_Wait_BSY();
+    SPI_Cmd(SPI2, DISABLE);
+    SPI_DataSizeConfig(SPI2, (size == 16) ? SPI_DataSize_16b : SPI_DataSize_8b);
+    SPI_Cmd(SPI2, ENABLE);
+
+    s_spi_datasize = size;
+}
+
+/**
+ * @brief 8位模式连续发送若干字节(CS/DC状态已就绪), 结束时等待SPI空闲
+ *
+ * @param data 要发送的数据指针
+ * @param len 要发送的数据长度
+ */
+static void ST7789_Send8(const uint8_t *data, uint16_t len)
+{
     for (uint16_t i = 0; i < len; i++)
     {
         SPI_SendData(SPI2, data[i]);
-        while (!SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE))
-            ;
+        ST7789_Wait_TXE();
     }
-    while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
-        ;
+    ST7789_Wait_BSY();
+}
+
+/**
+ * @brief 写入8位命令寄存器
+ *
+ * @param reg 命令寄存器地址
+ * @param data 要写入的数据指针
+ * @param len 要写入的数据长度
+ */
+static void ST7789_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len)
+{
+    ST7789_SPI_SetDataSize(8); // 设置为8位模式
+
+    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin); // 拉低CS,片选
+    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin); // 拉低DC,发送命令
+    ST7789_Send8(&reg, 1);                         // 发送命令
+
+    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin); // 拉高DC,发送数据
+    ST7789_Send8(data, len);                     // 发送数据
+
+    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin); // 释放CS,结束一次命令传输
+}
+
+/**
+ * @brief 一次CS低电平内连续写入 0x2A/0x2B/0x2C, 省去多次CS与BSY往返
+ *
+ * @param x1 窗口左上角X坐标
+ * @param y1 窗口左上角Y坐标
+ * @param x2 窗口右下角X坐标
+ * @param y2 窗口右下角Y坐标
+ */
+static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
+{
+    uint8_t xdata[4]; // 窗口X坐标高8位/低8位
+    uint8_t ydata[4]; // 窗口Y坐标高8位/低8位
+    uint8_t cmd;
+
+    xdata[0] = (uint8_t)(x1 >> 8); // 窗口左上角X坐标高8位
+    xdata[1] = (uint8_t)x1;        // 窗口左上角X坐标低8位
+    xdata[2] = (uint8_t)(x2 >> 8); // 窗口右下角X坐标高8位
+    xdata[3] = (uint8_t)x2;        // 窗口右下角X坐标低8位
+    ydata[0] = (uint8_t)(y1 >> 8); // 窗口左上角Y坐标高8位
+    ydata[1] = (uint8_t)y1;        // 窗口左上角Y坐标低8位
+    ydata[2] = (uint8_t)(y2 >> 8); // 窗口右下角Y坐标高8位
+    ydata[3] = (uint8_t)y2;        // 窗口右下角Y坐标低8位
+
+    ST7789_SPI_SetDataSize(8);
+    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
+
+    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    cmd = 0x2A; // 列地址设置
+    ST7789_Send8(&cmd, 1);
+    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    ST7789_Send8(xdata, 4);
+
+    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    cmd = 0x2B; // 行地址设置
+    ST7789_Send8(&cmd, 1);
+    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    ST7789_Send8(ydata, 4);
+
+    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    cmd = 0x2C; // 写内存命令
+    ST7789_Send8(&cmd, 1);
+    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+
     GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
 }
+
+/* ============ DMA(SPI2_TX: DMA1_Stream4, Channel0) ============ */
+
+/**
+ * @brief 初始化DMA1_Stream4, Channel0, 用于SPI2_TX
+ */
+static void ST7789_DMA_Init(void)
+{
+    DMA_InitTypeDef DMA_InitStruct;
+
+    DMA_DeInit(DMA1_Stream4);
+    DMA_StructInit(&DMA_InitStruct);
+
+    DMA_InitStruct.DMA_Channel = DMA_Channel_0;                              // SPI2_TX
+    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(SPI2->DR);           // SPI2数据寄存器地址
+    DMA_InitStruct.DMA_Memory0BaseAddr = 0;                                  // 内存基地址
+    DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;                     // 内存→外设
+    DMA_InitStruct.DMA_BufferSize = 0;                                       // 缓冲区大小
+    DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;            // 外设地址不增加
+    DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;                     // 内存地址增加
+    DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; // 外设数据宽度为半字
+    DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;         // 内存数据宽度为半字
+    DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;                               // 正常模式
+    DMA_InitStruct.DMA_Priority = DMA_Priority_Medium;                       // 中优先级
+    DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;                      // 不使用FIFO
+
+    DMA_Init(DMA1_Stream4, &DMA_InitStruct);
+}
+
+/**
+ * @brief 半字模式内存→外设 DMA 泵; 内部自动按NDTR上限分块, 出错(TE)则中止
+ * @param src 要发送的数据指针
+ * @param halfwords 要发送的数据长度(半字)
+ * @param inc 是否自动增加内存指针
+ */
+static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
+{
+    while (halfwords > 0)
+    {
+        uint32_t chunk = (halfwords > GRAM_DMA_MAX_HALFWORD) ? GRAM_DMA_MAX_HALFWORD : halfwords; // 分块大小,不超过最大传输半字数65535
+
+        DMA_Cmd(DMA1_Stream4, DISABLE);
+        while (DMA_GetCmdStatus(DMA1_Stream4) != DISABLE)
+            ;
+
+        DMA1_Stream4->NDTR = (uint16_t)chunk; // 设置传输半字数
+        DMA1_Stream4->M0AR = (uint32_t)src;   // 设置内存基地址
+        if (inc)
+            DMA1_Stream4->CR |= DMA_SxCR_MINC; // 内存地址增加
+        else
+            DMA1_Stream4->CR &= (uint32_t)~DMA_SxCR_MINC; // 内存地址不增加
+
+        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_FEIF4 | DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4);
+        DMA_Cmd(DMA1_Stream4, ENABLE);
+
+        while (DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TCIF4) == RESET)
+        {
+            if (DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TEIF4) != RESET)
+            {
+                DMA_Cmd(DMA1_Stream4, DISABLE);
+                return; /* 传输错误 */
+            }
+        }
+        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_TCIF4);
+
+        halfwords -= chunk;
+        if (inc)
+            src += (uint32_t)chunk * 2;
+    }
+}
+
+static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
+{
+    ST7789_SPI_SetDataSize(16);
+
+    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+
+    ST7789_DMA_Pump(data, len >> 1, increase);
+
+    ST7789_Wait_BSY();
+    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
+}
+
+/* ============ 底层功能 ============ */
 
 static void ST7789_Rest(void)
 {
@@ -79,10 +267,6 @@ static void ST7789_Display_Init(void)
 
 static void ST7789_GPIO_Init(void)
 {
-    GPIO_PinAFConfig(ST7789_SCLK_Port, GPIO_PinSource13, GPIO_AF_SPI2);
-    GPIO_PinAFConfig(ST7789_MOSI_Port, GPIO_PinSource3, GPIO_AF_SPI2);
-    GPIO_PinAFConfig(ST7789_MISO_Port, GPIO_PinSource2, GPIO_AF_SPI2);
-
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
 
@@ -95,6 +279,10 @@ static void ST7789_GPIO_Init(void)
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+    GPIO_PinAFConfig(ST7789_SCLK_Port, GPIO_PinSource13, GPIO_AF_SPI2);
+    GPIO_PinAFConfig(ST7789_MOSI_Port, GPIO_PinSource3, GPIO_AF_SPI2);
+    GPIO_PinAFConfig(ST7789_MISO_Port, GPIO_PinSource2, GPIO_AF_SPI2);
+
     GPIO_InitStruct.GPIO_Pin = ST7789_SCLK_Pin;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
@@ -104,10 +292,6 @@ static void ST7789_GPIO_Init(void)
 
     GPIO_InitStruct.GPIO_Pin = ST7789_MOSI_Pin | ST7789_MISO_Pin;
     GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_PinAFConfig(ST7789_SCLK_Port, GPIO_PinSource13, GPIO_AF_SPI2);
-    GPIO_PinAFConfig(ST7789_MOSI_Port, GPIO_PinSource3, GPIO_AF_SPI2);
-    GPIO_PinAFConfig(ST7789_MISO_Port, GPIO_PinSource2, GPIO_AF_SPI2);
 }
 
 static void ST7789_SPI_Init(void)
@@ -120,12 +304,15 @@ static void ST7789_SPI_Init(void)
     SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
     SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
     SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
-    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
+    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2; /* SPI2=42MHz → 21MHz */
     SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
     SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
 
     SPI_Init(SPI2, &SPI_InitStruct);
+    SPI_DMACmd(SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
     SPI_Cmd(SPI2, ENABLE);
+
+    s_spi_datasize = 8;
 }
 
 static bool Is_in_Screen(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
@@ -142,120 +329,17 @@ static bool Is_GB2312(char ch)
     return (ch >= 0xA1 && ch <= 0xF7);
 }
 
-static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
-{
-    ST7789_Write_Reg(0x2A, (uint8_t[]){(x1 >> 8) & 0xFF, (x1 & 0xFF), (x2 >> 8) & 0xFF, (x2 & 0xFF)}, 4);
-    ST7789_Write_Reg(0x2B, (uint8_t[]){(y1 >> 8) & 0xFF, (y1 & 0xFF), (y2 >> 8) & 0xFF, (y2 & 0xFF)}, 4);
-    ST7789_Write_Reg(0x2C, NULL, 0);
-}
-
-static void ST7789_Draw_Bitmap(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color_font, uint16_t color_back, const uint8_t *model)
-{
-    if (!Is_in_Screen(x, y, x + width - 1, y + height - 1))
-        return;
-
-    ST7789_SetWindow(x, y, x + width - 1, y + height - 1);
-
-    uint8_t color_font_data[2] = {(color_font >> 8) & 0xFF, (color_font & 0xFF)};
-    uint8_t color_back_data[2] = {(color_back >> 8) & 0xFF, (color_back & 0xFF)};
-    uint16_t onerow_bytes = (width + 7) / 8;
-
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
-
-    for (uint16_t row = 0; row < height; row++)
-    {
-        const uint8_t *row_data = model + row * onerow_bytes;
-        for (uint16_t col = 0; col < width; col++)
-        {
-            if (row_data[col / 8] & (1 << (col % 8)))
-            {
-                SPI_SendData(SPI2, color_font_data[0]);
-                while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-                    ;
-                SPI_SendData(SPI2, color_font_data[1]);
-                while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-                    ;
-            }
-            else
-            {
-                SPI_SendData(SPI2, color_back_data[0]);
-                while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-                    ;
-                SPI_SendData(SPI2, color_back_data[1]);
-                while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-                    ;
-            }
-        }
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
-            ;
-    }
-}
-
-static void ST7789_Write_Ascii(uint16_t x, uint16_t y, char ch, uint16_t color_font, uint16_t color_back, const Font_t *font)
-{
-    if (font == NULL || ch < 0x20 || ch > 0x7E)
-        return;
-
-    uint16_t width = font->size / 2;
-    uint16_t height = font->size;
-    uint16_t onerow_bytes = (width + 7) / 8;
-    const uint8_t *model = font->ascii_model + (ch - ' ') * onerow_bytes * height;
-
-    ST7789_Draw_Bitmap(x, y, width, height, color_font, color_back, model);
-}
-
-static void ST7789_Write_Chinese(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uint16_t color_back, const Font_t *font)
-{
-    if (font == NULL || ch == NULL || *ch == '\0')
-        return;
-
-    uint16_t width = font->size;
-    uint16_t height = font->size;
-    const Chinese_Font_t *chinese_font = font->chinese;
-    if (chinese_font == NULL)
-        return;
-
-    while (chinese_font->name != NULL)
-    {
-        if (strcmp(chinese_font->name, ch) == 0)
-            break;
-        chinese_font++;
-    }
-
-    if (chinese_font->name == NULL)
-        return;
-
-    ST7789_Draw_Bitmap(x, y, width, height, color_font, color_back, chinese_font->model);
-}
-
-// static int UTF8_char_length(const char *str)
-// {
-//     if (((*str & 0x80) == 0))
-//         return 1; // 1字节
-//     else if (((*str & 0xE0) == 0xC0))
-//         return 2; // 2字节
-//     else if (((*str & 0xF0) == 0xE0))
-//         return 3; // 3字节
-//     else if (((*str & 0xF8) == 0xF0))
-//         return 4; // 4字节
-//     else
-//         return -1; // 无效的UTF-8字符
-// }
-
 void ST7789_Init(void)
 {
-
     ST7789_GPIO_Init();
-
     ST7789_SPI_Init();
-
+    ST7789_DMA_Init();
     ST7789_Display_Init();
 }
 
 /**
  * @brief 填充颜色
- * 
+ *
  * @param x1 坐标1
  * @param y1 坐标1
  * @param x2 坐标2
@@ -268,88 +352,139 @@ void ST7789_Fill_Color(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint1
         return;
 
     uint32_t size = (x2 - x1 + 1) * (y2 - y1 + 1);
-    uint8_t color_data[2] = {(color >> 8) & 0xFF, (color & 0xFF)};
 
     ST7789_SetWindow(x1, y1, x2, y2); // 设置填充区域
 
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
-
-    for (uint32_t i = 0; i < size; i++)
-    {
-        SPI_SendData(SPI2, color_data[0]);
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-            ;
-        SPI_SendData(SPI2, color_data[1]);
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-            ;
-    }
-    while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
-        ;
-
-    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    ST7789_Write_Gram((uint8_t *)&color, size * 2, false);
 }
 
-// void ST7789_Write_Ascii(uint16_t x, uint16_t y, char *str, uint16_t color_font, uint16_t color_back, const Font_t *font)
-// {
-//     while (*str)
-//     {
-//         ST7789_Write_Single_Ascii(x, y, *str, color_font, color_back, font);
-//         x += font->size / 2;
-//         // 超过屏幕宽度，换行
-//         if (x + font->size / 2 > 239)
-//         {
-//             x = 0;
-//             y += font->size;
-//         }
-//         str++;
-//     }
-// }
-
+/**
+ * @brief 整行文字渲染: 把同一行的连续字符合成一次窗口+DMA突发
+ * @param x,y        起始坐标
+ * @param str        文本(GB2312)
+ * @param color_font 前景色
+ * @param color_back 背景色
+ * @param font       字体
+ */
 void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, uint16_t color_back, const Font_t *font)
 {
-    while (*str)
+    if (font == NULL || str == NULL || font->size == 0 || font->size > SCRATCH_H_PX)
+        return;
+
+    uint16_t size = font->size;
+    const char *p = str;
+
+    while (*p)
     {
-        int length = Is_GB2312(*str) ? 2 : 1;
+        if (y + size > HEIGHT)
+            return;
 
-        if (length <= 0) // 无效的UTF-8字符
+        /* 收集当前行(run): 记录每个字符的模型、宽度与本行内的像素偏移 */
+        typedef struct
         {
-            str++;
-            continue;
-        }
-        else if (length == 1) // 1字节字符
+            const uint8_t *model; /* NULL=未收录字符, 按背景填充 */
+            uint16_t w;
+            uint16_t off;
+        } GRef_t;
+        GRef_t g[40];
+        uint16_t n = 0;
+        uint16_t xpos = x;
+
+        while (*p && n < 40)
         {
-            ST7789_Write_Ascii(x, y, *str, color_font, color_back, font);
-            x += font->size / 2;
-            // 超过屏幕宽度，换行
-            if (x + font->size / 2 > 239)
+            bool is_cn = Is_GB2312(*p);
+            uint16_t gw = is_cn ? size : size / 2;
+            const uint8_t *model = NULL;
+
+            if (is_cn)
             {
-                x = 0;
-                y += font->size;
-                if (y > HEIGHT - 1)
-                    return;
+                char ch[3];
+                ch[0] = p[0];
+                ch[1] = p[1];
+                ch[2] = '\0';
+                const Chinese_Font_t *cf = font->chinese;
+                while (cf && cf->name)
+                {
+                    if (strcmp(cf->name, ch) == 0)
+                    {
+                        model = cf->model;
+                        break;
+                    }
+                    cf++;
+                }
+                if (!(cf && cf->name))
+                    model = NULL; /* 字库未收录该汉字 */
             }
-            str += length;
-        }
-        else // 2或2字节字符以上
-        {
-            char ch[5];
-
-            strncpy(ch, str, length);
-            ch[length] = '\0';
-            ST7789_Write_Chinese(x, y, ch, color_font, color_back, font);
-
-            x += font->size;
-            // 超过屏幕宽度，换行
-            if (x + font->size > WIDTH - 1)
+            else if ((uint8_t)*p >= 0x20 && (uint8_t)*p <= 0x7E && font->ascii_model)
             {
-                x = 0;
-                y += font->size;
-                if (y > HEIGHT - 1)
-                    return;
+                uint16_t aw = size / 2;
+                uint16_t ob = (aw + 7) / 8;
+                model = font->ascii_model + (uint32_t)((uint8_t)*p - 0x20) * ob * size;
             }
-            str += length;
+            else
+            {
+                model = NULL; /* 不可打印/控制字符, 按背景填充 */
+            }
+
+            if (xpos + gw > WIDTH) /* 放不下当前行, 该字符换到下一行 */
+                break;
+
+            g[n].model = model;
+            g[n].w = gw;
+            g[n].off = xpos - x;
+            n++;
+            xpos += gw;
+            p += is_cn ? 2 : 1;
+
+            if ((xpos - x) + gw > WIDTH - 1) /* 与逐字符绘制一致的换行判定 */
+                break;
         }
+
+        uint16_t run_px = xpos - x;
+        if (run_px > 0)
+        {
+            /* 逐行扫描: 把run内的字符像素铺进连续缓冲([lo][hi]) */
+            uint8_t *buf = s_scratch;
+            for (uint16_t row = 0; row < size; row++)
+            {
+                for (uint16_t k = 0; k < n; k++)
+                {
+                    uint8_t *dst = buf + ((uint32_t)row * run_px + g[k].off) * 2;
+                    uint16_t gw2 = g[k].w;
+                    const uint8_t *model = g[k].model;
+                    if (model)
+                    {
+                        uint16_t ob = (gw2 + 7) / 8;
+                        const uint8_t *mb = model + (uint32_t)row * ob;
+                        for (uint16_t c = 0; c < gw2; c++)
+                        {
+                            uint16_t col = (mb[c >> 3] & (1 << (c & 7))) ? color_font : color_back;
+                            *dst++ = (uint8_t)(col & 0xFF);
+                            *dst++ = (uint8_t)(col >> 8);
+                        }
+                    }
+                    else
+                    {
+                        for (uint16_t c = 0; c < gw2; c++)
+                        {
+                            *dst++ = (uint8_t)(color_back & 0xFF);
+                            *dst++ = (uint8_t)(color_back >> 8);
+                        }
+                    }
+                }
+            }
+
+            ST7789_SetWindow(x, y, x + run_px - 1, y + size - 1);
+            ST7789_Write_Gram(s_scratch, (uint32_t)run_px * size * 2, true);
+        }
+
+        if (*p == '\0')
+            return;
+
+        x = 0;
+        y += size;
+        if (y > HEIGHT - 1)
+            return;
     }
 }
 
@@ -364,26 +499,10 @@ void ST7789_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image)
     if (x > WIDTH - 1 || y > HEIGHT - 1 || x + width > WIDTH || y + height > HEIGHT)
         return;
 
-    const uint8_t *data = image->data;
-    uint32_t pixel_count = (uint32_t)width * height;
+    uint32_t pixel_count = (uint32_t)(width * height);
 
     ST7789_SetWindow(x, y, x + width - 1, y + height - 1);
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
-
-    for (uint32_t i = 0; i < pixel_count * 2; i += 2)
-    {
-        SPI_SendData(SPI2, data[i + 1]);
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-            ;
-        SPI_SendData(SPI2, data[i]);
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-            ;
-    }
-
-    while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
-        ;
-    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    ST7789_Write_Gram(image->data, pixel_count * 2, true);
 }
 
 /**
@@ -407,12 +526,13 @@ static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold)
     int dg = abs(g1 - g2) * 4; // 6bit -> 252
     int db = abs(b1 - b2) * 8;
 
-    // 简单阈值：各分量差值均小于 threshold，或平方和阈值
+    // 简单阈值：各分量差值均小于 threshold
     return (dr < threshold && dg < threshold && db < threshold);
 }
 
 /**
- * @brief 绘制图片，自动检测并替换背景色
+ * @brief 绘制图片，自动检测并替换背景色(透明效果)
+ *        换色在CPU完成, 像素流经缓冲后再走DMA发送
  * @param x,y        绘制起始坐标
  * @param image       图片结构体指针
  * @param target_back 目标背景色（例如 COLOR_WHITE）
@@ -425,33 +545,45 @@ void ST7789_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *
     uint16_t height = image->height;
     const uint8_t *data = image->data;
 
-    // 固定背景色为白色（可根据实际调整）
+    if (x + width > WIDTH || y + height > HEIGHT)
+        return;
+
+    // 固定背景色为白色
     uint16_t back_color = COLOR_WHITE;
-    // 颜色接近阈值，建议 30~50（根据图片质量微调）
+    // 颜色接近阈值
     uint8_t threshold = 90;
 
     ST7789_SetWindow(x, y, x + width - 1, y + height - 1);
+
+    ST7789_SPI_SetDataSize(16);
     GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
     GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
 
     uint32_t pixel_count = (uint32_t)width * height;
-    for (uint32_t i = 0; i < pixel_count; i++)
+    uint32_t remain = pixel_count;
+    uint32_t i = 0;
+    uint32_t block_max = sizeof(s_scratch) / 2; /* 一块缓冲最多容纳的像素数 */
+
+    while (remain > 0)
     {
-        uint16_t pixel = (data[i * 2 + 1] << 8) | data[i * 2];
-        // 若像素与背景色相近，则替换
-        if (Color_IsClose(pixel, back_color, threshold))
+        uint32_t block = (remain > block_max) ? block_max : remain;
+        uint8_t *dst = s_scratch;
+
+        for (uint32_t k = 0; k < block; k++)
         {
-            pixel = target_back;
+            uint16_t pixel = (uint16_t)((data[(i + k) * 2 + 1] << 8) | data[(i + k) * 2]);
+            if (Color_IsClose(pixel, back_color, threshold))
+                pixel = target_back;
+            *dst++ = (uint8_t)(pixel & 0xFF);
+            *dst++ = (uint8_t)(pixel >> 8);
         }
-        // 发送像素（高字节在前）
-        SPI_SendData(SPI2, (pixel >> 8) & 0xFF);
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-            ;
-        SPI_SendData(SPI2, pixel & 0xFF);
-        while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
-            ;
+
+        ST7789_DMA_Pump(s_scratch, block, true);
+
+        i += block;
+        remain -= block;
     }
-    while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
-        ;
+
+    ST7789_Wait_BSY();
     GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
 }

@@ -45,5 +45,5 @@
 .\output\st7789.o: ..\BSP\Inc\USART.h
 .\output\st7789.o: ..\User\Inc\main.h
 .\output\st7789.o: ..\User\Inc\delay.h
-.\output\st7789.o: ..\User_Lib\LCD_Resource\Inc\Font.h
-.\output\st7789.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\st7789.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
+.\output\st7789.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h

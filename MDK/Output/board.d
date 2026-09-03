@@ -46,6 +46,6 @@
 .\output\board.o: ..\BSP\Inc\USART.h
 .\output\board.o: ..\User\Inc\main.h
 .\output\board.o: ..\BSP\Inc\ST7789.h
-.\output\board.o: ..\User_Lib\LCD_Resource\Inc\Font.h
-.\output\board.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\board.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
+.\output\board.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\board.o: ..\BSP\Inc\Timer.h

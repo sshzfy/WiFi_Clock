@@ -1,5 +1,5 @@
-.\output\image.o: ..\User_Lib\LCD_Resource\Src\Image\Image.c
-.\output\image.o: ..\User_Lib\LCD_Resource\Inc\Image.h
+.\output\image.o: ..\User\Third_Resource\LCD_Resource\Src\Image\Image.c
+.\output\image.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\image.o: ..\User\Inc\main.h
 .\output\image.o: ..\Core\stm32f4xx.h
 .\output\image.o: ..\Core\core_cm4.h
