@@ -11,7 +11,7 @@
 #define TIME_UPDATE_PERIOD (HOUR(1))      // 本地时间戳刷新显示周期: 1h
 #define WIFI_UPDATE_PERIOD (MINUTE(30))   // WiFi检查/重连周期: 30min
 #define WEATHER_UPDATE_PERIOD (HOUR(1))   // 天气更新周期: 1h
-#define ROOM_UPDATE_PERIOD (MINUTE(20))   // 房间温湿度更新周期: 20min
+#define ROOM_UPDATE_PERIOD (SECOND(10))   // 房间温湿度更新周期: 10s
 #define RETRY_SYNC_PERIOD (SECOND(5))     // SNTP同步失败重试: 5s
 #define RETRY_WIFI_PERIOD (SECOND(10))    // WiFi重连失败重试: 10s
 #define RETRY_WEATHER_PERIOD (SECOND(60)) // 天气更新失败重试: 60s

@@ -2,14 +2,6 @@
 
 #define WEATHER_MAP_SIZE (sizeof(weather_map) / sizeof(weather_map[0]))
 
-typedef struct
-{
-    uint16_t x_start;
-    uint16_t y_start;
-    uint16_t width;
-    uint16_t height;
-} Modle_Size_t;
-
 extern AT_WiFi_Info_t wifi_info;
 extern AT_Date_Info_t date_info;
 extern AT_Weather_Info_t weather_info;
@@ -19,6 +11,64 @@ extern DHT22_Data_t room_info;
 #define MAIN_TOP_BACK_COLOR COLOR_GRAY            // 顶部模块背景色
 #define MAIN_BOTTOM1_BACK_COLOR COLOR_DEEPSKYBLUE // 底部模块背景色1
 #define MAIN_BOTTOM2_BACK_COLOR COLOR_LAVENDER    // 底部模块背景色2
+
+/* Main Page: 顶部模块 */
+Modle_Size_t modle_top = {
+    .x_start = 5,
+    .y_start = 5,
+    .width = 230,
+    .height = 135,
+};
+Modle_Size_t modle_wifi = {
+    .x_start = 5,
+    .y_start = 5,
+    .width = 20,
+    .height = 20,
+};
+/* Main Page: 底部模块1 */
+Modle_Size_t modle_bottom1 = {
+    .x_start = 5,
+    .y_start = 150,
+    .width = 115,
+    .height = 165,
+};
+/* Main Page: 底部模块2 */
+Modle_Size_t modle_bottom2 = {
+    .x_start = 125,
+    .y_start = 150,
+    .width = 115,
+    .height = 165,
+};
+
+/* 天气图标与中文映射表 */
+static const Weather_Map_t weather_map[] = {
+    {0, &Image_sunny, "晴"},
+    {1, &Image_star, "晴"},
+    {4, &Image_cloudy, "多云"},
+    {5, &Image_cloudy, "多云"},
+    {6, &Image_cloudy, "多云"},
+    {7, &Image_cloudy, "多云"},
+    {8, &Image_cloudy, "多云"},
+    {9, &Image_overcast, "阴"},
+    {10, &Image_shower, "阵雨"},
+    {11, &Image_thundershower, "雷阵雨"},
+    {12, &Image_thundershower_with_hail, "雷雨冰雹"},
+    {13, &Image_light_rain, "小雨"},
+    {14, &Image_moderate_rain, "中雨"},
+    {15, &Image_heavy_rain, "大雨"},
+    {16, &Image_storm, "暴雨"},
+    {17, &Image_heavy_storm, "大暴雨"},
+    {18, &Image_severe_storm, "特大暴雨"},
+    {19, &Image_ice_rain, "冻雨"},
+    {20, &Image_sleet, "雨夹雪"},
+    {21, &Image_snow_flurry, "阵雪"},
+    {22, &Image_light_snow, "小雪"},
+    {23, &Image_moderate_snow, "中雪"},
+    {24, &Image_heavy_snow, "大雪"},
+    {25, &Image_snowstorm, "暴雪"},
+    {30, &Image_foggy, "雾"},
+    {31, &Image_haze, "霾"},
+};
 
 /* === Main Page: 时钟、日期、星期 === */
 
@@ -199,18 +249,6 @@ static void Main_Page_Date_Draw(void)
  */
 static void Main_Page_Top(void)
 {
-    Modle_Size_t modle_top = {
-        .x_start = 5,
-        .y_start = 5,
-        .width = 230,
-        .height = 135,
-    };
-    Modle_Size_t modle_wifi = {
-        .x_start = 5,
-        .y_start = 5,
-        .width = 20,
-        .height = 20,
-    };
     uint16_t back_color = MAIN_TOP_BACK_COLOR;
     ST7789_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, COLOR_BLACK);                                                                                            // 清屏
     ST7789_Fill_Color(modle_top.x_start, modle_top.y_start, modle_top.x_start + modle_top.width - 1, modle_top.y_start + modle_top.height - 1, back_color); // 填充顶部区域
@@ -286,40 +324,6 @@ static void Main_Page_Top(void)
 /* === Main Page: 天气 === */
 
 /**
- * @brief 天气图标与中文映射表
- * @param None
- * @return None
- * */
-static const Weather_Map_t weather_map[] = {
-    {0, &Image_sunny, "晴"},
-    {1, &Image_star, "晴"},
-    {4, &Image_cloudy, "多云"},
-    {5, &Image_cloudy, "多云"},
-    {6, &Image_cloudy, "多云"},
-    {7, &Image_cloudy, "多云"},
-    {8, &Image_cloudy, "多云"},
-    {9, &Image_overcast, "阴"},
-    {10, &Image_shower, "阵雨"},
-    {11, &Image_thundershower, "雷阵雨"},
-    {12, &Image_thundershower_with_hail, "雷雨冰雹"},
-    {13, &Image_light_rain, "小雨"},
-    {14, &Image_moderate_rain, "中雨"},
-    {15, &Image_heavy_rain, "大雨"},
-    {16, &Image_storm, "暴雨"},
-    {17, &Image_heavy_storm, "大暴雨"},
-    {18, &Image_severe_storm, "特大暴雨"},
-    {19, &Image_ice_rain, "冻雨"},
-    {20, &Image_sleet, "雨夹雪"},
-    {21, &Image_snow_flurry, "阵雪"},
-    {22, &Image_light_snow, "小雪"},
-    {23, &Image_moderate_snow, "中雪"},
-    {24, &Image_heavy_snow, "大雪"},
-    {25, &Image_snowstorm, "暴雪"},
-    {30, &Image_foggy, "雾"},
-    {31, &Image_haze, "霾"},
-};
-
-/**
  * @brief 获取天气图标映射
  *
  * @param code 天气代码
@@ -342,12 +346,6 @@ static const Weather_Map_t *Weather_Get_Map(int code)
  */
 static void Main_Page_Weather(void)
 {
-    Modle_Size_t modle_bottom1 = {
-        .x_start = 5,
-        .y_start = 150,
-        .width = 115,
-        .height = 165,
-    };
     ST7789_Fill_Color(modle_bottom1.x_start, modle_bottom1.y_start,
                       modle_bottom1.x_start + modle_bottom1.width - 1, modle_bottom1.y_start + modle_bottom1.height - 1, MAIN_BOTTOM1_BACK_COLOR);
 
@@ -401,12 +399,6 @@ static void Main_Page_Weather(void)
  */
 static void Main_Page_Room(void)
 {
-    Modle_Size_t modle_bottom2 = {
-        .x_start = 125,
-        .y_start = 150,
-        .width = 115,
-        .height = 165,
-    };
     ST7789_Fill_Color(modle_bottom2.x_start, modle_bottom2.y_start,
                       modle_bottom2.x_start + modle_bottom2.width - 1, modle_bottom2.y_start + modle_bottom2.height - 1, MAIN_BOTTOM2_BACK_COLOR);
 
@@ -453,7 +445,37 @@ static void Main_Page_Room(void)
  */
 void Main_Page_Weather_Update(void)
 {
-    Main_Page_Weather();
+    /* 绘制天气图标 */
+    const Weather_Map_t *weather_map = Weather_Get_Map(weather_info.weather_code);
+    if (weather_map != NULL)
+        ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
+    // 绘制天气状况文字
+    const char *weather_text = weather_map->chinese;
+    uint16_t text_len = strlen(weather_text) / 2;
+    uint16_t weather_x = 5 + weather_map->icon->width + 10;
+    uint16_t weather_y = modle_bottom1.y_start + 33;
+    if (text_len <= 2)
+    {
+        ST7789_Write_String(weather_x, weather_y, (char *)weather_text, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
+    }
+    else
+    {
+        char first_line[8] = {0};
+        char second_line[8] = {0};
+        strncpy(first_line, weather_text, 4);
+        strcpy(second_line, weather_text + 4);
+        ST7789_Write_String(weather_x, weather_y, first_line, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
+        ST7789_Write_String(weather_x, weather_y + Font_22B.size, second_line, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
+    }
+
+    /* 绘制温度计和温度值 */
+    ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 100, (const Image_t *)&Image_thermometer, MAIN_BOTTOM1_BACK_COLOR);
+    char temp_str[8] = {0};
+    uint16_t temperature_x = weather_x;
+    uint16_t temperature_y = modle_bottom1.y_start + 100;
+    sprintf(temp_str, "%.1f", weather_info.temperature);
+    ST7789_Write_String(temperature_x, temperature_y, temp_str, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
+    ST7789_Write_String(temperature_x, temperature_y + Font_22B.size, "C", COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
 }
 
 /**
@@ -463,7 +485,22 @@ void Main_Page_Weather_Update(void)
  */
 void Main_Page_Room_Update(void)
 {
-    Main_Page_Room();
+    char temp_val[8] = {0};
+    char humi_val[8] = {0};
+    if (room_info.valid)
+    {
+        sprintf(temp_val, "%.1f", room_info.temperature);
+        sprintf(humi_val, "%.1f", room_info.humidity);
+    }
+    else
+    {
+        strcpy(temp_val, "--");
+        strcpy(humi_val, "--");
+    }
+    ST7789_Write_String(modle_bottom2.x_start + 3, modle_bottom2.y_start + 100, temp_val, COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
+    ST7789_Write_String(modle_bottom2.x_start + 3, modle_bottom2.y_start + 100 + Font_22B.size, "C", COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
+    ST7789_Write_String(modle_bottom2.x_start + 57, modle_bottom2.y_start + 100, humi_val, COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
+    ST7789_Write_String(modle_bottom2.x_start + 57, modle_bottom2.y_start + 100 + Font_22B.size, "%", COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
 }
 
 void Main_Page_Display(void)

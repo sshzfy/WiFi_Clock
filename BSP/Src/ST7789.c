@@ -191,7 +191,7 @@ static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
         else
             DMA1_Stream4->CR &= (uint32_t)~DMA_SxCR_MINC; // 内存地址不增加
 
-        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_FEIF4 | DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4);
+        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_FEIF4 | DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4); // 清除DMA标志位
         DMA_Cmd(DMA1_Stream4, ENABLE);
 
         while (DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TCIF4) == RESET)
@@ -199,20 +199,27 @@ static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
             if (DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TEIF4) != RESET)
             {
                 DMA_Cmd(DMA1_Stream4, DISABLE);
-                return; /* 传输错误 */
+                printf("[ERR]ST7789_DMA_Pump: DMA传输错误\r\n");
+                return; // 传输错误
             }
         }
-        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_TCIF4);
+        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_TCIF4); // 清除传输完成标志位
 
-        halfwords -= chunk;
+        halfwords -= chunk; // 剩余半字数
         if (inc)
-            src += (uint32_t)chunk * 2;
+            src += (uint32_t)chunk * 2; // 内存指针增加
     }
 }
 
+/**
+ * @brief 写入GRAM内存
+ * @param data 要写入的数据指针
+ * @param len 要写入的数据长度(字节)
+ * @param increase 是否自动增加内存指针,填充纯色时为false,非纯色时为true
+ */
 static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
 {
-    ST7789_SPI_SetDataSize(16);
+    ST7789_SPI_SetDataSize(16); // 设置SPI2数据宽度为半字
 
     GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
     GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
@@ -324,6 +331,12 @@ static bool Is_in_Screen(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     return true;
 }
 
+/**
+ * @brief 判断字符是否为GB2312中文
+ * @param ch 字符
+ * @return true 中文
+ * @return false 非中文
+ */
 static bool Is_GB2312(char ch)
 {
     return (ch >= 0xA1 && ch <= 0xF7);
@@ -331,9 +344,9 @@ static bool Is_GB2312(char ch)
 
 void ST7789_Init(void)
 {
-    ST7789_GPIO_Init();
     ST7789_SPI_Init();
     ST7789_DMA_Init();
+    ST7789_GPIO_Init();
     ST7789_Display_Init();
 }
 
@@ -371,7 +384,7 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
     if (font == NULL || str == NULL || font->size == 0 || font->size > SCRATCH_H_PX)
         return;
 
-    uint16_t size = font->size;
+    uint16_t size = font->size; // 字体大小（像素）
     const char *p = str;
 
     while (*p)
@@ -382,18 +395,18 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
         /* 收集当前行(run): 记录每个字符的模型、宽度与本行内的像素偏移 */
         typedef struct
         {
-            const uint8_t *model; /* NULL=未收录字符, 按背景填充 */
-            uint16_t w;
-            uint16_t off;
+            const uint8_t *model; // NULL=未收录字符, 按背景填充
+            uint16_t w;           // 该字符的像素宽度（中文=size，英文=size/2）
+            uint16_t offset;      // 该字符在当前行内的起始列偏移（相对于行首 x）
         } GRef_t;
-        GRef_t g[40];
-        uint16_t n = 0;
-        uint16_t xpos = x;
+        GRef_t g[40];      // 当前行字符引用数组
+        uint16_t n = 0;    // 当前行已收集的字符个数
+        uint16_t xpos = x; // 当前行的“虚拟光标”位置（像素坐标）
 
         while (*p && n < 40)
         {
-            bool is_cn = Is_GB2312(*p);
-            uint16_t gw = is_cn ? size : size / 2;
+            bool is_cn = Is_GB2312(*p);            // 是否为中文
+            uint16_t gw = is_cn ? size : size / 2; // 当前字符的像素宽度（中文=size，英文=size/2）
             const uint8_t *model = NULL;
 
             if (is_cn)
@@ -413,57 +426,57 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
                     cf++;
                 }
                 if (!(cf && cf->name))
-                    model = NULL; /* 字库未收录该汉字 */
+                    model = NULL; // 字库未收录该汉字
             }
-            else if ((uint8_t)*p >= 0x20 && (uint8_t)*p <= 0x7E && font->ascii_model)
+            else if ((uint8_t)*p >= 0x20 && (uint8_t)*p <= 0x7E && font->ascii_model) // 是否为ASCII字符,ASCII 可打印字符（0x20 ~ 0x7E）
             {
-                uint16_t aw = size / 2;
-                uint16_t ob = (aw + 7) / 8;
-                model = font->ascii_model + (uint32_t)((uint8_t)*p - 0x20) * ob * size;
+                uint16_t aw = size / 2;                                                 // ASCII 字符宽度
+                uint16_t ob = (aw + 7) / 8;                                             // ASCII 每行点阵占用的字节数(向上取整)
+                model = font->ascii_model + (uint32_t)((uint8_t)*p - 0x20) * ob * size; // 计算ASCII字符模型偏移
             }
             else
             {
-                model = NULL; /* 不可打印/控制字符, 按背景填充 */
+                model = NULL; // 不可打印/控制字符, 按背景填充
             }
 
-            if (xpos + gw > WIDTH) /* 放不下当前行, 该字符换到下一行 */
+            if (xpos + gw > WIDTH) // 放不下当前行, 该字符换到下一行
                 break;
 
-            g[n].model = model;
-            g[n].w = gw;
-            g[n].off = xpos - x;
-            n++;
-            xpos += gw;
-            p += is_cn ? 2 : 1;
+            g[n].model = model;     // 记录当前字符的模型指针
+            g[n].w = gw;            // 记录当前字符的像素宽度（中文=size，英文=size/2）
+            g[n].offset = xpos - x; // 记录当前字符在当前行内的起始列偏移（相对于行首 x）
+            n++;                    // 当前行已收集的字符个数++
+            xpos += gw;             // 更新当前字符的“虚拟光标”位置（像素坐标）
+            p += is_cn ? 2 : 1;     // 移动到下一个字符
 
-            if ((xpos - x) + gw > WIDTH - 1) /* 与逐字符绘制一致的换行判定 */
+            if ((xpos - x) + gw > WIDTH - 1) // 与逐字符绘制一致的换行判定
                 break;
         }
 
-        uint16_t run_px = xpos - x;
+        uint16_t run_px = xpos - x; // 当前行已收集的字符像素宽度（像素）
         if (run_px > 0)
         {
             /* 逐行扫描: 把run内的字符像素铺进连续缓冲([lo][hi]) */
-            uint8_t *buf = s_scratch;
-            for (uint16_t row = 0; row < size; row++)
+            uint8_t *buf = s_scratch;                 // 指向全局缓冲区的起点
+            for (uint16_t row = 0; row < size; row++) // 外层：从上到下扫描像素行
             {
-                for (uint16_t k = 0; k < n; k++)
+                for (uint16_t k = 0; k < n; k++) // 内层：从左到右扫描当前行的字符
                 {
-                    uint8_t *dst = buf + ((uint32_t)row * run_px + g[k].off) * 2;
-                    uint16_t gw2 = g[k].w;
+                    uint8_t *dst = buf + ((uint32_t)row * run_px + g[k].offset) * 2; // 当前字符在缓冲区的起始位置([lo][hi])
+                    uint16_t gw2 = g[k].w;                                           // 当前字符的像素宽度（中文=size，英文=size/2）
                     const uint8_t *model = g[k].model;
                     if (model)
                     {
-                        uint16_t ob = (gw2 + 7) / 8;
-                        const uint8_t *mb = model + (uint32_t)row * ob;
+                        uint16_t ob = (gw2 + 7) / 8;                    // 当前字符每行点阵占用的字节数(向上取整)
+                        const uint8_t *mb = model + (uint32_t)row * ob; // 指向当前字符第 row 行的点阵数据
                         for (uint16_t c = 0; c < gw2; c++)
                         {
-                            uint16_t col = (mb[c >> 3] & (1 << (c & 7))) ? color_font : color_back;
-                            *dst++ = (uint8_t)(col & 0xFF);
-                            *dst++ = (uint8_t)(col >> 8);
+                            uint16_t color = (mb[c >> 3] & (1 << (c & 7))) ? color_font : color_back;
+                            *dst++ = (uint8_t)(color & 0xFF); // 写入低字节
+                            *dst++ = (uint8_t)(color >> 8);   // 写入高字节
                         }
                     }
-                    else
+                    else // 字库未收录该字符, 按背景填充
                     {
                         for (uint16_t c = 0; c < gw2; c++)
                         {

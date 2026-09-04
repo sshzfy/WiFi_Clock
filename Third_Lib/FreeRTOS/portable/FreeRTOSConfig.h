@@ -104,5 +104,9 @@ extern void vAssertCalled(const char *file, int line);
 
 /* A header file that defines trace macro can be included here. */
 
+// #define xPortPendSVHandler PendSV_Handler
+// #define xPortSysTickHandler SysTick_Handler
+// #define vPortSVCHandler SVC_Handler
+
 #endif /* FREERTOS_CONFIG_H */
 

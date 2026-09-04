@@ -123,7 +123,7 @@
             <HexSelection>1</HexSelection>
             <HexRangeLowAddress>0</HexRangeLowAddress>
             <HexRangeHighAddress>0</HexRangeHighAddress>
-            <HexOffset>0</HexOffset>
+            <Hexoffsetset>0</Hexoffsetset>
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
         </DebugOption>

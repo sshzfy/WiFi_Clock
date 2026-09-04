@@ -39,7 +39,7 @@
         <FlashByte>65535</FlashByte>
         <HexRangeLowAddress>0</HexRangeLowAddress>
         <HexRangeHighAddress>0</HexRangeHighAddress>
-        <HexOffset>0</HexOffset>
+        <Hexoffsetset>0</Hexoffsetset>
       </OPTHX>
       <OPTLEX>
         <PageWidth>79</PageWidth>
