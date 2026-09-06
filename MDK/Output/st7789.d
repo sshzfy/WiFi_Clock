@@ -44,6 +44,15 @@
 .\output\st7789.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\st7789.o: ..\BSP\Inc\USART.h
 .\output\st7789.o: ..\User\Inc\main.h
-.\output\st7789.o: ..\User\Inc\delay.h
+.\output\st7789.o: ..\BSP\Inc\Timer.h
 .\output\st7789.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
 .\output\st7789.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\FreeRTOS.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\projdefs.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\portable.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\deprecated_definitions.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\portable\portmacro.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\mpu_wrappers.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\task.h
+.\output\st7789.o: ..\Third_Lib\FreeRTOS\include\list.h

@@ -7,17 +7,25 @@ static char success_line_2[32] = {0};
 static char success_line_3[32] = {0};
 
 /**
- * @brief 显示开机页面，包含等待连接、连接失败、连接成功信息
- *
+ * @brief 绘制开机等待画面(纯显示, 不执行任何网络操作)
  * @param None
  * @return None
  */
-void Boot_Page_Display(void)
+void Boot_Page_Wait(void)
 {
     ST7789_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect); // 绘制开机页面等待连接图片
+}
 
-    bool wifi_ok = Wireless_Init();
-    bool service_ok = Service_Init();
+/**
+ * @brief 根据开机网络阶段结果绘制开机结果(纯显示)
+ *
+ * @param wifi_ok    开机WiFi初始化+连接是否完成
+ * @param service_ok 开机SNTP+天气是否都成功
+ * @return None
+ */
+void Boot_Page_Show(bool wifi_ok, bool service_ok)
+{
+    ST7789_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect); // 重新绘制底图
 
     if (!wifi_ok)
     {
@@ -30,7 +38,6 @@ void Boot_Page_Display(void)
         ST7789_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);                     // 填充白色背景,清除旧信息
         ST7789_Draw_Picture(100, 180, (const Image_t *)&Image_err);                        // 绘制错误图片
         ST7789_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 失败信息
-        delay_ms(3 * 1000);
     }
     else if (!service_ok)
     {
@@ -43,7 +50,6 @@ void Boot_Page_Display(void)
         ST7789_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);                     // 填充白色背景,清除旧信息
         ST7789_Draw_Picture(100, 180, (const Image_t *)&Image_err);                        // 绘制错误图片
         ST7789_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 失败信息
-        delay_ms(3 * 1000);
     }
     else
     {
@@ -64,7 +70,7 @@ void Boot_Page_Display(void)
         int x2 = (WIDTH - w2) / 2; // 第2行的起始X
         int x3 = (WIDTH - w3) / 2; // 第3行的起始X
 
-        /* 防负数保�?*/
+        /* 防负数保护 */
         if (x1 < 0)
             x1 = 0;
         if (x2 < 0)
@@ -76,6 +82,5 @@ void Boot_Page_Display(void)
         ST7789_Write_String(x1, 230, success_line_1, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 成功信息
         ST7789_Write_String(x2, 250, success_line_2, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 成功信息
         ST7789_Write_String(x3, 270, success_line_3, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 成功信息
-        delay_ms(3 * 1000);
     }
 }

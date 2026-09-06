@@ -1,6 +1,5 @@
 .\output\timer.o: ..\BSP\Src\Timer.c
 .\output\timer.o: ..\BSP\Inc\Timer.h
-.\output\timer.o: ..\User\Inc\main.h
 .\output\timer.o: ..\Core\stm32f4xx.h
 .\output\timer.o: ..\Core\core_cm4.h
 .\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
@@ -36,11 +35,4 @@
 .\output\timer.o: ..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h
 .\output\timer.o: ..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h
 .\output\timer.o: ..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h
-.\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
-.\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdbool.h
 .\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stddef.h
-.\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\string.h
-.\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
-.\output\timer.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
-.\output\timer.o: ..\BSP\Inc\USART.h
-.\output\timer.o: ..\User\Inc\main.h

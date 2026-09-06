@@ -1,4 +1,6 @@
 #include "AT.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define AT_DEBUG 0
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -39,16 +41,19 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
     const char *line = rx_buf;
     uint32_t rx_len = 0;
     rx_buf[0] = '\0';
-    uint64_t start = Get_ms();
+
+    uint64_t start = TIM5_Get_ms();
 
     while (rx_len < sizeof(rx_buf) - 1)
     {
-        while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET)
+        while (Usart1_RX_Count() == 0)
         {
-            if (Get_ms() - start >= timeout)
+            if (TIM5_Get_ms() - start >= timeout)
                 return AT_ACK_NONE;
+            if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
+                vTaskDelay(1); /* 让出CPU, 字节由中断环形缓冲缓存, 不会丢失 */
         }
-        rx_buf[rx_len++] = USART_ReceiveData(USART1);
+        rx_buf[rx_len++] = Usart1_RX_Read();
         rx_buf[rx_len] = '\0';
         if (rx_buf[rx_len - 1] == '\n')
         {
@@ -99,20 +104,15 @@ static void AT_USART_Init(void)
     USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 
     USART_Init(USART1, &USART_InitStruct);
-    // USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE); // RXNE中断 → Usart.c环形缓冲
     USART_Cmd(USART1, ENABLE);
-    // 初始化NVIC
-    // NVIC_InitTypeDef NVIC_InitStruct;
-    // NVIC_StructInit(&NVIC_InitStruct);
 
-    // NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;
-    // NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;
-    // NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
-    // NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-
-    // NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
-
-    // NVIC_Init(&NVIC_InitStruct);
+    NVIC_InitTypeDef NVIC_InitStruct;
+    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStruct);
 }
 
 bool AT_Init(void)

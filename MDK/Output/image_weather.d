@@ -44,3 +44,4 @@
 .\output\image_weather.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\image_weather.o: ..\BSP\Inc\USART.h
 .\output\image_weather.o: ..\User\Inc\main.h
+.\output\image_weather.o: ..\BSP\Inc\Timer.h

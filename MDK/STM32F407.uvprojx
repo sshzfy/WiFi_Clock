@@ -123,7 +123,7 @@
             <HexSelection>1</HexSelection>
             <HexRangeLowAddress>0</HexRangeLowAddress>
             <HexRangeHighAddress>0</HexRangeHighAddress>
-            <Hexoffsetset>0</Hexoffsetset>
+            <HexOffset>0</HexOffset>
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
         </DebugOption>
@@ -401,24 +401,24 @@
               <FilePath>..\User\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>loop.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\Src\loop.c</FilePath>
-            </File>
-            <File>
               <FileName>Board.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\Src\Board.c</FilePath>
             </File>
             <File>
-              <FileName>delay.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\Src\delay.c</FilePath>
-            </File>
-            <File>
               <FileName>App.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\Src\App.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Src\app_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>Log.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Src\Log.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -1,21 +1,37 @@
 #include "main.h"
 #include "Board.h"
-#include "loop.h"
+#include "app_task.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
 
 int main(void)
 {
-    Board_Peripheral_Init(); // 外设时钟初始化
-    Board_Init();            // SysTick/TIM5/LCD/USART2 初始化
-    loop();                  // 主页循环(永不返回)
+    Board_Peripheral_Init();                        // 外设时钟初始化
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4); // 4位抢占,无子优先级(FreeRTOS要求)
 
-    return 0;
+    App_Task_Init(); // 创建UI任务(内部再创建net/sensor任务)
+
+    vTaskStartScheduler(); // 启动FreeRTOS调度器
+
+    while (1)
+        ; // code should never reach here
 }
 
 
 void vAssertCalled(const char *file, int line)
 {
-    /* 断言失败处理函数 */
+    /* Assertion failed callback (configASSERT). */
     printf("Assertion failed in file %s at line %d\n", file, line);
+    while (1)
+        ;
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    /* Task stack overflow callback. */
+    (void)xTask;
+    printf("Stack overflow in task %s\n", pcTaskName);
     while (1)
         ;
 }

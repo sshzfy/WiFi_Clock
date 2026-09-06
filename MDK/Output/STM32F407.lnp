@@ -1,10 +1,10 @@
 --cpu=Cortex-M4.fp
 ".\output\stm32f4xx_it.o"
 ".\output\main.o"
-".\output\loop.o"
 ".\output\board.o"
-".\output\delay.o"
 ".\output\app.o"
+".\output\app_task.o"
+".\output\log.o"
 ".\output\font_12.o"
 ".\output\font_16.o"
 ".\output\font_22.o"

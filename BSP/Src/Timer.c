@@ -1,7 +1,6 @@
 #include "Timer.h"
 
 static volatile uint64_t TIM5_ms = 0; // TIM5 毫秒计数器
-static period_callback_t timer_callback = NULL; // 周期回调(每1ms触发)
 
 /**
  * @brief 初始化TIM5为1ms定时器, 实现RTC时间基准
@@ -15,7 +14,7 @@ static period_callback_t timer_callback = NULL; // 周期回调(每1ms触发)
 void TIM5_Init(void)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-    NVIC_InitTypeDef NVIC_InitStructure;
+    TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
 
     uint32_t tim_clk = SystemCoreClock / 2; // APB1分频≥2时定时器时钟 = SystemCoreClock/2
 
@@ -28,7 +27,11 @@ void TIM5_Init(void)
 
     TIM_ITConfig(TIM5, TIM_IT_Update, ENABLE);
 
+    NVIC_InitTypeDef NVIC_InitStructure;
+
     NVIC_InitStructure.NVIC_IRQChannel = TIM5_IRQn;
+    /* 注意: 该优先级(2)高于configMAX_SYSCALL_INTERRUPT_PRIORITY(5),
+       因此TIM5中断内禁止调用任何FreeRTOS API, 只能做计数等简单操作 */
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -48,8 +51,6 @@ void TIM5_IRQHandler(void)
     {
         TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
         TIM5_ms++;
-        if (timer_callback)
-            timer_callback();
     }
 }
 
@@ -63,11 +64,45 @@ uint64_t TIM5_Get_ms(void)
 }
 
 /**
- * @brief 注册周期回调函数, 每个TIM5更新中断(1ms)调用一次
- * @param callback 回调函数指针, 可为NULL
- * @return None
+ * @brief 获取TIM5微秒计数器(单调递增)
+ *
+ * TIM5以1MHz计数(CNT: 0~999), 更新中断在回绕时对TIM5_ms+1。
+ * 先读CNT再读ms, ms在采样期间变化则重读; 当CNT很小时复检ms是否已进位,
+ * 避免回绕瞬间(中断尚未+1)读到偏小值。
+ *
+ * @return uint64_t 自TIM5_Init以来经过的微秒数
  */
-void register_period_callback(period_callback_t callback)
+uint64_t TIM5_Get_us(void)
 {
-    timer_callback = callback;
+    uint32_t cnt;
+    uint64_t ms;
+
+    do
+    {
+        cnt = TIM5->CNT;
+        ms = TIM5_ms;
+    } while (ms != TIM5_ms); // ms在采样期间被中断更新则重读
+
+    if (cnt < 256U) // CNT接近回绕起点, 复检ms是否已进位
+    {
+        uint64_t ms2 = TIM5_ms;
+        if (ms2 != ms)
+            ms = ms2; // 已进入下一毫秒, 当前cnt属于ms2
+    }
+
+    return ms * 1000U + cnt;
+}
+
+void delay_us(uint32_t us)
+{
+    uint64_t now = TIM5_Get_us();
+    while (TIM5_Get_us() - now < (uint64_t)us)
+        ;
+}
+
+void delay_ms(uint32_t ms)
+{
+    uint64_t now = TIM5_Get_ms();
+    while (TIM5_Get_ms() - now < (uint64_t)ms)
+        ;
 }

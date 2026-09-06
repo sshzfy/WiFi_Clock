@@ -1,4 +1,7 @@
 #include "App.h"
+#include "Log.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* 初始化WiFi信息 */
 const char *ssid = "Jasmine";
@@ -13,7 +16,10 @@ const char *http_response = NULL;
 
 DHT22_Data_t room_info = {0};
 
-/* ================ 软件时钟(基于TIM5) ================ */
+/* ================ 软件时钟(基于TIM5) ================
+ * 线程安全: netTask写(Clock_Sync), uiTask读(Clock_IsSynced/GetDateTime),
+ * 读写均在临界区内进行, 避免64位字段(epoch/sync_ms)撕裂读。
+ */
 static bool clock_synced = false; // 是否同步
 static uint64_t clock_epoch;      // 同步时刻的"Unix时间戳"(SNTP本地时间按UTC算法)
 static uint64_t clock_sync_ms;    // 同步时刻的 TIM5_Get_ms()
@@ -51,10 +57,16 @@ void Clock_Sync(AT_Date_Info_t *date_info)
 {
     if (date_info == NULL || date_info->year < 2000 || date_info->month < 1 || date_info->month > 12)
         return;
+
     int64_t days = Clock_DaysFromCivil(date_info->year, date_info->month, date_info->day);
-    clock_epoch = (uint32_t)(days * 86400 + date_info->hour * 3600 + date_info->minute * 60 + date_info->second);
-    clock_sync_ms = TIM5_Get_ms();
+    uint64_t epoch = (uint32_t)(days * 86400 + date_info->hour * 3600 + date_info->minute * 60 + date_info->second);
+    uint64_t ms = TIM5_Get_ms();
+
+    taskENTER_CRITICAL();
+    clock_epoch = epoch;
+    clock_sync_ms = ms;
     clock_synced = true;
+    taskEXIT_CRITICAL();
 }
 
 /**
@@ -64,7 +76,13 @@ void Clock_Sync(AT_Date_Info_t *date_info)
  */
 bool Clock_IsSynced(void)
 {
-    return clock_synced;
+    bool synced;
+
+    taskENTER_CRITICAL();
+    synced = clock_synced;
+    taskEXIT_CRITICAL();
+
+    return synced;
 }
 
 /**
@@ -74,14 +92,28 @@ bool Clock_IsSynced(void)
  */
 void Clock_GetDateTime(AT_Date_Info_t *time_out)
 {
+    bool synced;
+    uint64_t epoch;
+    uint64_t sync_ms;
+    uint64_t now_ms;
+
     if (time_out == NULL)
         return;
     memset(time_out, 0, sizeof(*time_out));
-    if (clock_synced == false)
+
+    /* 临界区内一次性读取时钟状态(避免与netTask的写入撕裂) */
+    taskENTER_CRITICAL();
+    synced = clock_synced;
+    epoch = clock_epoch;
+    sync_ms = clock_sync_ms;
+    now_ms = TIM5_Get_ms();
+    taskEXIT_CRITICAL();
+
+    if (synced == false)
         return;
 
-    uint64_t elapsed_ms = TIM5_Get_ms() - clock_sync_ms;        // 从同步时刻到当前时间的毫秒数
-    uint64_t now = clock_epoch + (uint64_t)(elapsed_ms / 1000); // 当前时间的秒数
+    uint64_t elapsed_ms = now_ms - sync_ms;                  // 从同步时刻到当前时间的毫秒数
+    uint64_t now = epoch + (uint64_t)(elapsed_ms / 1000);    // 当前时间的秒数
     int64_t days = now / 86400;
     int64_t secs = now % 86400;
     int year;
@@ -107,118 +139,59 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
 bool Wireless_Init(void)
 {
     /* 初始化AT命令 */
-    printf("AT_Init\r\n");
     if (!AT_Init())
     {
-        printf("[AT_Init] failed\r\n");
+        Log_Op("[NET] AT init FAILED\r\n");
         goto err;
     }
+    Log_Op("[NET] AT init OK\r\n");
 
     /* 初始化WiFi */
-    printf("AT_WiFi_Init\r\n");
     if (!AT_WiFi_Init())
     {
-        printf("[AT_WiFi_Init] failed\r\n");
+        Log_Op("[NET] WiFi init FAILED\r\n");
         goto err;
     }
+    Log_Op("[NET] WiFi init OK\r\n");
 
     return true;
 err:
     return false;
 }
 
-/* === Service 任务初始化(连接WiFi、初始化SNTP、获取时间信息、发送天气请求、解析HTTP请求) === */
+/* === WiFi 连接 === */
 
 /**
- * @brief 初始化服务, 包括连接WiFi并获取信息,
- *                       初始化SNTP并获取时间信息,
- *                       发送天气请求并解析HTTP请求获取天气信息
- *
- * @return true 初始化成功
- * @return false 初始化失败
+ * @brief 连接WiFi并刷新wifi_info
+ * @return true 已连接
  */
-bool Service_Init(void)
+bool Service_WiFi_Connect(void)
 {
-    /* 连接WiFi */
-    printf("AT_Connect_WiFi\r\n");
+    AT_WiFi_Info_t tmp;
+
+    Log_Op("[NET] WiFi connecting to %s ...\r\n", ssid);
     if (!AT_Connect_WiFi(ssid, password, mac))
     {
-        printf("[AT_Connect_WiFi] failed\r\n");
-        // goto err;
+        Log_Op("[NET] WiFi connect FAILED\r\n");
+        return false;
     }
-    // 获取WiFi信息
-    AT_Get_WiFi_Info(&wifi_info);
-    if (AT_Connect_WiFi(ssid, password, mac) && wifi_info.connected)
+    AT_Get_WiFi_Info(&tmp);
+    taskENTER_CRITICAL();
+    wifi_info = tmp; /* 一次性整体替换, 避免ui读到半写状态 */
+    taskEXIT_CRITICAL();
+    if (wifi_info.connected)
     {
-        printf("[WiFi Connected] ssid: %s, bssid: %s, channel: %d, rssi: %d\r\n",
+        Log_Op("[NET] WiFi connected: ssid=%s bssid=%s channel=%d rssi=%d\r\n",
                wifi_info.ssid, wifi_info.bssid, wifi_info.channel, wifi_info.rssi);
-    }
-    delay_ms(500);
-
-    /* 初始化SNTP */
-    printf("AT_SNTP_Init\r\n");
-    if (!AT_SNTP_Init())
-    {
-        printf("[AT_SNTP_Init] failed\r\n");
-        goto err;
-    }
-    // 获取时间信息
-    if (!AT_SNTP_Get_Time(&date_info))
-    {
-        printf("[AT_SNTP_Get_Time] failed\r\n");
-        // goto err;
-    }
-    else if (date_info.weekday <= 0 || date_info.weekday > 7)
-    {
-        printf("%04u-%02u-%02u %02u:%02u:%02u %s\r\n",
-               date_info.year, date_info.month, date_info.day, date_info.hour, date_info.minute, date_info.second,
-               "Error");
     }
     else
     {
-        printf("%04u-%02u-%02u %02u:%02u:%02u %s\r\n",
-               date_info.year, date_info.month, date_info.day, date_info.hour, date_info.minute, date_info.second,
-               weekdays[date_info.weekday - 1]);
+        Log_Op("[NET] WiFi connect result: not connected\r\n");
     }
-    delay_ms(500);
-
-    /* 获取天气信息 */
-    http_response = AT_Get_HTTP(weather_url);
-    if (http_response == NULL)
-    {
-        printf("[AT_Get_HTTP] failed\r\n");
-        goto err;
-    }
-    if (!parse_weather_response(http_response, &weather_info))
-    {
-        printf("[Parse_weather_response] failed\r\n");
-        goto err;
-    }
-    printf("City: %s, Location: %s, Weather: %s, Weather_Code: %d, Temperature: %.1f\r\n",
-           weather_info.city, weather_info.location, weather_info.weather, weather_info.weather_code, weather_info.temperature);
-
-    /* 获取温湿度信息 */
-    if (!DHT22_Init())
-    {
-        printf("[DHT22_Init] failed\r\n");
-        goto err;
-    }
-    if (DHT22_ReadData(&room_info) != 0)
-    {
-
-        printf("[DHT22_ReadData] failed\r\n");
-        goto err;
-    }
-    room_info.valid = true;
-    printf("Room Temp: %.1f, Humidity: %.1f\r\n", room_info.temperature, room_info.humidity);
-
-    return true;
-
-err:
-    return false;
+    return wifi_info.connected;
 }
 
-/* === 周期任务(由main调度) === */
+/* === 周期任务(由netTask/sensorTask调度) === */
 
 /**
  * @brief 周期任务: SNTP时间同步(每4h)
@@ -228,10 +201,13 @@ bool Service_Time_Sync(void)
 {
     if (!AT_SNTP_Get_Time(&date_info))
     {
-        printf("[Service_Time_Sync] failed\r\n");
+        Log_Op("[NET] SNTP sync FAILED\r\n");
         return false;
     }
     Clock_Sync(&date_info);
+    Log_Op("[NET] SNTP sync OK: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+           date_info.year, date_info.month, date_info.day,
+           date_info.hour, date_info.minute, date_info.second);
     return true;
 }
 
@@ -241,17 +217,30 @@ bool Service_Time_Sync(void)
  */
 int Service_WiFi_Update(void)
 {
+    AT_WiFi_Info_t tmp;
+
     if (AT_Is_WiFi_Conected())
     {
-        AT_Get_WiFi_Info(&wifi_info);
+        AT_Get_WiFi_Info(&tmp);
+        taskENTER_CRITICAL();
+        wifi_info = tmp;
+        taskEXIT_CRITICAL();
+        Log_Op("[NET] WiFi check OK: ssid=%s rssi=%d\r\n", wifi_info.ssid, wifi_info.rssi);
         return 0;
     }
 
-    printf("[Service_WiFi_Update] WiFi lost, reconnecting...\r\n");
+    Log_Op("[NET] WiFi lost, reconnecting...\r\n");
     if (!AT_Connect_WiFi(ssid, password, mac))
+    {
+        Log_Op("[NET] WiFi reconnect FAILED\r\n");
         return -1;
+    }
 
-    AT_Get_WiFi_Info(&wifi_info);
+    AT_Get_WiFi_Info(&tmp);
+    taskENTER_CRITICAL();
+    wifi_info = tmp;
+    taskEXIT_CRITICAL();
+    Log_Op("[NET] WiFi reconnected: ssid=%s rssi=%d\r\n", wifi_info.ssid, wifi_info.rssi);
     return 1;
 }
 
@@ -261,18 +250,23 @@ int Service_WiFi_Update(void)
  */
 bool Service_Weather_Update(void)
 {
+    AT_Weather_Info_t tmp;
+
     http_response = AT_Get_HTTP(weather_url);
     if (http_response == NULL)
     {
-        printf("[Service_Weather_Update] HTTP failed\r\n");
+        Log_Op("[NET] Weather HTTP FAILED\r\n");
         return false;
     }
-    if (!parse_weather_response(http_response, &weather_info))
+    if (!parse_weather_response(http_response, &tmp))
     {
-        printf("[Service_Weather_Update] parse failed\r\n");
+        Log_Op("[NET] Weather parse FAILED\r\n");
         return false;
     }
-    printf("Weather: %s, Code: %d, Temp: %.1f\r\n",
+    taskENTER_CRITICAL();
+    weather_info = tmp; /* 一次性整体替换, 避免ui读到半写状态 */
+    taskEXIT_CRITICAL();
+    Log_Op("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
            weather_info.weather, weather_info.weather_code, weather_info.temperature);
     return true;
 }
@@ -285,6 +279,7 @@ bool Service_Room_Update(void)
 {
     static bool dht22_inited = false;
     DHT22_Data_t dht22;
+    uint8_t dht_ret;
 
     if (!dht22_inited)
     {
@@ -292,17 +287,22 @@ bool Service_Room_Update(void)
         dht22_inited = true;
     }
 
-    if (DHT22_ReadData(&dht22) == 0)
+    dht_ret = DHT22_ReadData(&dht22);
+    if (dht_ret == DHT22_OK)
     {
+        taskENTER_CRITICAL();
         room_info.temperature = dht22.temperature;
         room_info.humidity = dht22.humidity;
         room_info.valid = true;
-        printf("[DHT22] T=%.1f H=%.1f\r\n", room_info.temperature, room_info.humidity);
+        taskEXIT_CRITICAL();
+        Log_Op("[SENSOR] DHT22 OK: T=%.1f H=%.1f\r\n", room_info.temperature, room_info.humidity);
     }
     else
     {
+        taskENTER_CRITICAL();
         room_info.valid = false;
-        printf("[DHT22] read failed\r\n");
+        taskEXIT_CRITICAL();
+        Log_Op("[SENSOR] DHT22 FAIL: code=%d (%s)\r\n", (int)dht_ret, DHT22_ErrString(dht_ret));
     }
     return true;
 }

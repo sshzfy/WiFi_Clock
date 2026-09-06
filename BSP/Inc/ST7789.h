@@ -2,7 +2,7 @@
 #define __ST7789_H__
 
 #include "main.h"
-#include "delay.h"
+#include "Timer.h"
 #include "Font.h"
 #include "Image.h"
 

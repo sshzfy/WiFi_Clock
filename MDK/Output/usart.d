@@ -43,3 +43,15 @@
 .\output\usart.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
 .\output\usart.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\usart.o: ..\BSP\Inc\USART.h
+.\output\usart.o: ..\BSP\Inc\Timer.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\FreeRTOS.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\projdefs.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\portable.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\deprecated_definitions.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\portable\portmacro.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\mpu_wrappers.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\task.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\list.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\semphr.h
+.\output\usart.o: ..\Third_Lib\FreeRTOS\include\queue.h

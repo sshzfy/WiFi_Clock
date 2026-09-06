@@ -8,17 +8,18 @@
 #define configUSE_PREEMPTION                                        1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION                     0
 #define configUSE_TICKLESS_IDLE                                     0
-#define configCPU_CLOCK_HZ                                          60000000
-#define configSYSTICK_CLOCK_HZ                                      1000000
-#define configTICK_RATE_HZ                                          250
+#define configCPU_CLOCK_HZ                                          168000000
+// #define configSYSTICK_CLOCK_HZ                                      1000000
+#define configTICK_RATE_HZ                                          1000
 #define configMAX_PRIORITIES                                        5
 #define configMINIMAL_STACK_SIZE                                    128
 #define configMAX_TASK_NAME_LEN                                     16
 #define configUSE_16_BIT_TICKS                                      0
 #define configIDLE_SHOULD_YIELD                                     1
 #define configUSE_TASK_NOTIFICATIONS                                1
+#define configUSE_EVENT_GROUPS                                      1
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES                       3
-#define configUSE_MUTEXES                                           0
+#define configUSE_MUTEXES                                           1
 #define configUSE_RECURSIVE_MUTEXES                                 0
 #define configUSE_COUNTING_SEMAPHORES                               0
 #define configUSE_ALTERNATIVE_API                                   0 /* Deprecated! */
@@ -36,14 +37,14 @@
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION                             0
 #define configSUPPORT_DYNAMIC_ALLOCATION                            1
-#define configTOTAL_HEAP_SIZE                                       10240
+#define configTOTAL_HEAP_SIZE                                       1024 * 95
 #define configAPPLICATION_ALLOCATED_HEAP                            0
-#define configSTACK_ALLOCATION_FROM_SEPARATE_HEAP                   1
+#define configSTACK_ALLOCATION_FROM_SEPARATE_HEAP                   0
 
 /* Hook function related definitions. */
 #define configUSE_IDLE_HOOK                                 0
 #define configUSE_TICK_HOOK                                 0
-#define configCHECK_FOR_STACK_OVERFLOW                      0
+#define configCHECK_FOR_STACK_OVERFLOW                      2
 #define configUSE_MALLOC_FAILED_HOOK                        0
 #define configUSE_DAEMON_TASK_STARTUP_HOOK                  0
 #define configUSE_SB_COMPLETED_CALLBACK                     0
@@ -58,12 +59,19 @@
 #define configMAX_CO_ROUTINE_PRIORITIES                     1
 
 /* Software timer related definitions. */
-#define configUSE_TIMERS                                    1
+#define configUSE_TIMERS                                    0
 #define configTIMER_TASK_PRIORITY                           3
 #define configTIMER_QUEUE_LENGTH                            10
 #define configTIMER_TASK_STACK_DEPTH                        configMINIMAL_STACK_SIZE
 
-/* Interrupt nesting behaviour configuration. */
+/* Interrupt nesting behaviour configuration.
+ * 约定(中断优先级数值越小越优先, 使用NVIC_PriorityGroup_4):
+ *   - configKERNEL_INTERRUPT_PRIORITY(15): PendSV/SysTick, 内核最低优先
+ *   - configMAX_SYSCALL_INTERRUPT_PRIORITY(5): 优先级数值 >= 5 的中断内
+ *     才允许调用 FreeRTOS API(如 xTaskNotifyFromISR)
+ *   - TIM5 中断优先级=2(<5), 其ISR内禁止调用任何FreeRTOS API(仅做计数)
+ *   - USART1 中断优先级=5, 可在ISR内调用 FreeRTOS API
+ */
 #define configKERNEL_INTERRUPT_PRIORITY         (15 << 4)
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY    (5 << 4)
 #define configMAX_API_CALL_INTERRUPT_PRIORITY   (5 << 4)
@@ -104,9 +112,9 @@ extern void vAssertCalled(const char *file, int line);
 
 /* A header file that defines trace macro can be included here. */
 
-// #define xPortPendSVHandler PendSV_Handler
-// #define xPortSysTickHandler SysTick_Handler
-// #define vPortSVCHandler SVC_Handler
+#define xPortPendSVHandler PendSV_Handler
+#define xPortSysTickHandler SysTick_Handler
+#define vPortSVCHandler SVC_Handler
 
 #endif /* FREERTOS_CONFIG_H */
 

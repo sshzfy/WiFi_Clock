@@ -44,3 +44,4 @@
 .\output\image.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\image.o: ..\BSP\Inc\USART.h
 .\output\image.o: ..\User\Inc\main.h
+.\output\image.o: ..\BSP\Inc\Timer.h

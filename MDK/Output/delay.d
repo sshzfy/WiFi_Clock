@@ -44,3 +44,4 @@
 .\output\delay.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\delay.o: ..\BSP\Inc\USART.h
 .\output\delay.o: ..\User\Inc\main.h
+.\output\delay.o: ..\BSP\Inc\Timer.h

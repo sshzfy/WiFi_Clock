@@ -44,11 +44,10 @@
 .\output\boot_page.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\boot_page.o: ..\BSP\Inc\USART.h
 .\output\boot_page.o: ..\User\Inc\main.h
-.\output\boot_page.o: ..\User\Inc\delay.h
+.\output\boot_page.o: ..\BSP\Inc\Timer.h
 .\output\boot_page.o: ..\BSP\Inc\ST7789.h
 .\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
 .\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\boot_page.o: ..\User\Inc\App.h
 .\output\boot_page.o: ..\BSP\Inc\AT.h
-.\output\boot_page.o: ..\BSP\Inc\Timer.h
 .\output\boot_page.o: ..\BSP\Inc\DHT22.h

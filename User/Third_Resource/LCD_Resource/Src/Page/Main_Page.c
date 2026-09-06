@@ -253,70 +253,8 @@ static void Main_Page_Top(void)
     ST7789_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, COLOR_BLACK);                                                                                            // 清屏
     ST7789_Fill_Color(modle_top.x_start, modle_top.y_start, modle_top.x_start + modle_top.width - 1, modle_top.y_start + modle_top.height - 1, back_color); // 填充顶部区域
 
-    /* 格式化WiFi信息 */
-    char ssid_str[32] = {0};
-    int ssid_len = strlen(wifi_info.ssid);
+    Main_Page_Net_Update(); /* 顶部网络条: WiFi图标/ssid/定位 (与运行时刷新共用) */
 
-    if (ssid_len + 2 <= 10)
-    {
-        sprintf(ssid_str, "[%s]", wifi_info.ssid);
-    }
-    else
-    {
-        strncpy(ssid_str, wifi_info.ssid, 5);
-        ssid_str[5] = '\0';
-        sprintf(ssid_str, "[%s...]", ssid_str);
-    }
-
-    int char_width = Font_16B.size / 2;
-    int str_pixel_width = strlen(ssid_str) * char_width;
-    int x_wifi = WIDTH - 5 - str_pixel_width;
-    if (x_wifi < 0)
-        x_wifi = 0;
-
-    /* 格式化定位信息 */
-    char location_str[16] = {"[大连]"};
-
-    /* 绘制WiFi信息和定位信息 */
-    if (wifi_info.connected)
-    {
-        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start, modle_wifi.y_start, (const Image_t *)&Image_wifi, back_color); // 绘制WiFi图标
-        ST7789_Write_String(155, 5, ssid_str, COLOR_BLACK, back_color, &Font_16B);                                             // 绘制WiFi名称
-    }
-    else
-        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start, modle_wifi.y_start, (const Image_t *)&Image_wifi_off, back_color); // 绘制无WiFi图标
-    if (weather_info.city[0] != '\0')
-    {
-        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start + Image_wifi.width, modle_wifi.y_start, (const Image_t *)&Image_location, back_color); // 绘制定位图标
-        ST7789_Write_String(155 - strlen(location_str) * (Font_16B.size / 2), 5, location_str, COLOR_BLACK, back_color, &Font_16B);                   // 绘制定位信息
-    }
-    else
-        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start + Image_wifi.width, modle_wifi.y_start, (const Image_t *)&Image_no_location, back_color); // 绘制无定位图标
-
-    // /* 格式化WiFi信息 */
-    // char ssid_str[32] = {0};
-    // int ssid_len = strlen(wifi_info.ssid);
-
-    // if (ssid_len + 2 <= 10)
-    // {
-    //     sprintf(ssid_str, "[%s]", wifi_info.ssid);
-    // }
-    // else
-    // {
-    //     strncpy(ssid_str, wifi_info.ssid, 5);
-    //     ssid_str[5] = '\0';
-    //     sprintf(ssid_str, "[%s...]", ssid_str);
-    // }
-
-    // int char_width = Font_16B.size / 2;
-    // int str_pixel_width = strlen(ssid_str) * char_width;
-    // int x_wifi = WIDTH - 5 - str_pixel_width;
-    // if (x_wifi < 0)
-    //     x_wifi = 0;
-
-    // /* 绘制WiFi信息 */
-    // ST7789_Write_String(155, 5, ssid_str, COLOR_BLACK, back_color, &Font_16B);
-    /* 绘制时钟与日期 */
     Main_Page_Clock_Draw();
     Main_Page_Date_Draw();
 }
@@ -450,10 +388,11 @@ void Main_Page_Weather_Update(void)
     if (weather_map != NULL)
         ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
     // 绘制天气状况文字
-    const char *weather_text = weather_map->chinese;
-    uint16_t text_len = strlen(weather_text) / 2;
+    const char *weather_text = weather_map->chinese; // 获取天气状况文字
+    uint16_t text_len = strlen(weather_text) / 2;    // 计算天气状况文字的字符数
     uint16_t weather_x = 5 + weather_map->icon->width + 10;
     uint16_t weather_y = modle_bottom1.y_start + 33;
+    ST7789_Fill_Color(weather_x, weather_y, weather_x + Font_22B.size * 2 - 1, weather_y + Font_22B.size * 2 - 1, MAIN_BOTTOM1_BACK_COLOR); // 清除天气状况文字区域,避免上次数据残留
     if (text_len <= 2)
     {
         ST7789_Write_String(weather_x, weather_y, (char *)weather_text, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
@@ -497,17 +436,75 @@ void Main_Page_Room_Update(void)
         strcpy(temp_val, "--");
         strcpy(humi_val, "--");
     }
-    ST7789_Write_String(modle_bottom2.x_start + 3, modle_bottom2.y_start + 100, temp_val, COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
-    ST7789_Write_String(modle_bottom2.x_start + 3, modle_bottom2.y_start + 100 + Font_22B.size, "C", COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
-    ST7789_Write_String(modle_bottom2.x_start + 57, modle_bottom2.y_start + 100, humi_val, COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
-    ST7789_Write_String(modle_bottom2.x_start + 57, modle_bottom2.y_start + 100 + Font_22B.size, "%", COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);
+    ST7789_Fill_Color(modle_bottom2.x_start, modle_bottom2.y_start + 100,
+                      modle_bottom2.x_start + modle_bottom2.width, modle_bottom2.y_start + 100 + Font_22B.size, MAIN_BOTTOM2_BACK_COLOR);               // 清除温湿度值区域,避免上次数据残留
+    ST7789_Write_String(modle_bottom2.x_start + 3, modle_bottom2.y_start + 100, temp_val, COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);             // 绘制室内温度值
+    ST7789_Write_String(modle_bottom2.x_start + 3, modle_bottom2.y_start + 100 + Font_22B.size, "C", COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);  // 绘制室内温度符号
+    ST7789_Write_String(modle_bottom2.x_start + 57, modle_bottom2.y_start + 100, humi_val, COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B);            // 绘制室内湿度值
+    ST7789_Write_String(modle_bottom2.x_start + 57, modle_bottom2.y_start + 100 + Font_22B.size, "%", COLOR_BLACK, MAIN_BOTTOM2_BACK_COLOR, &Font_22B); // 绘制室内湿度符号
 }
 
 void Main_Page_Display(void)
 {
-    Clock_Sync(&date_info); // Boot流程已通过SNTP获取时间到date_info
 
     Main_Page_Top();
     Main_Page_Weather();
     Main_Page_Room();
 }
+void Main_Page_Net_Update(void)
+{
+    uint16_t back_color = MAIN_TOP_BACK_COLOR;
+    uint16_t text_y = modle_wifi.y_start;
+    char loc_label[16] = {0};
+    int char_width = Font_16B.size / 2;
+    int x;
+    char ssid_str[32] = {0};
+    int ssid_len;
+
+    /* location caption "[DaLian]" as GB2312 bytes (ASCII-only source) */
+    loc_label[0] = '[';
+    loc_label[1] = (char)0xB4;
+    loc_label[2] = (char)0xF3;
+    loc_label[3] = (char)0xC1;
+    loc_label[4] = (char)0xAC;
+    loc_label[5] = ']';
+
+    /* clear the whole status row first (old icons / old text) */
+    ST7789_Fill_Color(modle_top.x_start, text_y,
+                      modle_top.x_start + modle_top.width - 1,
+                      text_y + modle_wifi.height - 1, back_color);
+
+    ssid_len = strlen(wifi_info.ssid);
+    if (ssid_len + 2 <= 10)
+    {
+        sprintf(ssid_str, "[%s]", wifi_info.ssid);
+    }
+    else
+    {
+        strncpy(ssid_str, wifi_info.ssid, 5);
+        ssid_str[5] = '\0';
+        sprintf(ssid_str, "[%s...]", ssid_str);
+    }
+
+    if (wifi_info.connected)
+    {
+        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start, modle_wifi.y_start, (const Image_t *)&Image_wifi, back_color);
+        ST7789_Write_String(155, text_y, ssid_str, COLOR_BLACK, back_color, &Font_16B);
+    }
+    else
+    {
+        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start, modle_wifi.y_start, (const Image_t *)&Image_wifi_off, back_color);
+    }
+
+    if (weather_info.city[0] != '\0')
+    {
+        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start + Image_wifi.width, modle_wifi.y_start, (const Image_t *)&Image_location, back_color);
+        x = 155 - (int)strlen(loc_label) * char_width;
+        ST7789_Write_String(x, text_y, loc_label, COLOR_BLACK, back_color, &Font_16B);
+    }
+    else
+    {
+        ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start + Image_wifi.width, modle_wifi.y_start, (const Image_t *)&Image_no_location, back_color);
+    }
+}
+

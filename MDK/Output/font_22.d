@@ -44,3 +44,4 @@
 .\output\font_22.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\font_22.o: ..\BSP\Inc\USART.h
 .\output\font_22.o: ..\User\Inc\main.h
+.\output\font_22.o: ..\BSP\Inc\Timer.h

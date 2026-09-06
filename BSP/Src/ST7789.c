@@ -1,4 +1,6 @@
 #include "ST7789.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define GRAM_DMA_MAX_HALFWORD 65535U // DMA NDTR(16bit)单次最大半字数
 #define SCRATCH_H_PX 48              // 最大渲染行高(对齐Font_48)
@@ -235,9 +237,9 @@ static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
 static void ST7789_Rest(void)
 {
     GPIO_ResetBits(ST7789_RESET_Port, ST7789_RESET_Pin);
-    delay_us(20);
+    vTaskDelay(pdMS_TO_TICKS(20));
     GPIO_SetBits(ST7789_RESET_Port, ST7789_RESET_Pin);
-    delay_ms(20);
+    vTaskDelay(pdMS_TO_TICKS(120));
 }
 
 static void ST7789_Set_Backlight(bool state)
@@ -248,8 +250,9 @@ static void ST7789_Set_Backlight(bool state)
 static void ST7789_Display_Init(void)
 {
     ST7789_Rest();
+    vTaskDelay(pdMS_TO_TICKS(20));
     ST7789_Write_Reg(0x11, NULL, 0);
-    delay_ms(5);
+    vTaskDelay(pdMS_TO_TICKS(120));
 
     ST7789_Write_Reg(0x36, (uint8_t[]){0x00}, 1);
     ST7789_Write_Reg(0x3A, (uint8_t[]){0x55}, 1);
@@ -269,7 +272,8 @@ static void ST7789_Display_Init(void)
 
     // ST7789_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, 0x001F); // 填充背景颜色（显示打开前）
     ST7789_Write_Reg(0x29, NULL, 0); // 打开显示
-    ST7789_Set_Backlight(true);      // 开启背光
+    vTaskDelay(pdMS_TO_TICKS(10));
+    ST7789_Set_Backlight(true); // 开启背光
 }
 
 static void ST7789_GPIO_Init(void)
@@ -344,9 +348,9 @@ static bool Is_GB2312(char ch)
 
 void ST7789_Init(void)
 {
+    ST7789_GPIO_Init();
     ST7789_SPI_Init();
     ST7789_DMA_Init();
-    ST7789_GPIO_Init();
     ST7789_Display_Init();
 }
 
