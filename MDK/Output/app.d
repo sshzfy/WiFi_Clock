@@ -47,7 +47,6 @@
 .\output\app.o: ..\BSP\Inc\Timer.h
 .\output\app.o: ..\BSP\Inc\AT.h
 .\output\app.o: ..\BSP\Inc\DHT22.h
-.\output\app.o: ..\User\Inc\Log.h
 .\output\app.o: ..\Third_Lib\FreeRTOS\include\FreeRTOS.h
 .\output\app.o: ..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h
 .\output\app.o: ..\Third_Lib\FreeRTOS\include\projdefs.h

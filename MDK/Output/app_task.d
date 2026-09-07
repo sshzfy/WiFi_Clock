@@ -62,6 +62,5 @@
 .\output\app_task.o: ..\User\Inc\App.h
 .\output\app_task.o: ..\BSP\Inc\AT.h
 .\output\app_task.o: ..\BSP\Inc\DHT22.h
-.\output\app_task.o: ..\User\Inc\Log.h
 .\output\app_task.o: ..\Third_Lib\FreeRTOS\include\event_groups.h
 .\output\app_task.o: ..\Third_Lib\FreeRTOS\include\timers.h

@@ -22,7 +22,7 @@ void USART1_IRQHandler(void)
 {
     if (USART_GetITStatus(USART1, USART_IT_RXNE) == SET)
     {
-        char c = (char)USART_ReceiveData(USART1); // 读DR会同时清除RXNE/ORE
+        char c = (char)USART_ReceiveData(USART1); /* 读DR会同时清除RXNE/ORE */
         uint16_t next = (uint16_t)((rx_tail + 1) % USART1_RX_RING_SIZE);
         if (next != rx_head) /* 非满则入队 */
         {
@@ -36,7 +36,7 @@ void USART1_IRQHandler(void)
 
 uint16_t Usart1_RX_Count(void)
 {
-    return (uint16_t)((rx_tail - rx_head + USART1_RX_RING_SIZE) % USART1_RX_RING_SIZE);
+    return (uint16_t)((rx_tail - rx_head + USART1_RX_RING_SIZE) % USART1_RX_RING_SIZE); /* 计算有效字节数 */
 }
 
 char Usart1_RX_Read(void)
@@ -61,21 +61,29 @@ char Usart1_RX_Read(void)
 
 #define DBG_TX_BUF_SIZE 256
 
-static uint8_t dbg_buf[DBG_TX_BUF_SIZE];
-static uint16_t dbg_len = 0;
-static SemaphoreHandle_t dbg_mtx = NULL;
-static TaskHandle_t dbg_line_owner = NULL;
-static bool dbg_dma_ready = false;
+static uint8_t dbg_buf[DBG_TX_BUF_SIZE];   // 行缓冲区
+static uint16_t dbg_len = 0;               // 行缓冲区有效字符数
+static SemaphoreHandle_t dbg_mtx = NULL;   // 行缓冲区互斥量,保护整行输出
+static TaskHandle_t dbg_line_owner = NULL; // 当前持有锁的任务句柄
+static bool dbg_dma_ready = false;         // DMA是否初始化
 
+/**
+ * @brief 判断当前上下文是否允许调用 FreeRTOS 的阻塞 API
+ * @return true 可以阻塞发送, false 不能阻塞发送
+ * */
 static bool Dbg_Can_Block(void)
 {
-    if (xPortIsInsideInterrupt() == pdTRUE)
+    if (xPortIsInsideInterrupt() == pdTRUE) /* 中断上下文不能阻塞 */
         return false;
-    if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
+    if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) /* 调度器未运行 */
         return false;
     return true;
 }
 
+/**
+ * @brief 逐字节轮询发送字符 c
+ * @param c 字符
+ * */
 static void Dbg_Byte_Poll(uint8_t c)
 {
     while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
@@ -86,63 +94,70 @@ static void Dbg_Byte_Poll(uint8_t c)
 /* DMA1_Stream6, Channel4 = USART2_TX */
 static void Dbg_Dma_Init(void)
 {
-    DMA_InitTypeDef s;
-
     if (dbg_dma_ready)
         return;
     dbg_dma_ready = true;
 
     DMA_DeInit(DMA1_Stream6);
-    DMA_StructInit(&s);
-    s.DMA_Channel = DMA_Channel_4;
-    s.DMA_PeripheralBaseAddr = (uint32_t)&(USART2->DR);
-    s.DMA_Memory0BaseAddr = (uint32_t)dbg_buf;
-    s.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-    s.DMA_BufferSize = 0;
-    s.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    s.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    s.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    s.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-    s.DMA_Mode = DMA_Mode_Normal;
-    s.DMA_Priority = DMA_Priority_Low;
-    s.DMA_FIFOMode = DMA_FIFOMode_Disable;
-    DMA_Init(DMA1_Stream6, &s);
 
+    DMA_InitTypeDef DMA_InitStruct;
+    DMA_StructInit(&DMA_InitStruct);
+
+    DMA_InitStruct.DMA_Channel = DMA_Channel_4;                          // 通道4对应USART2_TX
+    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(USART2->DR);     // 从USART2_TX寄存器读取
+    DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)dbg_buf;              // 从行缓冲区读取
+    DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;                 // 从内存到外设
+    DMA_InitStruct.DMA_BufferSize = 0;                                   // 0表示动态计算
+    DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;        // 外设地址不增加
+    DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;                 // 内存地址增加
+    DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte; // 外设数据大小为字节
+    DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;         // 内存数据大小为字节
+    DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;                           // 正常模式
+    DMA_InitStruct.DMA_Priority = DMA_Priority_Low;                      // 低优先级
+    DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;                  // 禁用FIFO
+
+    DMA_Init(DMA1_Stream6, &DMA_InitStruct);
     USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
 }
 
-/* 同步发送当前行缓冲(仅任务上下文调用) */
+/**
+ * @brief 同步发送当前行缓冲(仅任务上下文调用)
+ * @note 仅在任务上下文调用, 不能在中断上下文调用
+ * */
 static void Dbg_Flush(void)
 {
-    uint16_t n = dbg_len;
+    uint16_t n = dbg_len; // 存储有效字符数
 
     if (n == 0)
         return;
-    dbg_len = 0;
+    dbg_len = 0; // 立即重置长度（持有锁，安全），防止下次重复搬运
 
     Dbg_Dma_Init();
 
     DMA_Cmd(DMA1_Stream6, DISABLE);
-    while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE)
+    while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE) /* 等待DMA流完全进入禁用状态（硬件同步），以便安全修改NDTR/M0AR等寄存器 */
         ;
 
-    DMA1_Stream6->NDTR = n;
-    DMA1_Stream6->M0AR = (uint32_t)dbg_buf;
-    DMA1_Stream6->CR |= DMA_SxCR_MINC;
+    DMA1_Stream6->NDTR = n;                 // 设置要搬运的字节数
+    DMA1_Stream6->M0AR = (uint32_t)dbg_buf; // 设置内存地址为行缓冲区
+    DMA1_Stream6->CR |= DMA_SxCR_MINC;      // 确保内存地址递增（逐字节读取）
 
+    /* 清除残留标志，防止旧状态干扰后续 while 循环对本次传输完成的判断 */
     USART_ClearFlag(USART2, USART_FLAG_TC);
     DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_FEIF6 | DMA_FLAG_TCIF6 | DMA_FLAG_TEIF6);
+
+    /* 启用DMA1_Stream6, 开始传输 */
     DMA_Cmd(DMA1_Stream6, ENABLE);
 
-    /* 等所有字节由DMA搬入DR */
+    /* 等所有字节由DMA搬入DR,传输未完成则让出CPU */
     while (DMA_GetFlagStatus(DMA1_Stream6, DMA_FLAG_TCIF6) == RESET)
     {
         if (Dbg_Can_Block())
             vTaskDelay(1);
     }
-    DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_TCIF6);
+    DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_TCIF6); /* 清除DMA1_Stream6_TCIF6标志位, 确保下一次发送从头开始 */
 
-    /* 等最后一个字节真正移出(整行发送完成) */
+    /* 等最后一个字节真正移出(整行发送完成), 传输未完成则让出CPU */
     while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET)
     {
         if (Dbg_Can_Block())
@@ -162,28 +177,31 @@ int fputc(int ch, FILE *stream)
         return ch;
     }
 
-    TaskHandle_t me = xTaskGetCurrentTaskHandle();
+    TaskHandle_t me = xTaskGetCurrentTaskHandle(); /* 获取当前任务句柄 */
 
+    /* 懒加载创建互斥量（仅首次调用时创建） */
     if (dbg_mtx == NULL)
         dbg_mtx = xSemaphoreCreateMutex();
 
     /* 整行互斥: 首个字符抢锁并记录行属主, 换行释放 */
     if (dbg_line_owner != me)
     {
-        xSemaphoreTake(dbg_mtx, portMAX_DELAY);
-        dbg_line_owner = me;
+        xSemaphoreTake(dbg_mtx, portMAX_DELAY); /* 抢锁, 将锁的所有权交给当前任务, 如果锁被占用, 则阻塞等待任务释放锁 */
+        dbg_line_owner = me;                    /* 登记属主，后续字符免检 */
     }
 
+    /* 缓冲满则提前刷出（但仍持有锁，行未结束） */
     if (dbg_len >= sizeof(dbg_buf))
         Dbg_Flush();
 
-    dbg_buf[dbg_len++] = c;
+    dbg_buf[dbg_len++] = c; /* 行缓冲区未满, 写入字符到行缓冲区 */
 
+    /* 遇到换行符：必须等待整行物理发送完毕，再释放锁和清空属主 */
     if (c == '\n')
     {
-        Dbg_Flush();
-        xSemaphoreGive(dbg_mtx);
-        dbg_line_owner = NULL;
+        Dbg_Flush();             /* 阻塞等待 DMA 和 USART 完全发完 */
+        xSemaphoreGive(dbg_mtx); /* 释放锁，允许其他任务打印新行 */
+        dbg_line_owner = NULL;   /* 重置行属主为 NULL */
     }
 
     return ch;

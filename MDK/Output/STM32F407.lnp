@@ -4,7 +4,6 @@
 ".\output\board.o"
 ".\output\app.o"
 ".\output\app_task.o"
-".\output\log.o"
 ".\output\font_12.o"
 ".\output\font_16.o"
 ".\output\font_22.o"

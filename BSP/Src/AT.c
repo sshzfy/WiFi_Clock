@@ -19,7 +19,55 @@ static void AT_Usart_Write(const char *data);
 static bool AT_Wait_Ready(uint32_t timeout);
 static AT_ACK_t AT_Match_Internal_ACK(const char *str);
 static bool AT_Wait_Boot(uint32_t timeout);
+static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info);
+static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info);
+static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info);
 
+/* =========AT底层通信相关函数========= */
+
+static void AT_USART_Init(void)
+{
+    /* 初始化GPIOA */
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
+
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_StructInit(&GPIO_InitStruct);
+
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
+    /* 初始化USART1 */
+    USART_InitTypeDef USART_InitStruct;
+    USART_StructInit(&USART_InitStruct);
+
+    USART_InitStruct.USART_BaudRate = 115200;
+    USART_InitStruct.USART_WordLength = USART_WordLength_8b;
+    USART_InitStruct.USART_StopBits = USART_StopBits_1;
+    USART_InitStruct.USART_Parity = USART_Parity_No;
+    USART_InitStruct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+
+    USART_Init(USART1, &USART_InitStruct);
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE); /* RXNE中断 → Usart.c环形缓冲 */
+    USART_Cmd(USART1, ENABLE);
+
+    NVIC_InitTypeDef NVIC_InitStruct;
+    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStruct);
+}
+
+/**
+ * @brief 发送AT指令
+ * @param data 指令字符串
+ */
 static void AT_Usart_Write(const char *data)
 {
     while (data && *data)
@@ -36,9 +84,14 @@ static void AT_Usart_Write(const char *data)
     USART_SendData(USART1, '\n');
 }
 
+/**
+ * @brief 等待接收AT指令回复
+ * @param timeout 超时时间, 单位ms
+ * @return AT_ACK_t 回复结果
+ */
 static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
 {
-    const char *line = rx_buf;
+    const char *line = rx_buf; // 指向当前行的指针
     uint32_t rx_len = 0;
     rx_buf[0] = '\0';
 
@@ -66,6 +119,11 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
     return AT_ACK_NONE;
 }
 
+/**
+ * @brief 匹配AT指令回复
+ * @param str 回复字符串
+ * @return AT_ACK_t 回复结果
+ */
 static AT_ACK_t AT_Match_Internal_ACK(const char *str)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(AT_ACK_Match); i++)
@@ -76,63 +134,27 @@ static AT_ACK_t AT_Match_Internal_ACK(const char *str)
     return AT_ACK_NONE;
 }
 
-static void AT_USART_Init(void)
+/**
+ * @brief 等待AT模块引导完成
+ * @param timeout 超时时间, 单位ms
+ * @return true 成功,false 超时
+ */
+static bool AT_Wait_Boot(uint32_t timeout)
 {
-    // 初始化GPIOA
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
-
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_StructInit(&GPIO_InitStruct);
-
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
-    // 初始化USART1
-    USART_InitTypeDef USART_InitStruct;
-    USART_StructInit(&USART_InitStruct);
-
-    USART_InitStruct.USART_BaudRate = 115200;
-    USART_InitStruct.USART_WordLength = USART_WordLength_8b;
-    USART_InitStruct.USART_StopBits = USART_StopBits_1;
-    USART_InitStruct.USART_Parity = USART_Parity_No;
-    USART_InitStruct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-
-    USART_Init(USART1, &USART_InitStruct);
-    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE); // RXNE中断 → Usart.c环形缓冲
-    USART_Cmd(USART1, ENABLE);
-
-    NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStruct);
+    for (int i = 0; i < timeout; i += 100)
+    {
+        if (AT_Write_Command("AT", 100))
+            return true;
+    }
+    return false;
 }
 
-bool AT_Init(void)
-{
-    AT_USART_Init();
-
-    if (!AT_Wait_Boot(3000))
-        return false;
-    if (!AT_Write_Command("AT+RESTORE", 2000))
-        return false;
-    if (!AT_Wait_Ready(5000))
-        return false;
-    return true;
-}
-
-bool AT_Wait_Ready(uint32_t timeout)
-{
-    return AT_Usart_Wait_Receive(timeout) == AT_ACK_READY;
-}
-
+/**
+ * @brief 发送AT指令
+ * @param command 指令字符串
+ * @param timeout 超时时间, 单位ms
+ * @return true 成功,false 超时
+ */
 bool AT_Write_Command(const char *command, uint32_t timeout)
 {
 #if AT_DEBUG
@@ -149,24 +171,70 @@ bool AT_Write_Command(const char *command, uint32_t timeout)
     return ack == AT_ACK_OK;
 }
 
+/**
+ * @brief 等待AT模块就绪
+ * @param timeout 超时时间, 单位ms
+ * @return true 成功,false 超时
+ */
+bool AT_Wait_Ready(uint32_t timeout)
+{
+    return AT_Usart_Wait_Receive(timeout) == AT_ACK_READY;
+}
+
+/**
+ * @brief 初始化AT模块
+ * @return true 成功,false 失败
+ */
+bool AT_Init(void)
+{
+    AT_USART_Init();
+
+    if (!AT_Wait_Boot(3000))
+        return false;
+    if (!AT_Write_Command("AT+RESTORE", 2000))
+        return false;
+    if (!AT_Wait_Ready(5000))
+        return false;
+    return true;
+}
+
+/**
+ * @brief 获取AT指令回复
+ * @return char* 回复字符串
+ * @note 回复字符串会覆盖在rx_buf中, 不建议直接打印
+ */
 const char *AT_Get_Response(void)
 {
     return rx_buf;
 }
 
-static bool AT_Wait_Boot(uint32_t timeout)
-{
-    for (int i = 0; i < timeout; i += 100)
-    {
-        if (AT_Write_Command("AT", 100))
-            return true;
-    }
-    return false;
-}
+/* ===========WiFi相关底层函数========== */
 
 bool AT_WiFi_Init(void)
 {
     return AT_Write_Command("AT+CWMODE=1", 2000);
+}
+
+/**
+ * @brief 获取WiFi信息
+ * @param info WiFi信息结构体指针
+ * @return true 成功,false 失败
+ */
+bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info)
+{
+    if (info == NULL)
+        return false;
+
+    if (!AT_Write_Command("AT+CWSTATE?", 2000))
+        return false;
+    if (!Parse_CWSTATE_Response(AT_Get_Response(), info))
+        return false;
+
+    if (!AT_Write_Command("AT+CWJAP?", 2000))
+        return false;
+    if (!Parse_CWJAP_Response(AT_Get_Response(), info))
+        return false;
+    return true;
 }
 
 bool AT_Connect_WiFi(const char *ssid, const char *password, const char *mac)
@@ -186,7 +254,22 @@ bool AT_Connect_WiFi(const char *ssid, const char *password, const char *mac)
     return AT_Write_Command(cmd, 5000);
 }
 
-static bool parse_cwstate_response(const char *response, AT_WiFi_Info_t *info)
+bool AT_Is_WiFi_Conected(void)
+{
+    AT_WiFi_Info_t info;
+
+    if (!AT_Get_WiFi_Info(&info))
+        return false;
+    return info.connected;
+}
+
+/**
+ * @brief 解析CWSTATE回复
+ * @param response CWSTATE回复字符串
+ * @param info WiFi信息结构体指针
+ * @return true 成功,false 失败
+ */
+static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
 {
     // static const char *cwstate_response =
     //     "AT+CWSTATE?\r\n"
@@ -203,7 +286,13 @@ static bool parse_cwstate_response(const char *response, AT_WiFi_Info_t *info)
     return true;
 }
 
-static bool parse_cwjap_response(const char *response, AT_WiFi_Info_t *info)
+/**
+ * @brief 解析CWJAP回复
+ * @param response CWJAP回复字符串
+ * @param info WiFi信息结构体指针
+ * @return true 成功,false 失败
+ */
+static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
 {
     // static const char *cwjap_response =
     //     "AT+CWJAP?\r\n"
@@ -218,32 +307,12 @@ static bool parse_cwjap_response(const char *response, AT_WiFi_Info_t *info)
     return true;
 }
 
-bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info)
-{
-    if (info == NULL)
-        return false;
+/* ===========SNTP相关底层函数========== */
 
-    if (!AT_Write_Command("AT+CWSTATE?", 2000))
-        return false;
-    if (!parse_cwstate_response(AT_Get_Response(), info))
-        return false;
-
-    if (!AT_Write_Command("AT+CWJAP?", 2000))
-        return false;
-    if (!parse_cwjap_response(AT_Get_Response(), info))
-        return false;
-    return true;
-}
-
-bool AT_Is_WiFi_Conected(void)
-{
-    AT_WiFi_Info_t info;
-
-    if (!AT_Get_WiFi_Info(&info))
-        return false;
-    return info.connected;
-}
-
+/**
+ * @brief 初始化SNTP模块
+ * @return true 成功,false 失败
+ */
 bool AT_SNTP_Init(void)
 {
     if (!AT_Write_Command("AT+CIPSNTPCFG=1,8", 2000))
@@ -251,6 +320,25 @@ bool AT_SNTP_Init(void)
     return true;
 }
 
+/**
+ * @brief 获取SNTP时间
+ * @param date_info 日期信息结构体指针
+ * @return true 成功,false 失败
+ */
+bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
+{
+    if (!AT_Write_Command("AT+CIPSNTPTIME?", 2000))
+        return false;
+    if (!Parse_CIPSNTPTIME_Response(AT_Get_Response(), date_info))
+        return false;
+    return true;
+}
+
+/**
+ * @brief 月份字符串转换为月份数字
+ * @param month_str 月份字符串
+ * @return 月份数字
+ */
 static uint8_t month_str_to_num(const char *month_str)
 {
     const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -262,6 +350,11 @@ static uint8_t month_str_to_num(const char *month_str)
     return 0;
 }
 
+/**
+ * @brief 星期几字符串转换为星期几数字
+ * @param weekday_str 星期几字符串
+ * @return 星期几数字
+ */
 static uint8_t weekday_str_to_num(const char *weekday_str)
 {
     const char *weekdays[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
@@ -273,7 +366,13 @@ static uint8_t weekday_str_to_num(const char *weekday_str)
     return 0;
 }
 
-static bool parse_cipsntptime_response(const char *response, AT_Date_Info_t *date_info)
+/**
+ * @brief 解析CIPSNTPTIME回复
+ * @param response CIPSNTPTIME回复字符串
+ * @param date_info 日期信息结构体指针
+ * @return true 成功,false 失败
+ */
+static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info)
 {
     // static const char *cipsntptime =
     //     "AT+CIPSNTPTIME?\r\n"
@@ -293,16 +392,33 @@ static bool parse_cipsntptime_response(const char *response, AT_Date_Info_t *dat
     return true;
 }
 
-bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
+/* ===========HTTP相关底层函数========== */
+
+/**
+ * @brief 发送HTTP请求
+ * @param url HTTP请求URL
+ * @return HTTP响应字符串指针
+ */
+const char *AT_Get_HTTP(const char *url)
 {
-    if (!AT_Write_Command("AT+CIPSNTPTIME?", 2000))
-        return false;
-    if (!parse_cipsntptime_response(AT_Get_Response(), date_info))
-        return false;
-    return true;
+    static char tx_buf[256];
+    snprintf(tx_buf, sizeof(tx_buf), "AT+HTTPCLIENT=2,1,\"%s\",,,2", url);
+    bool ret = AT_Write_Command(tx_buf, 5000);
+    if (ret)
+    {
+        const char *response = AT_Get_Response();
+        return response;
+    }
+    return NULL;
 }
 
-bool parse_weather_response(const char *response, AT_Weather_Info_t *info)
+/**
+ * @brief 解析天气回复
+ * @param response 天气回复字符串
+ * @param info 天气信息结构体指针
+ * @return true 成功,false 失败
+ */
+bool Parse_Weather_Response(const char *response, AT_Weather_Info_t *info)
 {
     // static const char *http_response =
     //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=dalian&language=en&unit=c\",,,2\r\n"
@@ -343,17 +459,4 @@ bool parse_weather_response(const char *response, AT_Weather_Info_t *info)
             info->temperature = atof(temperature_str);
     }
     return true;
-}
-
-const char *AT_Get_HTTP(const char *url)
-{
-    static char tx_buf[256];
-    snprintf(tx_buf, sizeof(tx_buf), "AT+HTTPCLIENT=2,1,\"%s\",,,2", url);
-    bool ret = AT_Write_Command(tx_buf, 5000);
-    if (ret)
-    {
-        const char *response = AT_Get_Response();
-        return response;
-    }
-    return NULL;
 }

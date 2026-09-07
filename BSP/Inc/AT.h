@@ -6,11 +6,11 @@
 
 typedef enum
 {
-    AT_ACK_NONE,
-    AT_ACK_OK,
-    AT_ACK_ERROR,
-    AT_ACK_BUSY,
-    AT_ACK_READY,
+    AT_ACK_NONE,  // 本行无回复
+    AT_ACK_OK,    // 成功
+    AT_ACK_ERROR, // 错误
+    AT_ACK_BUSY,  // 繁忙
+    AT_ACK_READY, // 就绪
 } AT_ACK_t;
 
 typedef struct
@@ -57,7 +57,7 @@ bool AT_WiFi_Init(void);
 bool AT_Connect_WiFi(const char *ssid, const char *password, const char *mac);
 bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info);
 bool AT_Is_WiFi_Conected(void);
-bool parse_weather_response(const char *response, AT_Weather_Info_t *info);
+bool Parse_Weather_Response(const char *response, AT_Weather_Info_t *info);
 bool AT_SNTP_Init(void);
 bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info);
 const char *AT_Get_HTTP(const char *url);

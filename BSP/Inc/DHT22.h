@@ -21,9 +21,9 @@
 
 typedef struct
 {
-    float temperature;
-    float humidity;
-    bool valid;
+    float temperature; // 温度, 单位:摄氏度, 保留1位小数
+    float humidity;    // 湿度, 单位:%, 保留1位小数
+    bool valid;        // 数据有效标志位
 } DHT22_Data_t;
 
 bool DHT22_Init(void);

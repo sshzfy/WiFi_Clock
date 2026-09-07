@@ -390,6 +390,11 @@
               <FileType>5</FileType>
               <FilePath>..\User\stm32f4xx_conf.h</FilePath>
             </File>
+            <File>
+              <FileName>FreeRTOSConfig.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -415,11 +420,7 @@
               <FileType>1</FileType>
               <FilePath>..\User\Src\app_task.c</FilePath>
             </File>
-            <File>
-              <FileName>Log.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\Src\Log.c</FilePath>
-            </File>
+            
           </Files>
         </Group>
         <Group>

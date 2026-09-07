@@ -3,7 +3,6 @@
 #include "Board.h"
 #include "Page.h"
 #include "App.h"
-#include "Log.h"
 #include "event_groups.h"
 
 /* ================ 任务角色 ================
@@ -58,7 +57,7 @@ static void vTask_Net(void *param)
     uint32_t sntp_c, wifi_c, weather_c;
     bool wifi_up;
 
-    Log_Op("[NET] Init Start\r\n");
+    printf("[NET] Init Start\r\n");
 
     /* ---- 开机阶段: AT/WiFi初始化 + 连接 ---- */
     s_boot.wifi_ok = Wireless_Init();
@@ -154,10 +153,10 @@ static void vTask_UI(void *param)
 
     g_evt = xEventGroupCreate(); /* 事件组: 仅被等待的bit置位才会唤醒 */
 
-    Board_Init();       /* TIM5/LCD/USART2/ST7789 初始化 */
+    Board_Init(); /* TIM5/LCD/USART2/ST7789 初始化 */
     printf("[SYS]Build Date:%s %s\r\n", __DATE__, __TIME__);
-    Log_Op("[UI] Board init done, boot page\r\n");
-    Boot_Page_Wait();   /* 开机等待画面 */
+    printf("[UI] Board init done, boot page\r\n");
+    Boot_Page_Wait(); /* 开机等待画面 */
 
     /* 创建采集/服务任务(sensor=4保护DHT22时序, net=2低于ui避免饿死显示) */
     xTaskCreate(vTask_Sensor, "sensor", 512, NULL, 4, NULL);
@@ -165,12 +164,12 @@ static void vTask_UI(void *param)
 
     /* 等待开机网络阶段结束(成功或失败都置EV_NET_READY), 超时30s兜底 */
     xEventGroupWaitBits(g_evt, EV_NET_READY, pdTRUE, pdFALSE, pdMS_TO_TICKS(30 * 1000));
-    Log_Op("[UI] Boot net stage done: wifi=%d service=%d\r\n", (int)s_boot.wifi_ok, (int)s_boot.service_ok);
+    printf("[UI] Boot net stage done: wifi=%d service=%d\r\n", (int)s_boot.wifi_ok, (int)s_boot.service_ok);
 
     Boot_Page_Show(s_boot.wifi_ok, s_boot.service_ok); /* 开机结果(连接详情) */
-    vTaskDelay(pdMS_TO_TICKS(2500));                   /* 结果页停留, 便于查看详情 */
-    Log_Op("[UI] Enter main page\r\n");
-    Main_Page_Display();                               /* 进入主页面(数据已就绪, 首绘即正确) */
+    vTaskDelay(pdMS_TO_TICKS(2500)); /* 结果页停留, 便于查看详情 */
+    printf("[UI] Enter main page\r\n");
+    Main_Page_Display(); /* 进入主页面(数据已就绪, 首绘即正确) */
 
     for (;;)
     {
