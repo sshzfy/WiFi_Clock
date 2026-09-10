@@ -1,6 +1,4 @@
 #include "AT.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 #define AT_DEBUG 0
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -25,22 +23,26 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
 
 /* =========AT底层通信相关函数========= */
 
-static void AT_USART_Init(void)
+static void AT_GPIO_Init(void)
 {
     /* 初始化GPIOA */
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
+    GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource9, GPIO_AF_USART1);
+    GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource10, GPIO_AF_USART1);
 
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
 
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+    GPIO_InitStruct.GPIO_Pin = AT_USART1_GPIO_PIN_TX | AT_USART1_GPIO_PIN_RX;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
 
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
+    GPIO_Init(AT_USART1_GPIO_PORT, &GPIO_InitStruct);
+}
+
+static void AT_USART_Init(void)
+{
     /* 初始化USART1 */
     USART_InitTypeDef USART_InitStruct;
     USART_StructInit(&USART_InitStruct);
@@ -55,7 +57,11 @@ static void AT_USART_Init(void)
     USART_Init(USART1, &USART_InitStruct);
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE); /* RXNE中断 → Usart.c环形缓冲 */
     USART_Cmd(USART1, ENABLE);
+}
 
+static void AT_NVIC_Init(void)
+{
+    /* 初始化NVIC */
     NVIC_InitTypeDef NVIC_InitStruct;
     NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;
     NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;
@@ -187,7 +193,9 @@ bool AT_Wait_Ready(uint32_t timeout)
  */
 bool AT_Init(void)
 {
+    AT_GPIO_Init();
     AT_USART_Init();
+    AT_NVIC_Init();
 
     if (!AT_Wait_Boot(3000))
         return false;

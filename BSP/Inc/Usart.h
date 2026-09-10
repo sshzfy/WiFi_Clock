@@ -2,6 +2,10 @@
 #define __USART_H__
 
 #include "main.h"
+#include "stm32f4xx.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 
 void Usart2_Debug_Init(void);
 

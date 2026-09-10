@@ -2,7 +2,15 @@
 #define __AT_H__
 
 #include "main.h"
+#include "stm32f4xx.h"
 #include "Timer.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "Usart.h"
+
+#define AT_USART1_GPIO_PORT GPIOA         // USART1_TX和USART1_RX连接在GPIOA上
+#define AT_USART1_GPIO_PIN_TX GPIO_Pin_9  // USART1_TX
+#define AT_USART1_GPIO_PIN_RX GPIO_Pin_10 // USART1_RX
 
 typedef enum
 {

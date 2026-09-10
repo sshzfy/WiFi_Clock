@@ -1,6 +1,4 @@
 #include "DHT22.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 /* ================ DHT22 传感器时序 ================ */
 /* SDA总线空闲时高电平
@@ -20,12 +18,12 @@ static void DHT22_GPIO_Output(void)
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
 
-    GPIO_InitStruct.GPIO_Pin = DHT22_Pin;
+    GPIO_InitStruct.GPIO_Pin = DHT22_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(DHT22_Port, &GPIO_InitStruct);
+    GPIO_Init(DHT22_PORT, &GPIO_InitStruct);
 }
 
 /**
@@ -38,12 +36,12 @@ static void DHT22_GPIO_Input(void)
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
 
-    GPIO_InitStruct.GPIO_Pin = DHT22_Pin;
+    GPIO_InitStruct.GPIO_Pin = DHT22_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP; /* 输入+内部上拉: 总线空闲为高, 抗噪 */
-    GPIO_Init(DHT22_Port, &GPIO_InitStruct);
+    GPIO_Init(DHT22_PORT, &GPIO_InitStruct);
 }
 
 bool DHT22_Init(void)

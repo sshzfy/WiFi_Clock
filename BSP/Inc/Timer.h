@@ -1,8 +1,8 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
+#include "main.h"
 #include "stm32f4xx.h"
-#include <stddef.h>
 
 void TIM5_Init(void);
 uint64_t TIM5_Get_ms(void);

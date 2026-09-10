@@ -1,5 +1,4 @@
 #include "I2C.h"
-#include "Timer.h"
 
 /* I2C时序：
  * 数据变化：SCL 为低电平时，数据变化
@@ -18,7 +17,7 @@ void Soft_I2C_Init(Soft_I2C_t *Soft_I2C)
     GPIO_StructInit(&GPIO_InitStruct);
 
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Fast_Speed;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
 
@@ -97,7 +96,7 @@ static void Soft_I2C_Send_NACK(Soft_I2C_t *Soft_I2C)
  * @param Soft_I2C I2C结构体指针
  * @param data 要发送的字节
  * */
-void Soft_I2C_Send_byte(Soft_I2C_t *Soft_I2C, uint8_t data)
+void Soft_I2C_Send_Byte(Soft_I2C_t *Soft_I2C, uint8_t data)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
@@ -161,14 +160,14 @@ uint8_t Soft_I2C_Send_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t reg_
     Soft_I2C_Start(Soft_I2C);
 
     /* 发送设备地址 */
-    Soft_I2C_Send_byte(Soft_I2C, dev_addr << 1);
+    Soft_I2C_Send_Byte(Soft_I2C, dev_addr << 1);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);
         return 1;
     }
     /* 发送寄存器地址 */
-    Soft_I2C_Send_byte(Soft_I2C, reg_addr);
+    Soft_I2C_Send_Byte(Soft_I2C, reg_addr);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);
@@ -176,7 +175,7 @@ uint8_t Soft_I2C_Send_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t reg_
     }
     while (len--)
     {
-        Soft_I2C_Send_byte(Soft_I2C, *data++);
+        Soft_I2C_Send_Byte(Soft_I2C, *data++);
         if (Soft_I2C_Wait_Ack(Soft_I2C))
         {
             Soft_I2C_Stop(Soft_I2C);
@@ -203,14 +202,14 @@ uint8_t Soft_I2C_Receive_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t r
     Soft_I2C_Start(Soft_I2C);
 
     /* 发送设备地址,等待从机应答 */
-    Soft_I2C_Send_byte(Soft_I2C, dev_addr << 1);
+    Soft_I2C_Send_Byte(Soft_I2C, dev_addr << 1);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);
         return 1;
     }
     /* 发送寄存器地址,等待从机应答 */
-    Soft_I2C_Send_byte(Soft_I2C, reg_addr);
+    Soft_I2C_Send_Byte(Soft_I2C, reg_addr);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);
@@ -219,7 +218,7 @@ uint8_t Soft_I2C_Receive_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t r
 
     /* 重新发送开始信号,从机地址,接收数据 */
     Soft_I2C_Start(Soft_I2C);
-    Soft_I2C_Send_byte(Soft_I2C, (dev_addr << 1) | 0x01);
+    Soft_I2C_Send_Byte(Soft_I2C, (dev_addr << 1) | 0x01);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);

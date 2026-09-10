@@ -1,6 +1,4 @@
 #include "LCD.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 #define GRAM_DMA_MAX_HALFWORD 65535U // DMA NDTR(16bit)单次最大半字数
 #define SCRATCH_H_PX 48              // 最大渲染行高(对齐Font_48)
@@ -86,14 +84,14 @@ static void ST7789_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len)
 {
     ST7789_SPI_SetDataSize(8); // 设置为8位模式
 
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin); // 拉低CS,片选
-    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin); // 拉低DC,发送命令
+    GPIO_ResetBits(ST7789_CS_PORT, ST7789_CS_PIN); // 拉低CS,片选
+    GPIO_ResetBits(ST7789_DC_PORT, ST7789_DC_PIN); // 拉低DC,发送命令
     ST7789_Send8(&reg, 1);                         // 发送命令
 
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin); // 拉高DC,发送数据
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN); // 拉高DC,发送数据
     ST7789_Send8(data, len);                     // 发送数据
 
-    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin); // 释放CS,结束一次命令传输
+    GPIO_SetBits(ST7789_CS_PORT, ST7789_CS_PIN); // 释放CS,结束一次命令传输
 }
 
 /**
@@ -120,26 +118,26 @@ static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     ydata[3] = (uint8_t)y2;        // 窗口右下角Y坐标低8位
 
     ST7789_SPI_SetDataSize(8);
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    GPIO_ResetBits(ST7789_CS_PORT, ST7789_CS_PIN);
 
-    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_ResetBits(ST7789_DC_PORT, ST7789_DC_PIN);
     cmd = 0x2A; // 列地址设置
     ST7789_Send8(&cmd, 1);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
     ST7789_Send8(xdata, 4);
 
-    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_ResetBits(ST7789_DC_PORT, ST7789_DC_PIN);
     cmd = 0x2B; // 行地址设置
     ST7789_Send8(&cmd, 1);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
     ST7789_Send8(ydata, 4);
 
-    GPIO_ResetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_ResetBits(ST7789_DC_PORT, ST7789_DC_PIN);
     cmd = 0x2C; // 写内存命令
     ST7789_Send8(&cmd, 1);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
 
-    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    GPIO_SetBits(ST7789_CS_PORT, ST7789_CS_PIN);
 }
 
 /* ============ DMA(SPI3_TX: DMA1_Stream5, Channel0) ============ */
@@ -223,28 +221,28 @@ static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
 {
     ST7789_SPI_SetDataSize(16); // 设置SPI3数据宽度为半字
 
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_ResetBits(ST7789_CS_PORT, ST7789_CS_PIN);
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
 
     ST7789_DMA_Pump(data, len >> 1, increase);
 
     ST7789_Wait_BSY();
-    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    GPIO_SetBits(ST7789_CS_PORT, ST7789_CS_PIN);
 }
 
 /* ============ 底层功能 ============ */
 
 static void ST7789_Rest(void)
 {
-    GPIO_ResetBits(ST7789_RESET_Port, ST7789_RESET_Pin);
+    GPIO_ResetBits(ST7789_RESET_PORT, ST7789_RESET_PIN);
     vTaskDelay(pdMS_TO_TICKS(20));
-    GPIO_SetBits(ST7789_RESET_Port, ST7789_RESET_Pin);
+    GPIO_SetBits(ST7789_RESET_PORT, ST7789_RESET_PIN);
     vTaskDelay(pdMS_TO_TICKS(120));
 }
 
 static void ST7789_Set_Backlight(bool state)
 {
-    GPIO_WriteBit(ST7789_BACKLIGHT_Port, ST7789_BACKLIGHT_Pin, state ? Bit_SET : Bit_RESET);
+    GPIO_WriteBit(ST7789_BACKLIGHT_PORT, ST7789_BACKLIGHT_PIN, state ? Bit_SET : Bit_RESET);
 }
 
 static void ST7789_Display_Init(void)
@@ -281,27 +279,27 @@ static void ST7789_GPIO_Init(void)
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
 
-    GPIO_SetBits(GPIOE, ST7789_CS_Pin | ST7789_RESET_Pin | ST7789_DC_Pin);
-    GPIO_ResetBits(ST7789_BACKLIGHT_Port, ST7789_BACKLIGHT_Pin);
-    GPIO_InitStruct.GPIO_Pin = ST7789_CS_Pin | ST7789_RESET_Pin | ST7789_DC_Pin | ST7789_BACKLIGHT_Pin;
+    GPIO_SetBits(GPIOE, ST7789_CS_PIN | ST7789_RESET_PIN | ST7789_DC_PIN);
+    GPIO_ResetBits(ST7789_BACKLIGHT_PORT, ST7789_BACKLIGHT_PIN);
+    GPIO_InitStruct.GPIO_Pin = ST7789_CS_PIN | ST7789_RESET_PIN | ST7789_DC_PIN | ST7789_BACKLIGHT_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-    GPIO_PinAFConfig(ST7789_SCLK_Port, GPIO_PinSource10, GPIO_AF_SPI3);
-    GPIO_PinAFConfig(ST7789_MOSI_Port, GPIO_PinSource12, GPIO_AF_SPI3);
-    GPIO_PinAFConfig(ST7789_MISO_Port, GPIO_PinSource11, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(ST7789_SCLK_PORT, GPIO_PinSource10, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(ST7789_MOSI_PORT, GPIO_PinSource12, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(ST7789_MISO_PORT, GPIO_PinSource11, GPIO_AF_SPI3);
 
-    GPIO_InitStruct.GPIO_Pin = ST7789_SCLK_Pin;
+    GPIO_InitStruct.GPIO_Pin = ST7789_SCLK_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(ST7789_SCLK_Port, &GPIO_InitStruct);
+    GPIO_Init(ST7789_SCLK_PORT, &GPIO_InitStruct);
 
-    GPIO_InitStruct.GPIO_Pin = ST7789_MOSI_Pin | ST7789_MISO_Pin;
+    GPIO_InitStruct.GPIO_Pin = ST7789_MOSI_PIN | ST7789_MISO_PIN;
     GPIO_Init(GPIOC, &GPIO_InitStruct);
 }
 
@@ -573,8 +571,8 @@ void ST7789_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *
     ST7789_SetWindow(x, y, x + width - 1, y + height - 1);
 
     ST7789_SPI_SetDataSize(16);
-    GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
-    GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
+    GPIO_ResetBits(ST7789_CS_PORT, ST7789_CS_PIN);
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
 
     uint32_t pixel_count = (uint32_t)width * height;
     uint32_t remain = pixel_count;
@@ -602,5 +600,5 @@ void ST7789_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *
     }
 
     ST7789_Wait_BSY();
-    GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
+    GPIO_SetBits(ST7789_CS_PORT, ST7789_CS_PIN);
 }

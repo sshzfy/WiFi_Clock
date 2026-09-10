@@ -420,6 +420,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\Src\app_task.c</FilePath>
             </File>
+            <File>
+              <FileName>bare_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Src\bare_test.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -504,6 +509,11 @@
               <FileName>LCD.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\LCD.c</FilePath>
+            </File>
+            <File>
+              <FileName>Light_Sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\Light_Sensor.c</FilePath>
             </File>
             <File>
               <FileName>OLED.c</FileName>

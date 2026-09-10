@@ -1,8 +1,4 @@
 #include "Usart.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-#include <stdio.h>
 
 /* ==================== USART1 RX 环形缓冲(供AT轮询读取) ====================
  * 说明: USART1 仅1字节RDR无FIFO。任务级轮询(RXNE)在任务睡眠/被抢占期间

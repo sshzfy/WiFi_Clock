@@ -2,35 +2,37 @@
 #define __LCD_H__
 
 #include "main.h"
-#include "Timer.h"
+#include "stm32f4xx.h"
 #include "Font.h"
 #include "Image.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* ST7789 显示区域 */
 #define WIDTH 240
 #define HEIGHT 320
 
 /* ST7789 端口定义 */
-#define ST7789_SCLK_Port GPIOC
-#define ST7789_SCLK_Pin GPIO_Pin_10
+#define ST7789_SCLK_PORT GPIOC
+#define ST7789_SCLK_PIN GPIO_Pin_10
 
-#define ST7789_MOSI_Port GPIOC
-#define ST7789_MOSI_Pin GPIO_Pin_12
+#define ST7789_MOSI_PORT GPIOC
+#define ST7789_MOSI_PIN GPIO_Pin_12
 
-#define ST7789_MISO_Port GPIOC
-#define ST7789_MISO_Pin GPIO_Pin_11
+#define ST7789_MISO_PORT GPIOC
+#define ST7789_MISO_PIN GPIO_Pin_11
 
-#define ST7789_CS_Port GPIOE
-#define ST7789_CS_Pin GPIO_Pin_2
+#define ST7789_CS_PORT GPIOE
+#define ST7789_CS_PIN GPIO_Pin_2
 
-#define ST7789_RESET_Port GPIOE
-#define ST7789_RESET_Pin GPIO_Pin_3
+#define ST7789_RESET_PORT GPIOE
+#define ST7789_RESET_PIN GPIO_Pin_3
 
-#define ST7789_DC_Port GPIOE
-#define ST7789_DC_Pin GPIO_Pin_4
+#define ST7789_DC_PORT GPIOE
+#define ST7789_DC_PIN GPIO_Pin_4
 
-#define ST7789_BACKLIGHT_Port GPIOE
-#define ST7789_BACKLIGHT_Pin GPIO_Pin_5
+#define ST7789_BACKLIGHT_PORT GPIOE
+#define ST7789_BACKLIGHT_PIN GPIO_Pin_5
 
 /* 颜色 */
 #define COLOR(r, g, b) ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)

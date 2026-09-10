@@ -2,14 +2,17 @@
 #define __DHT22_H__
 
 #include "main.h"
+#include "stm32f4xx.h"
 #include "Timer.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
-#define DHT22_Pin GPIO_Pin_6
-#define DHT22_Port GPIOE
+#define DHT22_PIN GPIO_Pin_6
+#define DHT22_PORT GPIOE
 
-#define DHT22_DATA_OUT_H GPIO_SetBits(DHT22_Port, DHT22_Pin)
-#define DHT22_DATA_OUT_L GPIO_ResetBits(DHT22_Port, DHT22_Pin)
-#define DHT22_READ_DATA GPIO_ReadInputDataBit(DHT22_Port, DHT22_Pin)
+#define DHT22_DATA_OUT_H GPIO_SetBits(DHT22_PORT, DHT22_PIN)
+#define DHT22_DATA_OUT_L GPIO_ResetBits(DHT22_PORT, DHT22_PIN)
+#define DHT22_READ_DATA GPIO_ReadInputDataBit(DHT22_PORT, DHT22_PIN)
 
 /* DHT22_ReadData 返回码(0=成功) */
 #define DHT22_OK            0 /* 成功 0000000*/
