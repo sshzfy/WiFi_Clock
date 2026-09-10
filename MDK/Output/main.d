@@ -45,7 +45,7 @@
 .\output\main.o: ..\User\Inc\main.h
 .\output\main.o: ..\BSP\Inc\Timer.h
 .\output\main.o: ..\User\Inc\Board.h
-.\output\main.o: ..\BSP\Inc\ST7789.h
+.\output\main.o: ..\BSP\Inc\LCD.h
 .\output\main.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
 .\output\main.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\main.o: ..\User\Inc\app_task.h

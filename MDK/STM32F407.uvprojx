@@ -420,7 +420,6 @@
               <FileType>1</FileType>
               <FilePath>..\User\Src\app_task.c</FilePath>
             </File>
-            
           </Files>
         </Group>
         <Group>
@@ -492,14 +491,24 @@
               <FilePath>..\BSP\Src\AT.c</FilePath>
             </File>
             <File>
-              <FileName>ST7789.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\Src\ST7789.c</FilePath>
-            </File>
-            <File>
               <FileName>DHT22.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\DHT22.c</FilePath>
+            </File>
+            <File>
+              <FileName>I2C.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\I2C.c</FilePath>
+            </File>
+            <File>
+              <FileName>LCD.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\LCD.c</FilePath>
+            </File>
+            <File>
+              <FileName>OLED.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\OLED.c</FilePath>
             </File>
             <File>
               <FileName>Timer.c</FileName>

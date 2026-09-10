@@ -35,7 +35,7 @@
 .\output\board.o: ..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h
 .\output\board.o: ..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h
 .\output\board.o: ..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h
-.\output\board.o: ..\BSP\Inc\ST7789.h
+.\output\board.o: ..\BSP\Inc\LCD.h
 .\output\board.o: ..\User\Inc\main.h
 .\output\board.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
 .\output\board.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdbool.h

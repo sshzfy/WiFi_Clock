@@ -12,7 +12,7 @@
 #define DHT22_READ_DATA GPIO_ReadInputDataBit(DHT22_Port, DHT22_Pin)
 
 /* DHT22_ReadData 返回码(0=成功) */
-#define DHT22_OK            0
+#define DHT22_OK            0 /* 成功 0000000*/
 #define DHT22_ERR_NO_ACK    1 /* 总线未拉低, 传感器无应答 */
 #define DHT22_ERR_NO_HIGH   2 /* 应答后未拉高(信号畸变) */
 #define DHT22_ERR_NO_LOW    3 /* 数据起始未拉低(信号畸变) */

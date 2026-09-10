@@ -2,8 +2,9 @@
 #define __APP_H__
 
 #include "main.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #include "AT.h"
-#include "Timer.h"
 #include "DHT22.h"
 
 extern AT_WiFi_Info_t wifi_info;

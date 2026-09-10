@@ -44,4 +44,4 @@
 .\output\i2c.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
 .\output\i2c.o: ..\BSP\Inc\USART.h
 .\output\i2c.o: ..\User\Inc\main.h
-.\output\i2c.o: ..\User\Inc\delay.h
+.\output\i2c.o: ..\BSP\Inc\Timer.h

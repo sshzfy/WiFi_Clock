@@ -1,27 +1,44 @@
 #include "main.h"
 #include "Board.h"
-#include "app_task.h"
+#include "Timer.h"
+#include "BuildConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include <stdio.h>
+
+#if (USE_FREERTOS == 1)
+
+#include "app_task.h"
 
 int main(void)
 {
-    Board_Peripheral_Init();                        // 外设时钟初始化
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4); // 4位抢占,无子优先级(FreeRTOS要求)
+    Board_Peripheral_Init(); /* clocks */
 
-    App_Task_Init(); // 创建UI任务(内部再创建net/sensor任务)
-
-    vTaskStartScheduler(); // 启动FreeRTOS调度器
+    App_Task_Init();         /* create net/sensor/UI tasks */
+    vTaskStartScheduler();   /* start FreeRTOS scheduler */
 
     while (1)
-        ; // code should never reach here
+        ; /* never reached */
 }
 
+#else /* USE_FREERTOS == 0 : bare-metal module test */
+
+#include "bare_test.h"
+
+int main(void)
+{
+    Board_Peripheral_Init(); /* clocks */
+    TIM5_Init();             /* 1ms time base for delay_us/delay_ms */
+
+    BareMetal_Module_Test(); /* selected module test, owns its own loop */
+
+    while (1)
+        ; /* never reached */
+}
+
+#endif /* USE_FREERTOS */
 
 void vAssertCalled(const char *file, int line)
 {
-    /* Assertion failed callback (configASSERT). */
     printf("Assertion failed in file %s at line %d\n", file, line);
     while (1)
         ;
@@ -29,7 +46,6 @@ void vAssertCalled(const char *file, int line)
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
-    /* Task stack overflow callback. */
     (void)xTask;
     printf("Stack overflow in task %s\n", pcTaskName);
     while (1)

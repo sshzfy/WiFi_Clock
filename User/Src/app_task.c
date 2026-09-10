@@ -1,9 +1,4 @@
 #include "app_task.h"
-#include "main.h"
-#include "Board.h"
-#include "Page.h"
-#include "App.h"
-#include "event_groups.h"
 
 /* ================ 任务角色 ================
  * uiTask    (prio 3): LCD唯一写者。做板级初始化→开机等待画面→

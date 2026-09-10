@@ -1,7 +1,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include "stm32f4xx.h"
+/* main.h 只汇总 C 标准库头; STM32/FreeRTOS 头由各模块 .h 自行包含 */
 #include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,7 +9,5 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "USART.h"
-#include "Timer.h"
 
 #endif /* __MAIN_H__ */

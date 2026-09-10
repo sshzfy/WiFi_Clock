@@ -1,5 +1,5 @@
-#ifndef __ST7789_H__
-#define __ST7789_H__
+#ifndef __LCD_H__
+#define __LCD_H__
 
 #include "main.h"
 #include "Timer.h"
@@ -11,14 +11,14 @@
 #define HEIGHT 320
 
 /* ST7789 端口定义 */
-#define ST7789_SCLK_Port GPIOB
-#define ST7789_SCLK_Pin GPIO_Pin_13
+#define ST7789_SCLK_Port GPIOC
+#define ST7789_SCLK_Pin GPIO_Pin_10
 
 #define ST7789_MOSI_Port GPIOC
-#define ST7789_MOSI_Pin GPIO_Pin_3
+#define ST7789_MOSI_Pin GPIO_Pin_12
 
 #define ST7789_MISO_Port GPIOC
-#define ST7789_MISO_Pin GPIO_Pin_2
+#define ST7789_MISO_Pin GPIO_Pin_11
 
 #define ST7789_CS_Port GPIOE
 #define ST7789_CS_Pin GPIO_Pin_2
@@ -104,4 +104,4 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *ch, uint16_t color_font, 
 void ST7789_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image);
 void ST7789_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_back);
 
-#endif /* __ST7789_H__ */
+#endif /* __LCD_H__ */

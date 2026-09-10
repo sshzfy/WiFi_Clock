@@ -11,7 +11,7 @@ typedef struct
 
 typedef struct
 {
-    uint16_t size;
+    uint16_t size; // 字体大小,高度
     const uint8_t *ascii_model;
     const Chinese_Font_t *chinese;
 } Font_t;

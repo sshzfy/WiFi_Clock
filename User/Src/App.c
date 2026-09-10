@@ -1,6 +1,4 @@
 #include "App.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 /* 初始化WiFi信息 */
 const char *ssid = "Jasmine";

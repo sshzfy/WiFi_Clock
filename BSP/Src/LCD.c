@@ -1,4 +1,4 @@
-#include "ST7789.h"
+#include "LCD.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -31,13 +31,13 @@ static uint8_t s_spi_datasize = 0; // 0=未设置 8=8位 16=16位
 
 static void ST7789_Wait_TXE(void)
 {
-    while (SPI_GetFlagStatus(SPI2, SPI_FLAG_TXE) == RESET)
+    while (SPI_GetFlagStatus(SPI3, SPI_FLAG_TXE) == RESET)
         ;
 }
 
 static void ST7789_Wait_BSY(void)
 {
-    while (SPI_GetFlagStatus(SPI2, SPI_FLAG_BSY) != RESET)
+    while (SPI_GetFlagStatus(SPI3, SPI_FLAG_BSY) != RESET)
         ;
 }
 
@@ -52,9 +52,9 @@ static void ST7789_SPI_SetDataSize(uint8_t size)
         return;
 
     ST7789_Wait_BSY();
-    SPI_Cmd(SPI2, DISABLE);
-    SPI_DataSizeConfig(SPI2, (size == 16) ? SPI_DataSize_16b : SPI_DataSize_8b);
-    SPI_Cmd(SPI2, ENABLE);
+    SPI_Cmd(SPI3, DISABLE);
+    SPI_DataSizeConfig(SPI3, (size == 16) ? SPI_DataSize_16b : SPI_DataSize_8b);
+    SPI_Cmd(SPI3, ENABLE);
 
     s_spi_datasize = size;
 }
@@ -69,7 +69,7 @@ static void ST7789_Send8(const uint8_t *data, uint16_t len)
 {
     for (uint16_t i = 0; i < len; i++)
     {
-        SPI_SendData(SPI2, data[i]);
+        SPI_SendData(SPI3, data[i]);
         ST7789_Wait_TXE();
     }
     ST7789_Wait_BSY();
@@ -142,20 +142,20 @@ static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     GPIO_SetBits(ST7789_CS_Port, ST7789_CS_Pin);
 }
 
-/* ============ DMA(SPI2_TX: DMA1_Stream4, Channel0) ============ */
+/* ============ DMA(SPI3_TX: DMA1_Stream5, Channel0) ============ */
 
 /**
- * @brief 初始化DMA1_Stream4, Channel0, 用于SPI2_TX
+ * @brief 初始化DMA1_Stream5, Channel0, 用于SPI3_TX
  */
 static void ST7789_DMA_Init(void)
 {
     DMA_InitTypeDef DMA_InitStruct;
 
-    DMA_DeInit(DMA1_Stream4);
+    DMA_DeInit(DMA1_Stream5);
     DMA_StructInit(&DMA_InitStruct);
 
-    DMA_InitStruct.DMA_Channel = DMA_Channel_0;                              // SPI2_TX
-    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(SPI2->DR);           // SPI2数据寄存器地址
+    DMA_InitStruct.DMA_Channel = DMA_Channel_0;                              // SPI3_TX
+    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(SPI3->DR);           // SPI3数据寄存器地址
     DMA_InitStruct.DMA_Memory0BaseAddr = 0;                                  // 内存基地址
     DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;                     // 内存→外设
     DMA_InitStruct.DMA_BufferSize = 0;                                       // 缓冲区大小
@@ -167,7 +167,7 @@ static void ST7789_DMA_Init(void)
     DMA_InitStruct.DMA_Priority = DMA_Priority_Medium;                       // 中优先级
     DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;                      // 不使用FIFO
 
-    DMA_Init(DMA1_Stream4, &DMA_InitStruct);
+    DMA_Init(DMA1_Stream5, &DMA_InitStruct);
 }
 
 /**
@@ -182,30 +182,30 @@ static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
     {
         uint32_t chunk = (halfwords > GRAM_DMA_MAX_HALFWORD) ? GRAM_DMA_MAX_HALFWORD : halfwords; // 分块大小,不超过最大传输半字数65535
 
-        DMA_Cmd(DMA1_Stream4, DISABLE);
-        while (DMA_GetCmdStatus(DMA1_Stream4) != DISABLE)
+        DMA_Cmd(DMA1_Stream5, DISABLE);
+        while (DMA_GetCmdStatus(DMA1_Stream5) != DISABLE)
             ;
 
-        DMA1_Stream4->NDTR = (uint16_t)chunk; // 设置传输半字数
-        DMA1_Stream4->M0AR = (uint32_t)src;   // 设置内存基地址
+        DMA1_Stream5->NDTR = (uint16_t)chunk; // 设置传输半字数
+        DMA1_Stream5->M0AR = (uint32_t)src;   // 设置内存基地址
         if (inc)
-            DMA1_Stream4->CR |= DMA_SxCR_MINC; // 内存地址增加
+            DMA1_Stream5->CR |= DMA_SxCR_MINC; // 内存地址增加
         else
-            DMA1_Stream4->CR &= (uint32_t)~DMA_SxCR_MINC; // 内存地址不增加
+            DMA1_Stream5->CR &= (uint32_t)~DMA_SxCR_MINC; // 内存地址不增加
 
-        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_FEIF4 | DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4); // 清除DMA标志位
-        DMA_Cmd(DMA1_Stream4, ENABLE);
+        DMA_ClearFlag(DMA1_Stream5, DMA_FLAG_FEIF5 | DMA_FLAG_TCIF5 | DMA_FLAG_TEIF5); // 清除DMA标志位
+        DMA_Cmd(DMA1_Stream5, ENABLE);
 
-        while (DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TCIF4) == RESET)
+        while (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TCIF5) == RESET)
         {
-            if (DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TEIF4) != RESET)
+            if (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TEIF5) != RESET)
             {
-                DMA_Cmd(DMA1_Stream4, DISABLE);
+                DMA_Cmd(DMA1_Stream5, DISABLE);
                 printf("[ERR]ST7789_DMA_Pump: DMA传输错误\r\n");
                 return; // 传输错误
             }
         }
-        DMA_ClearFlag(DMA1_Stream4, DMA_FLAG_TCIF4); // 清除传输完成标志位
+        DMA_ClearFlag(DMA1_Stream5, DMA_FLAG_TCIF5); // 清除传输完成标志位
 
         halfwords -= chunk; // 剩余半字数
         if (inc)
@@ -221,7 +221,7 @@ static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
  */
 static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
 {
-    ST7789_SPI_SetDataSize(16); // 设置SPI2数据宽度为半字
+    ST7789_SPI_SetDataSize(16); // 设置SPI3数据宽度为半字
 
     GPIO_ResetBits(ST7789_CS_Port, ST7789_CS_Pin);
     GPIO_SetBits(ST7789_DC_Port, ST7789_DC_Pin);
@@ -290,9 +290,9 @@ static void ST7789_GPIO_Init(void)
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-    GPIO_PinAFConfig(ST7789_SCLK_Port, GPIO_PinSource13, GPIO_AF_SPI2);
-    GPIO_PinAFConfig(ST7789_MOSI_Port, GPIO_PinSource3, GPIO_AF_SPI2);
-    GPIO_PinAFConfig(ST7789_MISO_Port, GPIO_PinSource2, GPIO_AF_SPI2);
+    GPIO_PinAFConfig(ST7789_SCLK_Port, GPIO_PinSource10, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(ST7789_MOSI_Port, GPIO_PinSource12, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(ST7789_MISO_Port, GPIO_PinSource11, GPIO_AF_SPI3);
 
     GPIO_InitStruct.GPIO_Pin = ST7789_SCLK_Pin;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
@@ -315,13 +315,13 @@ static void ST7789_SPI_Init(void)
     SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
     SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
     SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
-    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2; /* SPI2=42MHz → 21MHz */
+    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2; /* SPI3=42MHz → 21MHz */
     SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
     SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
 
-    SPI_Init(SPI2, &SPI_InitStruct);
-    SPI_DMACmd(SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
-    SPI_Cmd(SPI2, ENABLE);
+    SPI_Init(SPI3, &SPI_InitStruct);
+    SPI_DMACmd(SPI3, SPI_I2S_DMAReq_Tx, ENABLE);
+    SPI_Cmd(SPI3, ENABLE);
 
     s_spi_datasize = 8;
 }

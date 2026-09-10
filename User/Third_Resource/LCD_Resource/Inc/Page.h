@@ -3,7 +3,7 @@
 
 #include "main.h"
 #include "Timer.h"
-#include "ST7789.h"
+#include "LCD.h"
 #include "Image.h"
 #include "Font.h"
 #include "App.h"

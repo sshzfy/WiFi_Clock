@@ -45,7 +45,7 @@
 .\output\boot_page.o: ..\BSP\Inc\USART.h
 .\output\boot_page.o: ..\User\Inc\main.h
 .\output\boot_page.o: ..\BSP\Inc\Timer.h
-.\output\boot_page.o: ..\BSP\Inc\ST7789.h
+.\output\boot_page.o: ..\BSP\Inc\LCD.h
 .\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Font.h
 .\output\boot_page.o: ..\User\Third_Resource\LCD_Resource\Inc\Image.h
 .\output\boot_page.o: ..\User\Inc\App.h
