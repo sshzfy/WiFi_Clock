@@ -1,4 +1,5 @@
 #include "main.h"
+#include "misc.h"
 #include "Board.h"
 #include "Timer.h"
 #include "BuildConfig.h"
@@ -11,25 +12,27 @@
 
 int main(void)
 {
-    Board_Peripheral_Init(); /* clocks */
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+    Board_Peripheral_Init(); /* 外设时钟初始化 */
 
-    App_Task_Init();         /* create net/sensor/UI tasks */
-    vTaskStartScheduler();   /* start FreeRTOS scheduler */
+    App_Task_Init();         /* 创建网络/传感器/UI任务, 并启动FreeRTOS调度器 */
+    vTaskStartScheduler();   /* 启动FreeRTOS调度器, 任务开始运行 */
 
     while (1)
         ; /* never reached */
 }
 
-#else /* USE_FREERTOS == 0 : bare-metal module test */
+#else /* USE_FREERTOS == 0 : 模块测试 */
 
 #include "bare_test.h"
 
 int main(void)
 {
-    Board_Peripheral_Init(); /* clocks */
-    TIM5_Init();             /* 1ms time base for delay_us/delay_ms */
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+    Board_Peripheral_Init(); /* 外设时钟初始化 */
+    TIM5_Init();             /* 1ms时间定时器初始化 */
 
-    BareMetal_Module_Test(); /* selected module test, owns its own loop */
+    BareMetal_Module_Test(); /* 选中的模块测试, 自定义循环 */
 
     while (1)
         ; /* never reached */

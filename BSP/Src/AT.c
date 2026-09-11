@@ -21,7 +21,7 @@ static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info);
 static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info);
 static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info);
 
-/* =========AT底层通信相关函数========= */
+/* ================ AT底层通信相关函数 ================ */
 
 static void AT_GPIO_Init(void)
 {
@@ -216,7 +216,7 @@ const char *AT_Get_Response(void)
     return rx_buf;
 }
 
-/* ===========WiFi相关底层函数========== */
+/* ================ WiFi相关底层函数 ================ */
 
 bool AT_WiFi_Init(void)
 {
@@ -315,7 +315,7 @@ static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
     return true;
 }
 
-/* ===========SNTP相关底层函数========== */
+/* ================ SNTP相关底层函数 ================ */
 
 /**
  * @brief 初始化SNTP模块
@@ -400,7 +400,7 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
     return true;
 }
 
-/* ===========HTTP相关底层函数========== */
+/* ================ HTTP相关底层函数 ================ */
 
 /**
  * @brief 发送HTTP请求

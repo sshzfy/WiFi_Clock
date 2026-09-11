@@ -6,11 +6,16 @@
 #include "stm32f4xx.h"
 #include "Timer.h"
 #include "I2C.h"
-#include "Font.h"
 #include "OLED.h"
 #include "Light_Sensor.h"
 
 #if (USE_FREERTOS == 0)
+
+typedef enum
+{
+    BM_TEST_MODULE_OLED = 1,  // OLED 测试
+    BM_TEST_MODULE_LIGHT = 2, // 光敏电阻测试
+} BM_TEST_MODULE_t;
 
 /* Run the bare-metal module test selected by BM_TEST_MODULE.
  * Each test owns an endless loop and must be called after clock + TIM5 init. */

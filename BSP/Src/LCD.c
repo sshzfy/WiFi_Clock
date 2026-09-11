@@ -245,6 +245,24 @@ static void ST7789_Set_Backlight(bool state)
     GPIO_WriteBit(ST7789_BACKLIGHT_PORT, ST7789_BACKLIGHT_PIN, state ? Bit_SET : Bit_RESET);
 }
 
+/**
+ * @brief 屏幕电源开关
+ * @param on true=显示开(0x29)+背光; false=背光灭+显示睡眠(0x28, 显存保留)
+ */
+void ST7789_Display_Power(bool on)
+{
+    if (on)
+    {
+        ST7789_Write_Reg(0x29, NULL, 0); /* 显示开 */
+        ST7789_Set_Backlight(true);
+    }
+    else
+    {
+        ST7789_Set_Backlight(false);
+        ST7789_Write_Reg(0x28, NULL, 0); /* 显示关(显存保留, 唤醒无需重初始化) */
+    }
+}
+
 static void ST7789_Display_Init(void)
 {
     ST7789_Rest();

@@ -12,6 +12,7 @@ void Board_Peripheral_Init(void)
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);   /* 使能DMA1时钟,用于SPI3/USART2 DMA传输 */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);   /* 使能TIM5时钟,用于替代RTC时间基准,延迟函数 */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);   /* 使能ADC1时钟,用于光敏电阻 */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE); /* 使能SYSCFG时钟,用于外部中断配置 */
 }
 
 void Board_Init(void)

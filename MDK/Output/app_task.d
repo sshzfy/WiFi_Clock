@@ -65,3 +65,6 @@
 .\output\app_task.o: ..\User\Inc\App.h
 .\output\app_task.o: ..\BSP\Inc\AT.h
 .\output\app_task.o: ..\BSP\Inc\DHT22.h
+.\output\app_task.o: ..\BSP\Inc\Light_Sensor.h
+.\output\app_task.o: ..\BSP\Inc\OLED.h
+.\output\app_task.o: ..\BSP\Inc\I2C.h

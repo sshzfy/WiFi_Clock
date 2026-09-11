@@ -124,7 +124,7 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
     time_out->weekday = (uint8_t)(((days + 3) % 7 + 7) % 7 + 1);
 }
 
-/* === WiFi 初始化 === */
+/* ================ WiFi 初始化 ================ */
 
 /**
  * @brief 初始化无线网络, 包括AT命令和WiFi
@@ -155,7 +155,7 @@ err:
     return false;
 }
 
-/* === WiFi 连接 === */
+/* ================ WiFi 连接 ================ */
 
 /**
  * @brief 连接WiFi并刷新wifi_info
@@ -187,7 +187,7 @@ bool Service_WiFi_Connect(void)
     return wifi_info.connected;
 }
 
-/* === 周期任务(由netTask/sensorTask调度) === */
+/* ================ 周期任务(由netTask/sensorTask调度) ================ */
 
 /**
  * @brief 周期任务: SNTP时间同步(每4h)

@@ -37,7 +37,7 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
 F (..\User\stm32f4xx_conf.h)(0x630B4B28)()
 F (..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h)(0x6A9C35D0)()
-F (..\User\Src\main.c)(0x6AA146B2)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\main.o --omf_browse .\output\main.crf --depend .\output\main.d)
+F (..\User\Src\main.c)(0x6AA2AD0C)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\main.o --omf_browse .\output\main.crf --depend .\output\main.d)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdbool.h)(0x588B8344)
@@ -46,7 +46,7 @@ I (D:\Keil5\ARM\ARMCC\include\stdint.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\string.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\time.h)(0x588B8344)
-I (..\User\Inc\Board.h)(0x6AA1466F)
+I (..\STM32F4xx_StdPeriph_Driver\inc\misc.h)(0x647BEF00)
 I (..\Core\stm32f4xx.h)(0x67397C9C)
 I (..\Core\core_cm4.h)(0x65B238F6)
 I (..\Core\core_cmInstr.h)(0x61498159)
@@ -72,7 +72,6 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_syscfg.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_tim.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_usart.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_wwdg.h)(0x647BEF00)
-I (..\STM32F4xx_StdPeriph_Driver\inc\misc.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_cryp.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_hash.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_rng.h)(0x647BEF00)
@@ -80,7 +79,8 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_can.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
-I (..\BSP\Inc\LCD.h)(0x6AA14C0F)
+I (..\User\Inc\Board.h)(0x6AA1466F)
+I (..\BSP\Inc\LCD.h)(0x6AA3A716)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
 I (..\User\Third_Resource\LCD_Resource\Inc\Image.h)(0x6A96C946)
 I (..\Third_Lib\FreeRTOS\include\FreeRTOS.h)(0x6324BCC5)
@@ -96,12 +96,18 @@ I (..\BSP\Inc\Timer.h)(0x6AA1464F)
 I (..\BSP\Inc\Usart.h)(0x6AA14653)
 I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
-I (..\User\Inc\BuildConfig.h)(0x6AA16996)
-I (..\User\Inc\bare_test.h)(0x6AA16B4A)
+I (..\User\Inc\BuildConfig.h)(0x6AA3BDD6)
+I (..\User\Inc\app_task.h)(0x6AA3BD5E)
+I (..\Third_Lib\FreeRTOS\include\event_groups.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\timers.h)(0x6324BCC5)
+I (..\User\Third_Resource\LCD_Resource\Inc\Page.h)(0x6A9EC354)
+I (..\User\Inc\App.h)(0x6AA14673)
+I (..\BSP\Inc\AT.h)(0x6AA149FD)
+I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
+I (..\BSP\Inc\Light_Sensor.h)(0x6AA3B504)
+I (..\BSP\Inc\OLED.h)(0x6AA3BD15)
 I (..\BSP\Inc\I2C.h)(0x6AA1465E)
-I (..\BSP\Inc\OLED.h)(0x6AA14664)
-I (..\BSP\Inc\Light_Sensor.h)(0x6AA16B25)
-F (..\User\Src\Board.c)(0x6AA15F6E)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\board.o --omf_browse .\output\board.crf --depend .\output\board.d)
+F (..\User\Src\Board.c)(0x6AA29DCE)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\board.o --omf_browse .\output\board.crf --depend .\output\board.d)
 I (..\User\Inc\Board.h)(0x6AA1466F)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
@@ -144,7 +150,7 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_can.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
-I (..\BSP\Inc\LCD.h)(0x6AA14C0F)
+I (..\BSP\Inc\LCD.h)(0x6AA3A716)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
 I (..\User\Third_Resource\LCD_Resource\Inc\Image.h)(0x6A96C946)
 I (..\Third_Lib\FreeRTOS\include\FreeRTOS.h)(0x6324BCC5)
@@ -160,7 +166,7 @@ I (..\BSP\Inc\Timer.h)(0x6AA1464F)
 I (..\BSP\Inc\Usart.h)(0x6AA14653)
 I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
-F (..\User\Src\App.c)(0x6AA146A9)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\app.o --omf_browse .\output\app.crf --depend .\output\app.d)
+F (..\User\Src\App.c)(0x6AA2634E)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\app.o --omf_browse .\output\app.crf --depend .\output\app.d)
 I (..\User\Inc\App.h)(0x6AA14673)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
@@ -218,8 +224,8 @@ I (..\BSP\Inc\Usart.h)(0x6AA14653)
 I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
 I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
-F (..\User\Src\app_task.c)(0x6AA146AA)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\app_task.o --omf_browse .\output\app_task.crf --depend .\output\app_task.d)
-I (..\User\Inc\app_task.h)(0x6AA14677)
+F (..\User\Src\app_task.c)(0x6AA3BDCD)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\app_task.o --omf_browse .\output\app_task.crf --depend .\output\app_task.d)
+I (..\User\Inc\app_task.h)(0x6AA3BD5E)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdbool.h)(0x588B8344)
@@ -273,7 +279,7 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_can.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
-I (..\BSP\Inc\LCD.h)(0x6AA14C0F)
+I (..\BSP\Inc\LCD.h)(0x6AA3A716)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
 I (..\User\Third_Resource\LCD_Resource\Inc\Image.h)(0x6A96C946)
 I (..\BSP\Inc\Timer.h)(0x6AA1464F)
@@ -284,9 +290,12 @@ I (..\User\Third_Resource\LCD_Resource\Inc\Page.h)(0x6A9EC354)
 I (..\User\Inc\App.h)(0x6AA14673)
 I (..\BSP\Inc\AT.h)(0x6AA149FD)
 I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
-F (..\User\Src\bare_test.c)(0x6AA17B39)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\bare_test.o --omf_browse .\output\bare_test.crf --depend .\output\bare_test.d)
-I (..\User\Inc\bare_test.h)(0x6AA16B4A)
-I (..\User\Inc\BuildConfig.h)(0x6AA16996)
+I (..\BSP\Inc\Light_Sensor.h)(0x6AA3B504)
+I (..\BSP\Inc\OLED.h)(0x6AA3BD15)
+I (..\BSP\Inc\I2C.h)(0x6AA1465E)
+F (..\User\Src\bare_test.c)(0x6AA36B06)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\bare_test.o --omf_browse .\output\bare_test.crf --depend .\output\bare_test.d)
+I (..\User\Inc\bare_test.h)(0x6AA3A75E)
+I (..\User\Inc\BuildConfig.h)(0x6AA3BDD6)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdbool.h)(0x588B8344)
@@ -330,9 +339,24 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
 I (..\BSP\Inc\Timer.h)(0x6AA1464F)
 I (..\BSP\Inc\I2C.h)(0x6AA1465E)
+I (..\BSP\Inc\OLED.h)(0x6AA3BD15)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
-I (..\BSP\Inc\OLED.h)(0x6AA14664)
-I (..\BSP\Inc\Light_Sensor.h)(0x6AA16B25)
+I (..\User\Inc\App.h)(0x6AA14673)
+I (..\Third_Lib\FreeRTOS\include\FreeRTOS.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h)(0x6A9C35D0)
+I (..\Third_Lib\FreeRTOS\include\projdefs.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\portable.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\deprecated_definitions.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\portable\portmacro.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\mpu_wrappers.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\task.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\list.h)(0x6324BCC5)
+I (..\BSP\Inc\AT.h)(0x6AA149FD)
+I (..\BSP\Inc\Usart.h)(0x6AA14653)
+I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
+I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
+I (..\BSP\Inc\Light_Sensor.h)(0x6AA3B504)
 F (..\User\Third_Resource\LCD_Resource\Src\Font\Font_12.c)(0x6A8C543C)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\font_12.o --omf_browse .\output\font_12.crf --depend .\output\font_12.d)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
 I (..\User\Inc\main.h)(0x6AA1464B)
@@ -467,7 +491,7 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_can.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
-I (..\BSP\Inc\LCD.h)(0x6AA14C0F)
+I (..\BSP\Inc\LCD.h)(0x6AA3A716)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
 I (..\User\Third_Resource\LCD_Resource\Inc\Image.h)(0x6A96C946)
 I (..\Third_Lib\FreeRTOS\include\FreeRTOS.h)(0x6324BCC5)
@@ -529,7 +553,7 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_can.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
-I (..\BSP\Inc\LCD.h)(0x6AA14C0F)
+I (..\BSP\Inc\LCD.h)(0x6AA3A716)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
 I (..\User\Third_Resource\LCD_Resource\Inc\Image.h)(0x6A96C946)
 I (..\Third_Lib\FreeRTOS\include\FreeRTOS.h)(0x6324BCC5)
@@ -547,7 +571,7 @@ I (..\BSP\Inc\Usart.h)(0x6AA14653)
 I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
 I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
-F (..\BSP\Src\AT.c)(0x6AA14FE4)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\at.o --omf_browse .\output\at.crf --depend .\output\at.d)
+F (..\BSP\Src\AT.c)(0x6AA26321)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\at.o --omf_browse .\output\at.crf --depend .\output\at.d)
 I (..\BSP\Inc\AT.h)(0x6AA149FD)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
@@ -603,7 +627,7 @@ I (..\Third_Lib\FreeRTOS\include\list.h)(0x6324BCC5)
 I (..\BSP\Inc\Usart.h)(0x6AA14653)
 I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
-F (..\BSP\Src\DHT22.c)(0x6AA14FE4)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\dht22.o --omf_browse .\output\dht22.crf --depend .\output\dht22.d)
+F (..\BSP\Src\DHT22.c)(0x6AA269B0)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\dht22.o --omf_browse .\output\dht22.crf --depend .\output\dht22.d)
 I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
@@ -656,7 +680,7 @@ I (..\Third_Lib\FreeRTOS\portable\portmacro.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\mpu_wrappers.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\task.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\list.h)(0x6324BCC5)
-F (..\BSP\Src\I2C.c)(0x6AA14FE4)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\i2c.o --omf_browse .\output\i2c.crf --depend .\output\i2c.d)
+F (..\BSP\Src\I2C.c)(0x6AA262DE)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\i2c.o --omf_browse .\output\i2c.crf --depend .\output\i2c.d)
 I (..\BSP\Inc\I2C.h)(0x6AA1465E)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
@@ -700,8 +724,8 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
 I (..\BSP\Inc\Timer.h)(0x6AA1464F)
-F (..\BSP\Src\LCD.c)(0x6AA14FE4)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\lcd.o --omf_browse .\output\lcd.crf --depend .\output\lcd.d)
-I (..\BSP\Inc\LCD.h)(0x6AA14C0F)
+F (..\BSP\Src\LCD.c)(0x6AA3A713)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\lcd.o --omf_browse .\output\lcd.crf --depend .\output\lcd.d)
+I (..\BSP\Inc\LCD.h)(0x6AA3A716)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdbool.h)(0x588B8344)
@@ -754,8 +778,8 @@ I (..\Third_Lib\FreeRTOS\portable\portmacro.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\mpu_wrappers.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\task.h)(0x6324BCC5)
 I (..\Third_Lib\FreeRTOS\include\list.h)(0x6324BCC5)
-F (..\BSP\Src\Light_Sensor.c)(0x6AA16AEF)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\light_sensor.o --omf_browse .\output\light_sensor.crf --depend .\output\light_sensor.d)
-I (..\BSP\Inc\Light_Sensor.h)(0x6AA16B25)
+F (..\BSP\Src\Light_Sensor.c)(0x6AA3B504)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\light_sensor.o --omf_browse .\output\light_sensor.crf --depend .\output\light_sensor.d)
+I (..\BSP\Inc\Light_Sensor.h)(0x6AA3B504)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdbool.h)(0x588B8344)
@@ -797,8 +821,8 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_can.h)(0x65B238F6)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dac.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
-F (..\BSP\Src\OLED.c)(0x6AA146A6)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\oled.o --omf_browse .\output\oled.crf --depend .\output\oled.d)
-I (..\BSP\Inc\OLED.h)(0x6AA14664)
+F (..\BSP\Src\OLED.c)(0x6AA3BDC0)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\oled.o --omf_browse .\output\oled.crf --depend .\output\oled.d)
+I (..\BSP\Inc\OLED.h)(0x6AA3BD15)
 I (..\User\Inc\main.h)(0x6AA1464B)
 I (D:\Keil5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (D:\Keil5\ARM\ARMCC\include\stdbool.h)(0x588B8344)
@@ -843,6 +867,21 @@ I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_dcmi.h)(0x647BEF00)
 I (..\STM32F4xx_StdPeriph_Driver\inc\stm32f4xx_fsmc.h)(0x647BEF00)
 I (..\BSP\Inc\Timer.h)(0x6AA1464F)
 I (..\User\Third_Resource\LCD_Resource\Inc\Font.h)(0x6AA0FE2B)
+I (..\User\Inc\App.h)(0x6AA14673)
+I (..\Third_Lib\FreeRTOS\include\FreeRTOS.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h)(0x6A9C35D0)
+I (..\Third_Lib\FreeRTOS\include\projdefs.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\portable.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\deprecated_definitions.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\portable\portmacro.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\mpu_wrappers.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\task.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\list.h)(0x6324BCC5)
+I (..\BSP\Inc\AT.h)(0x6AA149FD)
+I (..\BSP\Inc\Usart.h)(0x6AA14653)
+I (..\Third_Lib\FreeRTOS\include\semphr.h)(0x6324BCC5)
+I (..\Third_Lib\FreeRTOS\include\queue.h)(0x6324BCC5)
+I (..\BSP\Inc\DHT22.h)(0x6AA14AE1)
 F (..\BSP\Src\Timer.c)(0x6AA1469C)(--c99 -c --cpu Cortex-M4.fp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ..\User -I ..\User\Inc -I ..\User\Third_Resource\LCD_Resource\Inc -I ..\BSP\Inc -I ..\Core -I ..\Core\Startup -I ..\STM32F4xx_StdPeriph_Driver\inc -I ..\STM32F4xx_StdPeriph_Driver\src -I ..\Third_Lib\FreeRTOS\include -I ..\Third_Lib\FreeRTOS\portable-I.\RTE\_STM32F407-ID:\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-ID:\Keil5\ARM\CMSIS\Include-D__UVISION_VERSION="524" -DSTM32F407xx -DUSE_STDPERIPH_DRIVER -DSTM32F40_41xxx-o .\output\timer.o --omf_browse .\output\timer.crf --depend .\output\timer.d)
 I (..\BSP\Inc\Timer.h)(0x6AA1464F)
 I (..\User\Inc\main.h)(0x6AA1464B)

@@ -101,6 +101,7 @@
 
 /* ST7789 函数声明 */
 void ST7789_Init(void);
+void ST7789_Display_Power(bool on);
 void ST7789_Fill_Color(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color);
 void ST7789_Write_String(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uint16_t color_back, const Font_t *font);
 void ST7789_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image);

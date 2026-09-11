@@ -1,8 +1,12 @@
 #include "OLED.h"
 
-static Soft_I2C_t *OLED_I2C = NULL;
-
-/* ========= 硬件底层函数 =========*/
+Soft_I2C_t oled_i2c = {
+    .SCL_Port = GPIOB,
+    .SDA_Port = GPIOB,
+    .SCL_Pin = GPIO_Pin_6,
+    .SDA_Pin = GPIO_Pin_7,
+};
+/* ================ 硬件底层函数 ================ */
 
 /**
  * @brief 写入OLED命令
@@ -11,9 +15,9 @@ static Soft_I2C_t *OLED_I2C = NULL;
  * */
 static void OLED_WriteCmd(uint8_t cmd)
 {
-    if (OLED_I2C == NULL)
+    if (&oled_i2c == NULL)
         return;
-    Soft_I2C_Send_Bytes(OLED_I2C, OLED_ADDR, OLED_CMD_BYTE, &cmd, 1);
+    Soft_I2C_Send_Bytes(&oled_i2c, OLED_ADDR, OLED_CMD_BYTE, &cmd, 1);
 }
 
 /**
@@ -23,9 +27,9 @@ static void OLED_WriteCmd(uint8_t cmd)
  * */
 static void OLED_WriteData(uint8_t data)
 {
-    if (OLED_I2C == NULL)
+    if (&oled_i2c == NULL)
         return;
-    Soft_I2C_Send_Bytes(OLED_I2C, OLED_ADDR, OLED_DATA_BYTE, &data, 1);
+    Soft_I2C_Send_Bytes(&oled_i2c, OLED_ADDR, OLED_DATA_BYTE, &data, 1);
 }
 
 /**
@@ -41,7 +45,7 @@ static void OLED_SetCursor(uint8_t page, uint8_t col)
     OLED_WriteCmd(0x00 | (col & 0x0F));        /* 列低4位 */
 }
 
-/* ========= 应用函数 =========*/
+/* ================ 应用函数 ================ */
 
 /**
  * @brief 清除OLED显示
@@ -146,13 +150,47 @@ void OLED_Write_String(uint8_t x, uint8_t y, const char *str, const Font_t *font
 }
 
 /**
+ * @brief 夜间显示: HH:MM(Font_48居中) + 日期(Font_16居中), 不显示秒
+ * */
+void OLED_ShowClock(uint8_t hh, uint8_t mm, uint16_t year, uint8_t mon, uint8_t day)
+{
+    char buf[16];
+
+    /* HH:MM: Font_48 字宽24, 5字符=120px, 居中 */
+    snprintf(buf, sizeof(buf), "%02u:%02u", (unsigned)hh, (unsigned)mm);
+    OLED_Write_String((OLED_WIDTH - 5 * (Font_48.size / 2)) / 2, 0, buf, &Font_48);
+
+    /* 日期: Font_16 字宽8, 10字符=80px, 居中 */
+    snprintf(buf, sizeof(buf), "%04u-%02u-%02u", (unsigned)year, (unsigned)mon, (unsigned)day);
+    OLED_Write_String((OLED_WIDTH - 10 * (Font_16.size / 2)) / 2, 48, buf, &Font_16);
+}
+
+/**
+ * @brief 开启OLED显示
+ * */
+void OLED_Display_On(void)
+{
+    OLED_WriteCmd(0xAF); /* 开启显示 */
+    OLED_Clear();        /* 清屏, 由调用方随后绘制内容 */
+}
+
+/**
+ * @brief 关闭OLED显示
+ * */
+void OLED_Display_Off(void)
+{
+    OLED_Clear();
+    OLED_WriteCmd(0xAE); /* 关闭显示 */
+}
+
+/**
  * @brief 初始化OLED
  *
  * @param i2c I2C句柄
  * */
-void OLED_Init(Soft_I2C_t *i2c)
+void OLED_Init(void)
 {
-    OLED_I2C = i2c;
+    Soft_I2C_Init(&oled_i2c);
     delay_ms(100);
 
     OLED_WriteCmd(0xAE); /*关闭显示 */
