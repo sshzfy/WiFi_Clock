@@ -164,6 +164,7 @@ err:
 bool Service_WiFi_Connect(void)
 {
     AT_WiFi_Info_t tmp;
+    bool ok = false;
 
     printf("[NET] WiFi connecting to %s ...\r\n", ssid);
     if (!AT_Connect_WiFi(ssid, password, mac))
@@ -171,20 +172,31 @@ bool Service_WiFi_Connect(void)
         printf("[NET] WiFi connect FAILED\r\n");
         return false;
     }
-    AT_Get_WiFi_Info(&tmp);
+
+    /* 读取WiFi信息(失败重试; 避免栈上未初始化值被当成结果) */
+    for (int i = 0; i < 3 && !ok; i++)
+    {
+        memset(&tmp, 0, sizeof(tmp)); /* 清空结构体, 避免未初始化值被当成结果 */
+        ok = AT_Get_WiFi_Info(&tmp);
+        if (!ok)
+            vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
     taskENTER_CRITICAL();
-    wifi_info = tmp; /* 一次性整体替换, 避免ui读到半写状态 */
+    if (ok)
+        wifi_info = tmp; /* 一次性整体替换, 避免ui读到半写状态 */
     taskEXIT_CRITICAL();
-    if (wifi_info.connected)
+
+    if (ok && wifi_info.connected)
     {
         printf("[NET] WiFi connected: ssid=%s bssid=%s channel=%d rssi=%d\r\n",
                wifi_info.ssid, wifi_info.bssid, wifi_info.channel, wifi_info.rssi);
     }
     else
     {
-        printf("[NET] WiFi connect result: not connected\r\n");
+        printf("[NET] WiFi info FAILED\r\n");
     }
-    return wifi_info.connected;
+    return (ok && wifi_info.connected);
 }
 
 /* ================ 周期任务(由netTask/sensorTask调度) ================ */
@@ -195,16 +207,24 @@ bool Service_WiFi_Connect(void)
  */
 bool Service_Time_Sync(void)
 {
-    if (!AT_SNTP_Get_Time(&date_info))
+    AT_Date_Info_t t;
+
+    /* ESP 配网后SNTP需数秒才真正同步; 轮询直到取到有效时间(约15s), 期间得不到则重试 */
+    for (int i = 0; i < 15; i++)
     {
-        printf("[NET] SNTP sync FAILED\r\n");
-        return false;
+        if (AT_SNTP_Get_Time(&t))
+        {
+            date_info = t;
+            Clock_Sync(&date_info);
+            printf("[NET] SNTP sync OK: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+                   t.year, t.month, t.day, t.hour, t.minute, t.second);
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    Clock_Sync(&date_info);
-    printf("[NET] SNTP sync OK: %04u-%02u-%02u %02u:%02u:%02u\r\n",
-           date_info.year, date_info.month, date_info.day,
-           date_info.hour, date_info.minute, date_info.second);
-    return true;
+
+    printf("[NET] SNTP sync FAILED\r\n");
+    return false;
 }
 
 /**
@@ -214,10 +234,12 @@ bool Service_Time_Sync(void)
 int Service_WiFi_Update(void)
 {
     AT_WiFi_Info_t tmp;
+    bool ok;
 
-    if (AT_Is_WiFi_Conected())
+    memset(&tmp, 0, sizeof(tmp));
+    ok = AT_Get_WiFi_Info(&tmp);
+    if (ok && tmp.connected)
     {
-        AT_Get_WiFi_Info(&tmp);
         taskENTER_CRITICAL();
         wifi_info = tmp;
         taskEXIT_CRITICAL();
@@ -232,10 +254,13 @@ int Service_WiFi_Update(void)
         return -1;
     }
 
-    AT_Get_WiFi_Info(&tmp);
-    taskENTER_CRITICAL();
-    wifi_info = tmp;
-    taskEXIT_CRITICAL();
+    memset(&tmp, 0, sizeof(tmp));
+    if (AT_Get_WiFi_Info(&tmp))
+    {
+        taskENTER_CRITICAL();
+        wifi_info = tmp;
+        taskEXIT_CRITICAL();
+    }
     printf("[NET] WiFi reconnected: ssid=%s rssi=%d\r\n", wifi_info.ssid, wifi_info.rssi);
     return 1;
 }

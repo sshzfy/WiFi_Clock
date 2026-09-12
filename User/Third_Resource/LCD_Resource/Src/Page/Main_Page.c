@@ -276,6 +276,11 @@ static const Weather_Map_t *Weather_Get_Map(int code)
     }
     return NULL;
 }
+/* 未知天气码: 返回默认项(晴天, 索引0), 避免NULL解引用 */
+static const Weather_Map_t *Weather_Default(void)
+{
+    return &weather_map[0];
+}
 
 /**
  * @brief 绘制天气图标和温度
@@ -297,8 +302,9 @@ static void Main_Page_Weather(void)
 
     /* 绘制天气图标 */
     const Weather_Map_t *weather_map = Weather_Get_Map(weather_info.weather_code);
-    if (weather_map != NULL)
-        ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
+    if (weather_map == NULL)
+        weather_map = Weather_Default(); /* 未知天气码: 默认晴天 */
+    ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
     // 绘制天气状况文字
     const char *weather_text = weather_map->chinese;
     uint16_t text_len = strlen(weather_text) / 2;
@@ -385,8 +391,9 @@ void Main_Page_Weather_Update(void)
 {
     /* 绘制天气图标 */
     const Weather_Map_t *weather_map = Weather_Get_Map(weather_info.weather_code);
-    if (weather_map != NULL)
-        ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
+    if (weather_map == NULL)
+        weather_map = Weather_Default(); /* 未知天气码: 默认晴天 */
+    ST7789_Draw_Picture_AutoTransparent(modle_bottom1.x_start, modle_bottom1.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
     // 绘制天气状况文字
     const char *weather_text = weather_map->chinese; // 获取天气状况文字
     uint16_t text_len = strlen(weather_text) / 2;    // 计算天气状况文字的字符数
@@ -507,4 +514,3 @@ void Main_Page_Net_Update(void)
         ST7789_Draw_Picture_AutoTransparent(modle_wifi.x_start + Image_wifi.width, modle_wifi.y_start, (const Image_t *)&Image_no_location, back_color);
     }
 }
-

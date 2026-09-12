@@ -233,15 +233,18 @@ bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info)
     if (info == NULL)
         return false;
 
+    memset(info, 0, sizeof(*info)); /* 清零, 失败时不残留未初始化/旧值 */
+
+    /* CWSTATE 提供 connected + ssid, 为必需项 */
     if (!AT_Write_Command("AT+CWSTATE?", 2000))
         return false;
     if (!Parse_CWSTATE_Response(AT_Get_Response(), info))
         return false;
 
-    if (!AT_Write_Command("AT+CWJAP?", 2000))
-        return false;
-    if (!Parse_CWJAP_Response(AT_Get_Response(), info))
-        return false;
+    /* CWJAP 提供 bssid/channel/rssi, 不因它失败而使整体失败 */
+    if (AT_Write_Command("AT+CWJAP?", 2000))
+        Parse_CWJAP_Response(AT_Get_Response(), info);
+
     return true;
 }
 
@@ -259,7 +262,7 @@ bool AT_Connect_WiFi(const char *ssid, const char *password, const char *mac)
     {
         snprintf(cmd, sizeof(cmd), "AT+CWJAP=\"%s\",\"%s\",\"%s\"", ssid, password, mac);
     }
-    return AT_Write_Command(cmd, 5000);
+    return AT_Write_Command(cmd, 10000);
 }
 
 bool AT_Is_WiFi_Conected(void)
@@ -335,9 +338,15 @@ bool AT_SNTP_Init(void)
  */
 bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
 {
+    if (date_info == NULL)
+        return false;
     if (!AT_Write_Command("AT+CIPSNTPTIME?", 2000))
         return false;
     if (!Parse_CIPSNTPTIME_Response(AT_Get_Response(), date_info))
+        return false;
+
+    /* ESP 尚未完成NTP同步时会返回 1970, 视为无效 */
+    if (date_info->year < 2000 || date_info->month < 1 || date_info->month > 12)
         return false;
     return true;
 }
@@ -411,7 +420,7 @@ const char *AT_Get_HTTP(const char *url)
 {
     static char tx_buf[256];
     snprintf(tx_buf, sizeof(tx_buf), "AT+HTTPCLIENT=2,1,\"%s\",,,2", url);
-    bool ret = AT_Write_Command(tx_buf, 5000);
+    bool ret = AT_Write_Command(tx_buf, 10000);
     if (ret)
     {
         const char *response = AT_Get_Response();

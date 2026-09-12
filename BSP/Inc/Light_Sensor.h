@@ -45,7 +45,11 @@ void Light_Sensor_Init(void);
 uint16_t Light_Sensor_Read(void);
 
 /* 统一判定: 当前是否处于“暗”(需稳定去抖由调用方负责)
- * DO模式: DO为高(未达光照阈值)=暗; AO模式: 采样+滞回 */
+ * DO模式: DO为高(未达光照阈值)=暗; AO模式: 返回AWD锁存状态 */
 bool Light_Sensor_IsDark(void);
+
+/* 中断回调(由 RTOS 层注册, ISR 内调用): DO边沿 / AO看门狗阈值越界时触发 */
+typedef void (*Light_Sensor_IRQ_Callback_t)(void);
+void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t cb);
 
 #endif /* __LIGHT_SENSOR_H__ */

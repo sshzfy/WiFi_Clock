@@ -24,6 +24,7 @@
 ".\output\oled.o"
 ".\output\timer.o"
 ".\output\usart.o"
+".\output\w25q64.o"
 ".\output\startup_stm32f40xx.o"
 ".\output\system_stm32f4xx.o"
 ".\output\misc.o"

@@ -9,15 +9,7 @@ BM_TEST_MODULE_t BM_TEST_MODULE = BM_TEST_MODULE_LIGHT; // 测试模块选项
 /* ================ OLED 测试 ================ */
 static void OLED_BareMetal_Test(void)
 {
-    Soft_I2C_t oled_i2c = {
-        .SCL_Port = GPIOB,
-        .SDA_Port = GPIOB,
-        .SCL_Pin = GPIO_Pin_6,
-        .SDA_Pin = GPIO_Pin_7,
-    };
-
-    Soft_I2C_Init(&oled_i2c);
-    OLED_Init(&oled_i2c);
+    OLED_Init();
     OLED_Clear();
 
     OLED_Write_String(0, 0, "OLED TEST OK", &Font_16);
@@ -41,15 +33,7 @@ static void OLED_BareMetal_Test(void)
 
 static void Light_Sensor_BareMetal_Test(void)
 {
-    Soft_I2C_t oled_i2c = {
-        .SCL_Port = GPIOB,
-        .SDA_Port = GPIOB,
-        .SCL_Pin = GPIO_Pin_6,
-        .SDA_Pin = GPIO_Pin_7,
-    };
-
-    Soft_I2C_Init(&oled_i2c);
-    OLED_Init(&oled_i2c);
+    OLED_Init();
     OLED_Clear();
     Light_Sensor_Init();
 

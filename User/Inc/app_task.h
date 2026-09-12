@@ -34,10 +34,9 @@ typedef struct
 #define EV_ROOM                     (1UL << 1) /* 房间温湿度已更新, 请刷新房间模块 */
 #define EV_NET_READY                (1UL << 2) /* 开机网络阶段完成(无论成败) */
 #define EV_WIFI                     (1UL << 3) /* WiFi连接状态变化, 请刷新顶部状态条 */
-#define EV_LIGHT                    (1UL << 4) /* 光敏传感器值变化, 判断进入低功耗模式 */
-#define EV_LOWERPOWER               (1UL << 5) /* 进入低功耗模式 */
-#define EV_LOWPOWER_ACK             (1UL << 6) /* 低功耗模式确认 */
-#define EV_WAKEUP                   (1UL << 7) /* 从低功耗模式唤醒 */
+#define EV_LOWERPOWER               (1UL << 4) /* 进入低功耗模式 */
+#define EV_LOWPOWER_ACK             (1UL << 5) /* 低功耗模式确认 */
+#define EV_WAKEUP                   (1UL << 6) /* 从低功耗模式唤醒 */
 
 /* 创建UI任务(UI任务内部再创建 netTask/sensorTask), 由 main 调用 */
 void App_Task_Init(void);
