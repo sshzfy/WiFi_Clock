@@ -22,7 +22,7 @@ static inline void Light_Sensor_Notify(void)
 #if AO_DO_SWITCH == 1
 /* ==================== AO: ADC + 模拟看门狗(AWD)中断 ==================== */
 
-static volatile bool ao_dark = false; /* AWD锁存的昼夜状态 */
+static volatile bool ao_dark = false; // AWD锁存的昼夜状态
 
 static void Light_Sensor_AO_GPIO_Init(void)
 {
@@ -80,7 +80,7 @@ static void Light_Sensor_ADC_Init(void)
     ADC_InitStruct.ADC_NbrOfConversion = 1;                                  // 1次转换
     ADC_Init(ADC1, &ADC_InitStruct);
 
-    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_56Cycles); /* 通道0 */
+    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_56Cycles); // 通道0
 
     /* 模拟看门狗: 单通道(IN0); 先装"免疫窗口"[0,4095]避免启动瞬间误触发 */
     ADC_AnalogWatchdogThresholdsConfig(ADC1, 4095, 0);
@@ -89,7 +89,7 @@ static void Light_Sensor_ADC_Init(void)
     ADC_ITConfig(ADC1, ADC_IT_AWD, ENABLE);
 
     NVIC_InitStruct.NVIC_IRQChannel = ADC_IRQn;
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; /* =configMAX_SYSCALL: 允许FromISR */
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // 允许FromISR
     NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
@@ -100,8 +100,8 @@ static void Light_Sensor_ADC_Init(void)
 uint16_t Light_Sensor_Read(void)
 {
     while (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET)
-        ;                                /* 连续转换模式: 等一次转换完成 */
-    return ADC_GetConversionValue(ADC1); /* 读取并清EOC */
+        ;                                // 连续转换模式: 等一次转换完成
+    return ADC_GetConversionValue(ADC1); // 读取并清EOC
 }
 
 /**
@@ -113,8 +113,8 @@ void ADC_IRQHandler(void)
     {
         ADC_ClearITPendingBit(ADC1, ADC_IT_AWD);
 
-        ao_dark = !ao_dark;             /* 越界事件对应状态翻转 */
-        Light_Sensor_AWD_Arm(!ao_dark); /* 反向装订, 防止连续越界中断风暴 */
+        ao_dark = !ao_dark;             // 越界事件对应状态翻转
+        Light_Sensor_AWD_Arm(!ao_dark); // 反向装订, 防止连续越界中断风暴
         Light_Sensor_Notify();
     }
 }
@@ -124,7 +124,7 @@ void Light_Sensor_Init(void)
     Light_Sensor_AO_GPIO_Init();
     Light_Sensor_ADC_Init();
 
-    ADC_SoftwareStartConv(ADC1); /* 启动连续转换 */
+    ADC_SoftwareStartConv(ADC1); // 启动连续转换
 
     /* 采样一次确定初始状态, 并按"反向"装订AWD(避免立即触发) */
     uint16_t v = Light_Sensor_Read();
@@ -156,7 +156,8 @@ static void Light_Sensor_EXTI_Init(void)
     EXTI_InitTypeDef EXTI_InitStruct;
     EXTI_StructInit(&EXTI_InitStruct);
 
-    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource1);
+    /* 端口源与引脚源取自 Light_Sensor.h, 保证与 DO 引脚定义一致 */
+    SYSCFG_EXTILineConfig(LIGHT_SENSOR_DO_EXTI_PORT_SOURCE, LIGHT_SENSOR_DO_EXTI_PIN_SOURCE);
 
     EXTI_InitStruct.EXTI_Line = LIGHT_SENSOR_DO_EXTI_LINE;      // 1号中断线
     EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;            // 中断模式
@@ -191,7 +192,7 @@ void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
         {
             Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // 光照强度低于设定值,DO输出高电平
         }
-        Light_Sensor_Notify(); /* 通知任务(边沿事件) */
+        Light_Sensor_Notify(); // 通知任务(边沿事件)
     }
 }
 

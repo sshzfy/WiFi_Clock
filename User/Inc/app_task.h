@@ -11,8 +11,12 @@
 #include "Light_Sensor.h"
 #include "LCD.h"
 #include "OLED.h"
+#include "External_RTC.h"
+
+#define RTC_LOWPOWER_ENABLE         1 /* 低功耗模式时钟源选择: 1=DS1302, 0=软件时钟 */
 
 #define DEBOUNCE_MS                 (2000UL) /* 昼夜切换去抖 2s */
+#define EV_LP_UI_TICK_MS            (2000UL) /* 低功耗UI事件等待(ms), 夜间只显示到分钟 */
 
 /* ================ 开机网络阶段结果(仅uiTask在EV_NET_READY后读取) ================ */
 typedef struct
@@ -37,6 +41,8 @@ typedef struct
 #define EV_LOWERPOWER               (1UL << 4) /* 进入低功耗模式 */
 #define EV_LOWPOWER_ACK             (1UL << 5) /* 低功耗模式确认 */
 #define EV_WAKEUP                   (1UL << 6) /* 从低功耗模式唤醒 */
+#define EV_NET_UPDATE_NOW           (1UL << 7) /* 立即更新网络状态 */
+#define EV_SENSOR_UPDATE_NOW        (1UL << 8) /* 立即更新DHT22传感器状态 */
 
 /* 创建UI任务(UI任务内部再创建 netTask/sensorTask), 由 main 调用 */
 void App_Task_Init(void);

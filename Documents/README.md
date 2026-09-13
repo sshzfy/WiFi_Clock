@@ -3,7 +3,7 @@
 > 基于 **STM32F407VET6 + FreeRTOS** 的桌面天气时钟 / 室内环境监测终端。
 > 彩屏显示时钟与天气，OLED 负责夜间显示，光敏电阻自动切换昼夜模式，WiFi 走 ESP32-C3 AT 模组。
 
-本文档对应的仓库快照：`MDK/Output/STM32F407.axf` 构建于 **2026-09-12**（MDK-ARM Plus 5.24.1 / ARMCC V5.06 update 5，0 Error 0 Warning）。
+本文档对应的仓库快照：**2026-09-13**（夜间低功耗模式接入 RTOS 之后；构建环境 MDK-ARM Plus 5.24.1 / ARMCC V5.06 update 5）。
 文档与源码不一致时，**以源码为准**。
 
 ---
@@ -37,9 +37,10 @@
 - 用 **SSD1306 0.96" OLED（软 I2C）** 在夜间显示简洁的 `HH:MM` 与日期；
 - 用 **光敏电阻模块** 感知环境亮度，自动在彩屏（白天）与 OLED（夜间）之间切换；
 - 用 **DHT22/AM2302** 采集室内温度与湿度；
-- **FreeRTOS** 负责调度：显示、联网、传感器、光敏各自独立任务，通过事件组通信。
+- **FreeRTOS** 负责调度：显示、联网、传感器、光敏各自独立任务，通过事件组通信；
+- **夜晚进入低功耗模式**：关闭彩屏、只保留 OLED 显示时间，并暂停 WiFi / SNTP / 天气 / 室内温湿度的周期更新；退出时立即补更一次。
 
-时间基准不在 MCU 内部 RTC 上，而是 **SNTP 校时 + TIM5 1ms 计数** 推算的软件时钟，避免依赖电池与 RTC 寄存器配置。
+时间基准白天为 **SNTP 校时 + TIM5 1ms 计数** 推算的软件时钟；夜间切换到 **DS1302 外部 RTC**（进入夜间前用网络时间回写并回读校验），因此夜间不依赖网络也能正常走时。
 
 ---
 
@@ -64,11 +65,13 @@
    - 服务失败（SNTP 或天气）：错误图标 + `[Service] Init failed`。
 5. 停留 **2.5s** → 绘制主界面 → 启动光敏任务（保证昼夜切换只发生在开机完成之后）。
 
-### 夜间模式与双屏切换
+### 夜间低功耗模式与双屏切换
 
-- 变暗：`OLED_Init`（首次懒初始化）→ 开 OLED 显示 → 关闭 ST7789 显示（`0x28` 显示睡眠）与背光。
-- 变亮：关闭 OLED → 恢复 ST7789（`0x29` + 背光）→ 整屏重绘主界面。
+- **变暗**：用系统时间回写 DS1302（回读校验）→ 置 `s_lowpower = true` → 打开 OLED 并从 DS1302 读时间显示 → 关闭 ST7789 显示（`0x28` 显示睡眠）与背光。
+- **夜间**：`netTask` / `DHT22_Task` **冻结周期计数器、不执行任何 update**；`uiTask` 事件等待放宽到 `EV_LP_UI_TICK_MS`（2s），OLED 仅在时/分/日变化时重绘。
+- **变亮**：关闭 OLED → 恢复 ST7789（`0x29` + 背光）→ 整屏重绘主界面 → 清 `s_lowpower` 并置 `EV_NET_UPDATE_NOW | EV_SENSOR_UPDATE_NOW`，两个任务各立即补一次 update。
 - 切换由光敏任务发起，等待 uiTask 回 `EV_LOWPOWER_ACK`（超时 2s），避免竞态。
+- 光敏任务**以中断为主、1000ms 超时轮询兜底**：即使 EXTI 未触发，也能在 1 秒内感知亮度变化并切换。
 
 ### 其他
 
@@ -89,7 +92,7 @@
 | 室内传感器 | DHT22 / AM2302 单总线 |
 | 环境光 | 光敏电阻模块，DO（EXTI）或 AO（ADC + 模拟看门狗）二选一 |
 | 调试口 | USART2 @115200 |
-| 外部 RTC | DS1302 模块（PB0=RST / PB1=IO / PB2=CLK），已接入裸机测试，尚未接入 RTOS |
+| 外部 RTC | DS1302 模块（PB0=RST / PB1=IO / PB2=CLK），夜间低功耗模式的时间源 |
 
 > ⚠️ **晶振注意**：Keil 工程 `Cpu` 串中的 `CLOCK(12000000)` 只影响调试器的 Xtal 设置，**不参与时钟树计算**。
 > 实际参与计算的是 `Core/stm32f4xx.h` 的 `HSE_VALUE`（当前 `STM32F40_41xxx` 分支默认 **25000000**）。
@@ -128,7 +131,7 @@ Project4/
 │   ├── Inc/ · Src/
 │   │   ├── AT.c                   # ESP32-C3 AT 指令、WiFi/CWSTATE/CWJAP、SNTP、HTTP、JSON 解析
 │   │   ├── DHT22.c                # 单总线时序、校验和、错误码
-│   │   ├── External_RTC.c         # DS1302 驱动（已用于裸机测试，未接入 RTOS）
+│   │   ├── External_RTC.c         # DS1302 驱动（裸机测试 + 夜间低功耗时间源）
 │   │   ├── I2C.c                  # 通用软件 I2C
 │   │   ├── LCD.c                  # ST7789：SPI3 + DMA1_Stream5、字符/图片/透明叠加
 │   │   ├── Light_Sensor.c         # DO(EXTI1) 或 AO(ADC1_IN0 + AWD) 两种模式
@@ -173,10 +176,10 @@ Project4/
 
 | 任务 | 优先级 | 栈（字 / 字节） | 职责 | 周期 |
 | --- | --- | --- | --- | --- |
-| `uiTask` | 3 | 1024 / 4KB | 创建事件组、`Board_Init`、开机页 → 创建 `dht22`/`net` → 等 `EV_NET_READY`（30s 超时）→ 结果页 → 主界面 → 创建光敏任务；之后 500ms 心跳处理事件 | 500ms |
-| `DHT22_Task` | 4 | 512 / 2KB | 读取 DHT22，置 `EV_ROOM`；优先级高于 UI，避免抢占破坏 us 级时序 | 10s |
-| `netTask` | 2 | 1024 / 4KB | 独占 USART1/AT；开机联网 + SNTP + 天气；随后周期维护 | 1s 心跳 |
-| `LightSensor_Task` | 2 | 512 / 2KB | 注册中断回调、初始化光敏；阻塞等通知 → 2s 去抖 → 昼夜切换并等 ACK | 事件驱动 |
+| `uiTask` | 3 | 1024 / 4KB | 创建事件组、`Board_Init`、开机页 → 创建 `dht22`/`net` → 等 `EV_NET_READY`（30s 超时）→ 结果页 → 主界面 → 创建光敏任务；事件驱动刷新，昼夜切换执行者 | 白天 500ms / 夜间 `EV_LP_UI_TICK_MS`(2s) |
+| `DHT22_Task` | 4 | 512 / 2KB | 等待 10s 超时即为采集周期，同时响应 `EV_SENSOR_UPDATE_NOW` 立即补采；低功耗期间跳过；优先级高于 UI，避免抢占破坏 us 级时序 | 10s |
+| `netTask` | 2 | 1024 / 4KB | 独占 USART1/AT；开机联网 + SNTP + 天气；1s 心跳推进三个周期计数器，响应 `EV_NET_UPDATE_NOW` 立即补更；低功耗期间冻结计数器 | 1s 心跳 |
+| `LightSensor_Task` | 2 | 512 / 2KB | 注册中断回调、初始化光敏；等待中断（1000ms 超时轮询兜底）→ 2s 去抖 → 昼夜切换并等 ACK | 事件驱动 + 1s 兜底 |
 
 `netTask` 周期参数（`User/Inc/app_task.h`）：
 
@@ -189,6 +192,8 @@ Project4/
 其它常量：
 
 - `DEBOUNCE_MS = 2000`（昼夜切换去抖 2s）
+- `EV_LP_UI_TICK_MS = 2000`（夜间 `uiTask` 事件等待超时；夜间只显示到分钟）
+- `RTC_LOWPOWER_ENABLE = 1`（夜间时间源：`1` = DS1302，`0` = 软件时钟）
 - `configTICK_RATE_HZ = 1000`、`configMAX_PRIORITIES = 5`（优先级 0~4）
 - `configUSE_TIME_SLICING = 0`、`configTOTAL_HEAP_SIZE = 95KB`（heap_4）
 - `configCHECK_FOR_STACK_OVERFLOW = 2`；`configASSERT` 失败进入 `vAssertCalled`
@@ -205,6 +210,10 @@ Project4/
 | bit4 | `EV_LOWERPOWER` | LightSensor_Task | 进入夜间 |
 | bit5 | `EV_LOWPOWER_ACK` | uiTask | 昼夜切换完成确认 |
 | bit6 | `EV_WAKEUP` | LightSensor_Task | 回到白天 |
+| bit7 | `EV_NET_UPDATE_NOW` | uiTask | 退出低功耗：`netTask` 立即补 WiFi+SNTP+天气（唯一消费者，清除式等待） |
+| bit8 | `EV_SENSOR_UPDATE_NOW` | uiTask | 退出低功耗：`DHT22_Task` 立即补采（唯一消费者，清除式等待） |
+
+> ⚠️ 这两个补更事件位**必须分开**：`xEventGroupWaitBits` 使用清除式等待，若两个任务共用一个位，先到的任务会把位清掉，另一个任务就永远收不到通知（表现为“退出夜间后只有一半数据被刷新”）。
 
 ### 数据流
 
@@ -217,6 +226,13 @@ ESP32-C3 ──USART1──▶ AT.c ──▶ wifi_info   ──▶ Main_Page_Ne
 
 DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡片
 光敏中断 ──▶ vTaskNotifyGiveFromISR ──▶ LightSensor_Task（2s 去抖）──▶ 事件组 ──▶ uiTask 切屏
+
+夜间（低功耗）:
+进入夜间前: 软件时钟 ──▶ DS1302_SetTime（回读校验）
+夜间:       DS1302_ReadTime ──▶ 成功 ──▶ OLED 显示
+                            └── 失败 ──▶ 软件时钟降级（打印 time_source=SoftClock）
+退出夜间:   uiTask ──▶ EV_NET_UPDATE_NOW ─────▶ netTask 立即 WiFi+SNTP+天气
+                    └─▶ EV_SENSOR_UPDATE_NOW ──▶ DHT22_Task 立即采集
 ```
 
 ---
@@ -270,14 +286,16 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | 功能 | 引脚 | 说明 |
 | --- | --- | --- |
 | DHT22 DATA | PE6 | 单总线，输出/输入切换，输入上拉 |
-| 光敏 AO | PA0 | `ADC1_IN0`，12 位，连续转换 + 模拟看门狗阈值中断 |
-| 光敏 DO | PA1 | `EXTI1`，上升沿/下降沿双沿触发 |
+| 光敏 AO | PC0 | `GPIOC + GPIO_Pin_0`，对应 `ADC123_IN10`（驱动里的 ADC 通道仍是 `ADC_Channel_0`，见第 13 节） |
+| 光敏 DO | PC1 | `GPIOC + GPIO_Pin_1` → `EXTI1`（端口源为 `EXTI_PortSourceGPIOC`），上升沿/下降沿双沿触发 |
 | 测试 LED | PC5 | 推挽输出，低电平点亮 |
-| DS1302 外部 RTC | PB0=RST / PB1=IO / PB2=CLK | 裸机测试项 `BM_TEST_MODULE_DS1302`；`DS1302_Init()` 只置写保护，不清零秒寄存器 |
+| DS1302 外部 RTC | PB0=RST / PB1=IO / PB2=CLK | 裸机测试项 `BM_TEST_MODULE_DS1302` + 夜间低功耗时间源；`DS1302_Init()` 只置写保护，不清零秒寄存器 |
 
 开关宏：`BSP/Inc/Light_Sensor.h` 中 `AO_DO_SWITCH`，**默认 `0`（DO 模式）**；改为 `1` 使用 ADC + 模拟看门狗。AO 模式的阈值常量：`LIGHT_SENSOR_AO_DARK_TH = 3000`、`LIGHT_SENSOR_AO_LIGHT_TH = 2000`（迟滞回防抖），极性由 `LIGHT_SENSOR_AO_DARK_HIGH` 决定。
 
 DO 模式判定：DO 引脚为**高**（光照未达电位器阈值）→ 视为“暗”。
+
+> ⚠️ 改光敏引脚时，`BSP/Inc/Light_Sensor.h` 里的 **GPIO 端口/引脚**与 **`LIGHT_SENSOR_DO_EXTI_PORT_SOURCE` / `..._PIN_SOURCE`** 必须成对修改。两者不一致时 EXTI 中断源仍挂在旧端口上，**电平变化不会产生任何中断**，表现为“遮挡后无反应、串口也无日志”。
 
 ---
 
@@ -290,7 +308,7 @@ NVIC 分组为 **`NVIC_PriorityGroup_4`**（4 位全为抢占优先级）。
 | PendSV / SysTick | 15（`configKERNEL_INTERRUPT_PRIORITY`） | — |
 | **TIM5** | **2** | ❌ **禁止**（优先级数值 < `configMAX_SYSCALL_INTERRUPT_PRIORITY`） |
 | USART1 | 5 | ✅ 可调用 `...FromISR` |
-| EXTI1（光敏 DO） | 5 | ✅ 可调用 `...FromISR` |
+| EXTI1（光敏 DO，PC1） | 5 | ✅ 可调用 `...FromISR` |
 | ADC（光敏 AO） | 5 | ✅ 可调用 `...FromISR` |
 
 规则（`Third_Lib/FreeRTOS/portable/FreeRTOSConfig.h` 中有对应注释）：
@@ -352,22 +370,41 @@ Service_Weather_Update():
 - `Clock_GetDateTime()`：临界区内一次性取出 `synced / epoch / sync_ms / now_ms`，再算 `epoch + elapsed_ms/1000`，最后用 `Clock_CivilFromDays()` 反算年月日与星期（`((days+3)%7+7)%7+1`，1=周一）。
 - 未同步时返回全 0，界面据此绘制 `--:--` / 空日期，因此 **上电后到首次 SNTP 成功之间不会显示错误时间**。
 
-### 8.4 昼夜切换握手
+### 8.4 昼夜切换与低功耗握手
 
 ```
-LightSensor_Task                        uiTask
-  中断通知 → 2s 去抖
+LightSensor_Task                          uiTask                      netTask / DHT22_Task
+  中断通知(或1s轮询兜底) → 2s 去抖
   暗 & !requested_night:
-     置 EV_LOWERPOWER  ─────────────▶  UI_Enter_Night(): OLED 开 + ST7789 睡眠/关背光
-     等 EV_LOWPOWER_ACK(2s)  ◀────────  置 EV_LOWPOWER_ACK
+     置 EV_LOWERPOWER  ───────────────▶  ① RTC_Sync_From_SystemClock()（回读校验）
+                                        ② s_lowpower = true
+                                        ③ OLED 开 → RTC_ReadDataTime() → 显示
+                                        ④ ST7789 睡眠 + 关背光
+     等 EV_LOWPOWER_ACK(2s) ◀──────────  ⑤ 置 EV_LOWPOWER_ACK
+                                                                    → 下一拍起冻结计数器 / 跳过采集
   亮 & requested_night:
-     置 EV_WAKEUP      ─────────────▶  UI_Enter_Day(): OLED 关 + ST7789 恢复 + 整屏重绘
-     等 EV_LOWPOWER_ACK(2s)  ◀────────  置 EV_LOWPOWER_ACK
+     置 EV_WAKEUP      ───────────────▶  ① OLED 关 → ST7789 恢复 → Main_Page_Display()
+                                        ② s_lowpower = false
+                                        ③ 置 EV_NET_UPDATE_NOW|EV_SENSOR_UPDATE_NOW ─▶ 立即补更/补采
+     等 EV_LOWPOWER_ACK(2s) ◀──────────  ④ 置 EV_LOWPOWER_ACK
 ```
 
-夜间状态由 uiTask 的 `s_lcd_on / s_oled_on` 记录，事件刷新只在对应屏幕开启时执行；OLED 时钟仅在**时、分或日期变化**时重绘。
+夜间状态由 uiTask 的 `s_lcd_on / s_oled_on` 记录（`s_lowpower` 供各任务查询），事件刷新只在对应屏幕开启时执行；OLED 时钟仅在**时、分或日期变化**时重绘，时间源为 DS1302（失败回退软件时钟）。
 
-### 8.5 串口输出
+夜间 `netTask` / `DHT22_Task` 的关键约定：
+
+- **冻结周期计数器**：`if (s_lowpower) continue;` 放在递减之前。若边暂停边递减，退出夜间时三个计数器会同时归零，导致同一秒内连发多次 AT 事务。
+- **补更走独立事件位**：`netTask` 等 `EV_NET_UPDATE_NOW`、`DHT22_Task` 等 `EV_SENSOR_UPDATE_NOW`，均为清除式等待，互不抢占。
+- **正在执行的 AT 事务不被打断**：进入夜间时若 `netTask` 正在收发 AT（最长 10s），本轮跑完后下一拍才进入跳过状态；`uiTask` 不等待 netTask，仍立即回 ACK。
+
+### 8.5 DS1302 夜间时间源
+
+- 三个内部静态辅助函数（`User/Src/app_task.c`）：`RTC_Ensure_Init()`（懒初始化）、`RTC_Sync_From_SystemClock()`（用网络时间回写并回读校验）、`RTC_ReadDataTime()`（优先读 DS1302，失败回退软件时钟并返回来源标志）。
+- 回读校验：`DS1302_SetTime()` **恒返回 `true`**（无写校验），因此必须用 `DS1302_ReadTime()` 回读比对；比较“当日分钟总数”而非单独比较分钟字段，允许写入耗时造成的 2 分钟偏差且能跨小时。
+- 星期语义统一为 DS1302 的 **1~7**：`DS1302_ReadTime()` 对 `week < 1` 直接判失败，若写入星期 0（旧写法 `weekday - 1`），周一会同步失败。
+- 失败降级：`RTC_LOWPOWER_ENABLE = 0` 或 DS1302 读取失败时，夜间改用软件时钟显示，日志打印 `time_source=SoftClock`。
+
+### 8.6 串口输出
 
 `printf` 走 `fputc` → 行缓冲 → DMA。整行输出由互斥量与“行属主”保证不与其他任务交叉；中断上下文或调度器未运行时退化为轮询，保证 HardFault/启动期日志也能打印（`vAssertCalled`、`vApplicationStackOverflowHook` 都依赖它）。
 
@@ -425,6 +462,8 @@ LightSensor_Task                        uiTask
 
 ### 资源占用（参考值，来自 2026-09-12 构建日志）
 
+> 该数值是低功耗功能接入**之前**的构建快照，仅用于量级参考；改动代码后请以最新构建日志为准。
+
 ```
 Program Size: Code=30336  RO-data=323600  RW-data=360  ZI-data=128240
 ```
@@ -441,7 +480,7 @@ Program Size: Code=30336  RO-data=323600  RW-data=360  ZI-data=128240
 `User/Inc/BuildConfig.h`：
 
 ```c
-#define USE_FREERTOS   0        /* 1=FreeRTOS 调度; 0=裸机模块测试(当前为 DS1302 联调) */
+#define USE_FREERTOS   1        /* 1=FreeRTOS 调度(当前); 0=裸机模块测试 */
 
 #if (USE_FREERTOS == 0)
 #define BM_TEST_MODULE BM_TEST_MODULE_DS1302   /* 1=OLED, 2=光敏, 3=DS1302 */
@@ -450,8 +489,8 @@ Program Size: Code=30336  RO-data=323600  RW-data=360  ZI-data=128240
 
 | `USE_FREERTOS` | 行为 |
 | --- | --- |
-| `1` | `main()` 调 `Board_Peripheral_Init()` → `App_Task_Init()` → `vTaskStartScheduler()` |
-| `0`（当前） | `main()` 调 `Board_Peripheral_Init()` + `TIM5_Init()` → `BareMetal_Module_Test()`，每个测试自带死循环 |
+| `1`（当前） | `main()` 调 `Board_Peripheral_Init()` → `App_Task_Init()` → `vTaskStartScheduler()`；夜间低功耗模式由 `app_task.c` 实现，DS1302 作为夜间时间源 |
+| `0` | `main()` 调 `Board_Peripheral_Init()` + `TIM5_Init()` → `BareMetal_Module_Test()`，每个测试自带死循环（DS1302 联调时使用） |
 
 `BM_TEST_MODULE` 在 `BuildConfig.h` 中集中切换（**唯一入口**，`bare_test.c` 中已无同名变量）：
 
@@ -459,7 +498,7 @@ Program Size: Code=30336  RO-data=323600  RW-data=360  ZI-data=128240
 | --- | --- | --- |
 | `BM_TEST_MODULE_OLED` | OLED | `OLED_Init` + 固定字符串 + 计数器，500ms 刷新 |
 | `BM_TEST_MODULE_LIGHT` | 光敏 | `OLED` 显示 `ADC_VAL=...`（AO 模式）或 `DO_STATE=...`（DO 模式），500ms 刷新 |
-| `BM_TEST_MODULE_DS1302`（当前） | DS1302 | 每秒读一次外部 RTC：OLED 显示日期 / `HH:MM:SS` / 读取计数，USART2 输出同样内容，并提供首次写入与回读校验 |
+| `BM_TEST_MODULE_DS1302`（默认值） | DS1302 | 每秒读一次外部 RTC：OLED 显示日期 / `HH:MM:SS` / 读取计数，USART2 输出同样内容，并提供首次写入与回读校验 |
 
 裸机 `main()` 不调用 `Board_Init()`，因此 `BareMetal_Module_Test()` 会先调用 `Usart2_Debug_Init()` 初始化调试口；`fputc` 在调度器未运行时自动退化为逐字节轮询，`printf` 可直接使用。
 
@@ -532,6 +571,7 @@ static const char *weather_url =
 [NET] Weather OK: Cloudy, code=4, temp=29.0
 [UI] Boot net stage done: wifi=1 service=1
 [UI] Enter main page
+[LIGHT] task ready: DO_state=1 dark=1
 ```
 
 运行期日志：
@@ -545,9 +585,37 @@ static const char *weather_url =
 [NET] Weather parse FAILED
 [SENSOR] DHT22 OK: T=26.3 H=54.1
 [SENSOR] DHT22 FAIL: code=1 (no-ack)
-[UI] Enter night: LCD off, OLED on
-[UI] Enter day: OLED off, LCD on
 ```
+
+昼夜切换与低功耗日志（验证第 8 章行为时重点看这几行）：
+
+```
+[LIGHT] debounce done: level=dark, mode=day      # 去抖结束后的电平与当前模式
+[LIGHT] request NIGHT                            # 请求进入夜间
+[LP] Sync RTC time done                          # 进入夜间前回写 DS1302 并回读校验(失败为 fail)
+[LP] Enter night: LCD off, OLED on, time_source=RTC
+[UI] Enter day: OLED off, LCD on                 # 退出夜间
+[NET] LowPower exit, reset update                # netTask 收到补更请求
+[LIGHT] request DAY
+```
+
+判定“夜间确实暂停了更新”的方法：进入夜间后连续 ≥5 分钟**不应出现**下列任何一行：
+
+```
+[NET] WiFi check OK / WiFi lost, reconnecting / WiFi reconnected
+[NET] SNTP sync OK / SNTP sync FAILED
+[NET] Weather OK / Weather HTTP FAILED / Weather parse FAILED
+[SENSOR] DHT22 OK / DHT22 FAIL
+```
+
+排查光敏不切换时的判读：
+
+| 现象 | 结论 |
+| --- | --- |
+| 没有 `[LIGHT] task ready` | 光敏任务未创建（检查 `uiTask` 是否走到创建任务那一步） |
+| 遮挡 1s 后仍无 `[LIGHT] debounce done` | 电平从未变化 → 接线/供电/模块问题（现有 1s 轮询兜底，不会像纯中断方案那样“永远不动”） |
+| `level` 始终为 `bright` | 极性相反（模块可能是“暗→DO 低”），需反转 `Light_Sensor_IsDark()` 的判定 |
+| 有 `request NIGHT` 但无 `[LP] Enter night` | 问题在 `uiTask` 的事件处理分支 |
 
 DHT22 错误码（`BSP/Inc/DHT22.h`）：
 
@@ -576,17 +644,20 @@ Stack overflow in task <name>
 | # | 事项 | 说明 |
 | --- | --- | --- |
 | 1 | `BSP/Src/W25Q64.c` 是空壳 | 只有 `#include "W25Q64.h"`，SPI Flash 驱动尚未实现 |
-| 2 | DS1302 尚未接入 RTOS | `BSP/Src/External_RTC.c` 已通过裸机测试验证，但 `App.c` / `app_task.c` 尚未调用；RTOS 下时间基准仍是 TIM5 软件时钟 |
-| 3 | `startup_stm32f429_439xx.s` 未使用 | 工程实际使用 `startup_stm32f40xx.s` |
-| 4 | 凭据硬编码 | WiFi 密码与天气 API Key 直接写在 `App.c`，建议后续抽到配置区或外部存储 |
-| 5 | SRAM 余量小 | `ZI-data ≈ 125.6KB / 128KB`，新增缓冲前务必核算 |
-| 6 | `Service_Room_Update()` 恒返回 `true` | DHT22 读取失败也会置 `EV_ROOM`，界面因此显示 `--`；如需区分成功/失败状态，需要修改返回值语义 |
-| 7 | 裸机测试项为编译期固定 | `BM_TEST_MODULE` 是宏，切换测试项需改 `BuildConfig.h` 并重新编译（原“宏无效”问题已修复） |
-| 8 | 光敏 AO/DO 需重新编译切换 | `AO_DO_SWITCH` 是编译期宏，且 AO 阈值需按实际分压电路标定 |
-| 9 | 依赖外网 | 无网络时天气保持默认（晴天图标 + 0.0），时钟显示 `--:--`，WiFi 每 10s 重试 |
-| 10 | TIM5 中断禁止调用 FreeRTOS API | 优先级 2 高于 `configMAX_SYSCALL_INTERRUPT_PRIORITY`（5），只能做计数 |
-| 11 | 无低功耗休眠 | `configUSE_TICKLESS_IDLE = 0`；“夜间模式”只是关屏，MCU 仍全速运行 |
-| 12 | 天气接口为第三方免费版 | 有调用频率限制，`key` 与配额由使用者自行申请 |
+| 2 | AO 模式的 ADC 通道未跟随引脚变更 | 光敏引脚已改为 `GPIOC + Pin0`（= `ADC123_IN10`），但 `Light_Sensor.c` 里仍是 `ADC_Channel_0`（PA0）。当前 `AO_DO_SWITCH = 0`（DO 模式）不编译该分支，切到 AO 模式前必须先改成 `ADC_Channel_10` |
+| 3 | 光敏引脚与 EXTI 端口源必须成对修改 | `Light_Sensor.h` 中 GPIO 端口/引脚与 `..._EXTI_PORT_SOURCE`/`..._PIN_SOURCE` 不一致时中断永不触发（已踩过一次：GPIO 改到 PC1、EXTI 仍挂 PA1，表现为遮挡无任何反应） |
+| 4 | `Board.c` 的 `Test()` 会拉低 PB2 | `Test()` 里无条件执行 `GPIO_ResetBits(GPIOB, GPIO_Pin_2)`，而 PB2 是 DS1302 的 CLK。因它在 `DS1302_Init()` 之前执行、之后会被重新配置，当前无害；建议把它放进 `#if (USE_FREERTOS == 1)` 分支避免将来踩坑 |
+| 5 | `DS1302_ReadReg()` 未被引用 | `External_RTC.c` 中的单寄存器读函数始终没有调用者，编译会给出 `#177-D` 告警（不影响功能，可删可留） |
+| 6 | 夜间只是“降载”，不是 MCU 睡眠 | `configUSE_TICKLESS_IDLE = 0`；夜间仅关屏 + 暂停网络/传感器 update，MCU 与 ESP32-C3 模组功耗不变。进一步省电需先做模组侧省电（`AT+SLEEP` 或硬件断电），再评估 Stop 模式 |
+| 7 | 进入夜间时可能等一个 AT 事务结束 | 若 `netTask` 正在收发 AT（最长 10s），它会跑完本轮才进入暂停；这是刻意设计（不打断 AT 事务），代价是暂停生效最多延迟约 10s |
+| 8 | 天气接口为第三方免费版 | 有调用频率限制，`key` 与配额由使用者自行申请 |
+| 9 | 凭据硬编码 | WiFi 密码与天气 API Key 直接写在 `App.c`，建议后续抽到配置区或外部存储 |
+| 10 | SRAM 余量小 | `ZI-data ≈ 125.6KB / 128KB`，新增缓冲前务必核算 |
+| 11 | `Service_Room_Update()` 恒返回 `true` | DHT22 读取失败也会置 `EV_ROOM`，界面因此显示 `--`；如需区分成功/失败状态，需要修改返回值语义 |
+| 12 | 裸机测试项为编译期固定 | `BM_TEST_MODULE` 是宏，切换测试项需改 `BuildConfig.h` 并重新编译 |
+| 13 | 光敏 AO/DO 需重新编译切换 | `AO_DO_SWITCH` 是编译期宏，且 AO 阈值需按实际分压电路标定 |
+| 14 | 依赖外网 | 无网络时天气保持默认（晴天图标 + 0.0）、白天时钟显示 `--:--`、WiFi 每 10s 重试 |
+| 15 | TIM5 中断禁止调用 FreeRTOS API | 优先级 2 高于 `configMAX_SYSCALL_INTERRUPT_PRIORITY`（5），只能做计数 |
 | 13 | 源码注释编码为 GB2312/GBK | 部分文件混排 UTF-8；用 UTF-8 打开会显示乱码（见下一节） |
 
 ---

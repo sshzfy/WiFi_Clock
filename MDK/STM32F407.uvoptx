@@ -133,7 +133,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGUARM</Key>
-          <Name></Name>
+          <Name>(105=-1,-1,-1,-1,0)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -155,56 +155,89 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>371</LineNumber>
+          <LineNumber>106</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134228440</Address>
+          <Address>134228558</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
-          <Filename>..\User\Third_Resource\LCD_Resource\Src\Page\Main_Page.c</Filename>
+          <Filename>..\User\Src\app_task.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\STM32F407\../User/Third_Resource/LCD_Resource/Src/Page/Main_Page.c\371</Expression>
+          <Expression>\\\../User/Src/app_task.c\106</Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>375</LineNumber>
+          <LineNumber>103</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134228454</Address>
+          <Address>134228550</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
-          <Filename>..\User\Third_Resource\LCD_Resource\Src\Page\Main_Page.c</Filename>
+          <Filename>..\User\Src\app_task.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\STM32F407\../User/Third_Resource/LCD_Resource/Src/Page/Main_Page.c\375</Expression>
+          <Expression>\\\../User/Src/app_task.c\103</Expression>
+        </Bp>
+        <Bp>
+          <Number>2</Number>
+          <Type>0</Type>
+          <LineNumber>422</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134239232</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>..\User\Src\app_task.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\STM32F407\../User/Src/app_task.c\422</Expression>
+        </Bp>
+        <Bp>
+          <Number>3</Number>
+          <Type>0</Type>
+          <LineNumber>421</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134239228</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>..\User\Src\app_task.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\STM32F407\../User/Src/app_task.c\421</Expression>
+        </Bp>
+        <Bp>
+          <Number>4</Number>
+          <Type>0</Type>
+          <LineNumber>414</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134239208</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>..\User\Src\app_task.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\STM32F407\../User/Src/app_task.c\414</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>x</ItemText>
-        </Ww>
-        <Ww>
-          <count>1</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>char_count</ItemText>
-        </Ww>
-        <Ww>
-          <count>2</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>text_width</ItemText>
-        </Ww>
-        <Ww>
-          <count>3</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>font_width</ItemText>
+          <ItemText>bits</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>

@@ -14,7 +14,7 @@
  *   BM_TEST_MODULE_DS1302 = DS1302 外部RTC (PB0=RST/PB1=IO/PB2=CLK)
  * ============================================================ */
 
-#define USE_FREERTOS   0
+#define USE_FREERTOS   1
 
 #if (USE_FREERTOS == 0)
 /* 裸机模块测试项: 在此切换。

@@ -16,13 +16,15 @@
 
 /* AO 阈值(仅在 AO_DO_SWITCH==1 时使用), 需用裸机 case2 读原始值标定
  * LIGHT_SENSOR_AO_DARK_HIGH: 1=越暗ADC值越大; 0=越暗ADC值越小(极性取决于分压接法) */
-#define LIGHT_SENSOR_AO_DARK_HIGH           1     /* 1=越暗ADC值越大; 0=越暗ADC值越小 */
-#define LIGHT_SENSOR_AO_DARK_TH             3000  /* 进入“暗”的阈值(极端侧) */
-#define LIGHT_SENSOR_AO_LIGHT_TH            2000  /* 回到“亮”的阈值(滞回, 防抖动) */
+#define LIGHT_SENSOR_AO_DARK_HIGH           1     // 1=越暗ADC值越大; 0=越暗ADC值越小
+#define LIGHT_SENSOR_AO_DARK_TH             3000  // 进入“暗”的阈值(极端侧)
+#define LIGHT_SENSOR_AO_LIGHT_TH            2000  // 回到“亮”的阈值(滞回, 防抖动)
 
 /* DO 配置 */
 #define LIGHT_SENSOR_DO_GPIO_PORT           GPIOC
 #define LIGHT_SENSOR_DO_GPIO_PIN            GPIO_Pin_1
+#define LIGHT_SENSOR_DO_EXTI_PORT_SOURCE    EXTI_PortSourceGPIOC
+#define LIGHT_SENSOR_DO_EXTI_PIN_SOURCE     EXTI_PinSource1
 #define LIGHT_SENSOR_DO_EXTI_LINE           EXTI_Line1
 #define LIGHT_SENSOR_DO_EXTI_IRQn           EXTI1_IRQn
 #define LIGHT_SENSOR_DO_EXTI_IRQHandler     EXTI1_IRQHandler
@@ -43,9 +45,6 @@ extern volatile Light_Sensor_DO_State_t Light_Sensor_DO_State;
 /* AO/DO 公用函数 */
 void Light_Sensor_Init(void);
 uint16_t Light_Sensor_Read(void);
-
-/* 统一判定: 当前是否处于“暗”(需稳定去抖由调用方负责)
- * DO模式: DO为高(未达光照阈值)=暗; AO模式: 返回AWD锁存状态 */
 bool Light_Sensor_IsDark(void);
 
 /* 中断回调(由 RTOS 层注册, ISR 内调用): DO边沿 / AO看门狗阈值越界时触发 */
