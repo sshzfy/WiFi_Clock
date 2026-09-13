@@ -11,7 +11,7 @@
 #define AO_DO_SWITCH 0
 
 /* AO 输出引脚 */
-#define LIGHT_SENSOR_GPIO_PORT              GPIOA
+#define LIGHT_SENSOR_GPIO_PORT              GPIOC
 #define LIGHT_SENSOR_GPIO_PIN               GPIO_Pin_0
 
 /* AO 阈值(仅在 AO_DO_SWITCH==1 时使用), 需用裸机 case2 读原始值标定
@@ -21,7 +21,7 @@
 #define LIGHT_SENSOR_AO_LIGHT_TH            2000  /* 回到“亮”的阈值(滞回, 防抖动) */
 
 /* DO 配置 */
-#define LIGHT_SENSOR_DO_GPIO_PORT           GPIOA
+#define LIGHT_SENSOR_DO_GPIO_PORT           GPIOC
 #define LIGHT_SENSOR_DO_GPIO_PIN            GPIO_Pin_1
 #define LIGHT_SENSOR_DO_EXTI_LINE           EXTI_Line1
 #define LIGHT_SENSOR_DO_EXTI_IRQn           EXTI1_IRQn

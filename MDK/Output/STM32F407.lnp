@@ -18,6 +18,7 @@
 ".\output\main_page.o"
 ".\output\at.o"
 ".\output\dht22.o"
+".\output\external_rtc.o"
 ".\output\i2c.o"
 ".\output\lcd.o"
 ".\output\light_sensor.o"

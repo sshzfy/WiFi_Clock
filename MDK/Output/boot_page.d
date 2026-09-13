@@ -61,3 +61,4 @@
 .\output\boot_page.o: ..\Third_Lib\FreeRTOS\include\semphr.h
 .\output\boot_page.o: ..\Third_Lib\FreeRTOS\include\queue.h
 .\output\boot_page.o: ..\BSP\Inc\DHT22.h
+.\output\boot_page.o: ..\BSP\Inc\External_RTC.h

@@ -30,6 +30,7 @@ int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
     Board_Peripheral_Init(); /* 外设时钟初始化 */
+    Test();
     TIM5_Init();             /* 1ms时间定时器初始化 */
 
     BareMetal_Module_Test(); /* 选中的模块测试, 自定义循环 */

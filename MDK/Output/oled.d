@@ -60,3 +60,4 @@
 .\output\oled.o: ..\Third_Lib\FreeRTOS\include\semphr.h
 .\output\oled.o: ..\Third_Lib\FreeRTOS\include\queue.h
 .\output\oled.o: ..\BSP\Inc\DHT22.h
+.\output\oled.o: ..\BSP\Inc\External_RTC.h

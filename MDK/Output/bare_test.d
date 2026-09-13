@@ -62,4 +62,5 @@
 .\output\bare_test.o: ..\Third_Lib\FreeRTOS\include\semphr.h
 .\output\bare_test.o: ..\Third_Lib\FreeRTOS\include\queue.h
 .\output\bare_test.o: ..\BSP\Inc\DHT22.h
+.\output\bare_test.o: ..\BSP\Inc\External_RTC.h
 .\output\bare_test.o: ..\BSP\Inc\Light_Sensor.h

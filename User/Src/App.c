@@ -1,7 +1,7 @@
 #include "App.h"
 
 /* 初始化WiFi信息 */
-const char *ssid = "Jasmine";
+const char *ssid = "Laptop-S";
 const char *password = "Sun507109!";
 const char *mac = NULL;
 AT_WiFi_Info_t wifi_info = {0};
@@ -202,7 +202,7 @@ bool Service_WiFi_Connect(void)
 /* ================ 周期任务(由netTask/sensorTask调度) ================ */
 
 /**
- * @brief 周期任务: SNTP时间同步(每4h)
+ * @brief 周期任务: SNTP时间同步
  * @return true 成功
  */
 bool Service_Time_Sync(void)
@@ -228,7 +228,7 @@ bool Service_Time_Sync(void)
 }
 
 /**
- * @brief 周期任务: WiFi连接检查/重连(每30min)
+ * @brief 周期任务: WiFi连接检查/重连
  * @return 0=已连接, 1=本次刚重连成功, -1=重连失败
  */
 int Service_WiFi_Update(void)

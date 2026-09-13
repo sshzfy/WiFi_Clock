@@ -6,6 +6,7 @@
 #include "task.h"
 #include "AT.h"
 #include "DHT22.h"
+#include "External_RTC.h"
 
 extern AT_WiFi_Info_t wifi_info;
 extern AT_Date_Info_t date_info;

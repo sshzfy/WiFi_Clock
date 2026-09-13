@@ -19,8 +19,8 @@ static bool s_lcd_on = true;
 static bool s_oled_on = false;
 
 /* ==================== DHT22 Task ==================== */
-#define DHT22_TASK_PRIORITY       4
-#define DHT22_TASK_STACK_SIZE     512
+#define DHT22_TASK_PRIORITY 4
+#define DHT22_TASK_STACK_SIZE 512
 TaskHandle_t dht22_task_handle;
 
 static void DHT22_Task(void *pvParameters)
@@ -55,8 +55,8 @@ static void Light_IRQ_Notify(void)
     }
 }
 
-#define LIGHT_SENSOR_TASK_PRIORITY       2
-#define LIGHT_SENSOR_TASK_STACK_SIZE     512
+#define LIGHT_SENSOR_TASK_PRIORITY 2
+#define LIGHT_SENSOR_TASK_STACK_SIZE 512
 TaskHandle_t lightsensor_task_handle;
 
 static void LightSensor_Task(void *pvParameters)
@@ -64,11 +64,11 @@ static void LightSensor_Task(void *pvParameters)
     (void)pvParameters;
 
     s_light_task = xTaskGetCurrentTaskHandle();      // 保存当前任务句柄, 用于中断回调
-    Light_Sensor_RegisterCallback(Light_IRQ_Notify); // 注册中断回调函数
-    Light_Sensor_Init();                             // 初始化光敏传感器
+    Light_Sensor_RegisterCallback(Light_IRQ_Notify); /** 注册中断回调函数 */
+    Light_Sensor_Init();                             /** 初始化光敏传感器 */
 
     bool requested_night = false; // 与UI默认(白天)一致
-    bool first_run = true;            // 上电先做一次初始判定
+    bool first_run = true;        // 上电先做一次初始判定
 
     for (;;)
     {
@@ -107,8 +107,8 @@ static void LightSensor_Task(void *pvParameters)
 }
 
 /* ==================== netTask ==================== */
-#define NET_TASK_PRIORITY       2
-#define NET_TASK_STACK_SIZE     1024
+#define NET_TASK_PRIORITY 2
+#define NET_TASK_STACK_SIZE 1024
 TaskHandle_t net_task_handle;
 
 static void Net_Task(void *pvParameters)
@@ -245,9 +245,9 @@ static void UI_Enter_Day(void)
 }
 
 /* ==================== uiTask(LCD唯一写者) ==================== */
- #define UI_TASK_PRIORITY       3
- #define UI_TASK_STACK_SIZE     1024
- TaskHandle_t ui_task_handle;
+#define UI_TASK_PRIORITY 3
+#define UI_TASK_STACK_SIZE 1024
+TaskHandle_t ui_task_handle;
 
 static void UI_Task(void *pvParameters)
 {

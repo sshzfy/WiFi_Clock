@@ -60,13 +60,11 @@
 .\output\main.o: ..\Third_Lib\FreeRTOS\include\semphr.h
 .\output\main.o: ..\Third_Lib\FreeRTOS\include\queue.h
 .\output\main.o: ..\User\Inc\BuildConfig.h
-.\output\main.o: ..\User\Inc\app_task.h
-.\output\main.o: ..\Third_Lib\FreeRTOS\include\event_groups.h
-.\output\main.o: ..\Third_Lib\FreeRTOS\include\timers.h
-.\output\main.o: ..\User\Third_Resource\LCD_Resource\Inc\Page.h
+.\output\main.o: ..\User\Inc\bare_test.h
+.\output\main.o: ..\BSP\Inc\I2C.h
+.\output\main.o: ..\BSP\Inc\OLED.h
 .\output\main.o: ..\User\Inc\App.h
 .\output\main.o: ..\BSP\Inc\AT.h
 .\output\main.o: ..\BSP\Inc\DHT22.h
+.\output\main.o: ..\BSP\Inc\External_RTC.h
 .\output\main.o: ..\BSP\Inc\Light_Sensor.h
-.\output\main.o: ..\BSP\Inc\OLED.h
-.\output\main.o: ..\BSP\Inc\I2C.h

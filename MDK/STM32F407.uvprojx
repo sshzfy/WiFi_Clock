@@ -501,6 +501,11 @@
               <FilePath>..\BSP\Src\DHT22.c</FilePath>
             </File>
             <File>
+              <FileName>External_RTC.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\External_RTC.c</FilePath>
+            </File>
+            <File>
               <FileName>I2C.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\I2C.c</FilePath>
