@@ -10,8 +10,13 @@
  *
  * BM_TEST_MODULE (only used when USE_FREERTOS == 0):
  *   BM_TEST_MODULE_OLED   = OLED (SSD1306 0.96, soft I2C PB6=SCL/PB7=SDA)
- *   BM_TEST_MODULE_LIGHT  = 光敏电阻 (DO: PA1/EXTI1; AO: PA0/ADC1_IN0)
+ *   BM_TEST_MODULE_LIGHT  = 光敏电阻 (DO: PC1/EXTI1; AO: PC0/ADC1_IN10)
  *   BM_TEST_MODULE_DS1302 = DS1302 外部RTC (PB0=RST/PB1=IO/PB2=CLK)
+ *   BM_TEST_MODULE_W25Q64 = W25Q64 SPI Flash 裸驱动 (CS=PA4/CLK=PA5/MISO=PA6/MOSI=PA7)
+ *   BM_TEST_MODULE_LFS    = littlefs 文件系统 (依赖 W25Q64)
+ * ------------------------------------------------------------
+ * 建议测试顺序: W25Q64 -> LFS。底层驱动不通时文件系统必然失败,
+ * 先跑 W25Q64 可以把"硬件/SPI/时序问题"与"文件系统问题"分开定位。
  * ============================================================ */
 
 #define USE_FREERTOS   1
@@ -20,7 +25,7 @@
 /* 裸机模块测试项: 在此切换。
  * 注意: 该宏是唯一入口, 不要在 bare_test.c 里另建同名变量。 */
 #ifndef BM_TEST_MODULE
-#define BM_TEST_MODULE BM_TEST_MODULE_DS1302
+#define BM_TEST_MODULE BM_TEST_MODULE_LFS
 #endif
 #endif /* USE_FREERTOS == 0 */
 

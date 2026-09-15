@@ -147,25 +147,25 @@ static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
  */
 static void ST7789_DMA_Init(void)
 {
-    DMA_InitTypeDef DMA_InitStruct;
+    DMA_InitTypeDef DMA_InitStructure;
 
     DMA_DeInit(DMA1_Stream5);
-    DMA_StructInit(&DMA_InitStruct);
+    DMA_StructInit(&DMA_InitStructure);
 
-    DMA_InitStruct.DMA_Channel = DMA_Channel_0;                              // SPI3_TX
-    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(SPI3->DR);           // SPI3数据寄存器地址
-    DMA_InitStruct.DMA_Memory0BaseAddr = 0;                                  // 内存基地址
-    DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;                     // 内存→外设
-    DMA_InitStruct.DMA_BufferSize = 0;                                       // 缓冲区大小
-    DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;            // 外设地址不增加
-    DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;                     // 内存地址增加
-    DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; // 外设数据宽度为半字
-    DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;         // 内存数据宽度为半字
-    DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;                               // 正常模式
-    DMA_InitStruct.DMA_Priority = DMA_Priority_Medium;                       // 中优先级
-    DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;                      // 不使用FIFO
+    DMA_InitStructure.DMA_Channel = DMA_Channel_0;                              // SPI3_TX
+    DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&(SPI3->DR);           // SPI3数据寄存器地址
+    DMA_InitStructure.DMA_Memory0BaseAddr = 0;                                  // 内存基地址
+    DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;                     // 内存→外设
+    DMA_InitStructure.DMA_BufferSize = 0;                                       // 缓冲区大小
+    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;            // 外设地址不增加
+    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;                     // 内存地址增加
+    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; // 外设数据宽度为半字
+    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;         // 内存数据宽度为半字
+    DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;                               // 正常模式
+    DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;                       // 中优先级
+    DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Disable;                      // 不使用FIFO
 
-    DMA_Init(DMA1_Stream5, &DMA_InitStruct);
+    DMA_Init(DMA1_Stream5, &DMA_InitStructure);
 }
 
 /**
@@ -294,48 +294,48 @@ static void ST7789_Display_Init(void)
 
 static void ST7789_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_StructInit(&GPIO_InitStruct);
+    GPIO_InitTypeDef GPIO_InitStructure;
+    GPIO_StructInit(&GPIO_InitStructure);
 
     GPIO_SetBits(GPIOE, ST7789_CS_PIN | ST7789_RESET_PIN | ST7789_DC_PIN);
     GPIO_ResetBits(ST7789_BACKLIGHT_PORT, ST7789_BACKLIGHT_PIN);
-    GPIO_InitStruct.GPIO_Pin = ST7789_CS_PIN | ST7789_RESET_PIN | ST7789_DC_PIN | ST7789_BACKLIGHT_PIN;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOE, &GPIO_InitStruct);
+    GPIO_InitStructure.GPIO_Pin = ST7789_CS_PIN | ST7789_RESET_PIN | ST7789_DC_PIN | ST7789_BACKLIGHT_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(GPIOE, &GPIO_InitStructure);
 
     GPIO_PinAFConfig(ST7789_SCLK_PORT, GPIO_PinSource10, GPIO_AF_SPI3);
-    GPIO_PinAFConfig(ST7789_MOSI_PORT, GPIO_PinSource12, GPIO_AF_SPI3);
     GPIO_PinAFConfig(ST7789_MISO_PORT, GPIO_PinSource11, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(ST7789_MOSI_PORT, GPIO_PinSource12, GPIO_AF_SPI3);
 
-    GPIO_InitStruct.GPIO_Pin = ST7789_SCLK_PIN;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(ST7789_SCLK_PORT, &GPIO_InitStruct);
+    GPIO_InitStructure.GPIO_Pin = ST7789_SCLK_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_Speed = GPIO_High_Speed;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(ST7789_SCLK_PORT, &GPIO_InitStructure);
 
-    GPIO_InitStruct.GPIO_Pin = ST7789_MOSI_PIN | ST7789_MISO_PIN;
-    GPIO_Init(GPIOC, &GPIO_InitStruct);
+    GPIO_InitStructure.GPIO_Pin = ST7789_MOSI_PIN | ST7789_MISO_PIN;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
 }
 
 static void ST7789_SPI_Init(void)
 {
-    SPI_InitTypeDef SPI_InitStruct;
-    SPI_StructInit(&SPI_InitStruct);
+    SPI_InitTypeDef SPI_InitStructure;
+    SPI_StructInit(&SPI_InitStructure);
 
-    SPI_InitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-    SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
-    SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
-    SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
-    SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
-    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2; /* SPI3=42MHz → 21MHz */
-    SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
-    SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
+    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+    SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2; /* SPI3=42MHz → 21MHz */
+    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
 
-    SPI_Init(SPI3, &SPI_InitStruct);
+    SPI_Init(SPI3, &SPI_InitStructure);
     SPI_DMACmd(SPI3, SPI_I2S_DMAReq_Tx, ENABLE);
     SPI_Cmd(SPI3, ENABLE);
 
