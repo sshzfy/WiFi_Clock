@@ -1,4 +1,5 @@
 #include "app_task.h"
+#include "Asset.h"
 
 /* ================ 任务角色 ================
  * uiTask    (prio 3): LCD唯一写者。做板级初始化→开机等待画面→
@@ -409,6 +410,15 @@ static void UI_Task(void *pvParameters)
     Board_Init(); // TIM5/LCD/USART2/ST7789 初始化
     printf("[SYS]Build Date:%s %s\r\n", __DATE__, __TIME__);
     printf("[UI] Board init done, boot page\r\n");
+
+    /* 资源层未就绪时字模与图片都取不到, 屏幕只会出现纯色块。
+     * 这里只提示, 不阻塞流程 —— 网络与传感器功能仍可正常使用。 */
+    if (!Asset_Ready())
+    {
+        printf("[UI] WARN: asset layer not ready, screen shows blank blocks\r\n");
+        printf("[UI] WARN: flash the provision firmware to write fonts/images\r\n");
+    }
+
     Boot_Page_Wait(); // 开机等待画面
 
     /* 创建DHT22/服务任务(sensor=4保护DHT22时序, net=2低于ui避免饿死显示) */

@@ -1,5 +1,9 @@
 #include "Image.h"
 
+#include "BuildConfig.h"
+
+#if (RESOURCE_DATA_IN_ROM == 1) && (PROVISION_BATCH == 2)
+
 const unsigned char gImage_Main_Page[153600] = { /* 0X00,0X10,0XF0,0X00,0X40,0X01,0X01,0X1B, */
 0X00,0X00,0X00,0X00,0X00,0X00,0X20,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
 0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
@@ -9603,8 +9607,11 @@ const unsigned char gImage_Main_Page[153600] = { /* 0X00,0X10,0XF0,0X00,0X40,0X0
 0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X20,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
 };
 
-const Image_t Main_Page = {
-    .width = 240,
+#endif /* RESOURCE_DATA_IN_ROM && PROVISION_BATCH == 2 */
+
+const Image_t Image_Main_Page = {
+    .width  = 240,
     .height = 320,
-    .data = gImage_Main_Page,
+    .path   = "/img/main.bin",
 };
+

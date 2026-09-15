@@ -1,4 +1,8 @@
 #include "OLED.h"
+#include "Asset.h"
+
+/* 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行) */
+static uint8_t s_oled_glyph[ASSET_GLYPH_BYTES_MAX];
 
 Soft_I2C_t oled_i2c = {
     .SCL_Port = GPIOB,
@@ -69,26 +73,34 @@ void OLED_Clear(void)
  * */
 void OLED_WriteChar(uint8_t x, uint8_t y, char ch, const Font_t *font)
 {
-    if (font == NULL || font->ascii_model == NULL)
+    if (font == NULL || font->ascii_id == ASSET_FID_NONE)
         return;
     if (x >= OLED_WIDTH || y >= OLED_HEIGHT)
         return;
-
-    uint16_t size = font->size; // 字体高度（像素）
-    uint16_t width = size / 2;  // ASCII字符宽度 = 高度/2
-    /* 裁剪到屏幕边界 */
-    if (x + width > OLED_WIDTH)
-        width = OLED_WIDTH - x;
-    if (y + size > OLED_HEIGHT)
-        size = OLED_HEIGHT - y;
 
     uint8_t index = (uint8_t)ch - ' ';
     if (index >= 95)
         return; /* 只处理可见ASCII */
 
-    /* 计算每行占用的字节数（向上取整） */
-    uint16_t bytes_per_row = (width + 7) / 8;
-    const uint8_t *model = font->ascii_model + index * bytes_per_row * size;
+    uint16_t full_size = font->size;          // 字模原始高度
+    uint16_t full_width = full_size / 2;      // 字模原始宽度
+    uint16_t full_bpr = (full_width + 7) / 8; // 字模每行占用的字节数
+
+    /* 先把整个字模读出来。注意偏移与布局都按"原始"尺寸算,
+     * 与下面的屏幕裁剪无关, 否则裁剪后偏移会算错。 */
+    uint32_t need = (uint32_t)full_bpr * full_size;
+    if (need == 0U || need > sizeof(s_oled_glyph))
+        return;
+    if (Asset_ReadFont(font->ascii_id, (uint32_t)index * need, s_oled_glyph, need) != 0)
+        return;
+
+    /* 绘制范围裁剪到屏幕内 */
+    uint16_t size = full_size;
+    uint16_t width = full_width;
+    if (x + width > OLED_WIDTH)
+        width = OLED_WIDTH - x;
+    if (y + size > OLED_HEIGHT)
+        size = OLED_HEIGHT - y;
 
     /* 临时位图（最大48x24），存储每个像素的亮灭（0/1） */
     static uint8_t bitmap[48][24]; // 最大高度48，宽度24（对应size=48）
@@ -96,9 +108,9 @@ void OLED_WriteChar(uint8_t x, uint8_t y, char ch, const Font_t *font)
     {
         for (uint16_t col = 0; col < width; col++)
         {
-            uint16_t byte_idx = row * bytes_per_row + col / 8;
+            uint16_t byte_idx = row * full_bpr + col / 8;
             uint8_t bit = col % 8;
-            bitmap[row][col] = (model[byte_idx] >> bit) & 0x01;
+            bitmap[row][col] = (s_oled_glyph[byte_idx] >> bit) & 0x01;
         }
     }
 

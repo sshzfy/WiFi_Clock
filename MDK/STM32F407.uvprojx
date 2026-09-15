@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\User;..\User\Inc;..\User\Third_Resource\LCD_Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Third_Lib\FreeRTOS\include;..\Third_Lib\FreeRTOS\portable</IncludePath>
+              <IncludePath>..\User;..\User\Inc;..\User\Third_Resource\Screen_Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Third_Lib\FreeRTOS\include;..\Third_Lib\FreeRTOS\portable;..\Third_Lib\LittleFS\Inc;..\Third_Lib\LittleFS\LittleFS_Operation\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -395,6 +395,11 @@
               <FileType>5</FileType>
               <FilePath>..\Third_Lib\FreeRTOS\portable\FreeRTOSConfig.h</FilePath>
             </File>
+            <File>
+              <FileName>lfs_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Third_Lib\LittleFS\Inc\lfs_config.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -425,6 +430,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\Src\bare_test.c</FilePath>
             </File>
+            <File>
+              <FileName>Provision.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Src\Provision.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -433,57 +443,72 @@
             <File>
               <FileName>Font_12.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_12.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Font_12.c</FilePath>
             </File>
             <File>
               <FileName>Font_16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_16.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Font_16.c</FilePath>
             </File>
             <File>
               <FileName>Font_22.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_22.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Font_22.c</FilePath>
             </File>
             <File>
               <FileName>Font_32.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_32.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Font_32.c</FilePath>
             </File>
             <File>
               <FileName>Font_48.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Font\Font_48.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Font_48.c</FilePath>
+            </File>
+            <File>
+              <FileName>Chinese_Font16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Chinese_Font16.c</FilePath>
+            </File>
+            <File>
+              <FileName>Chinese_Font22.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Font\Chinese_Font22.c</FilePath>
             </File>
             <File>
               <FileName>Image.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Image\Image.c</FilePath>
             </File>
             <File>
               <FileName>Image_Boot_Page.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image_Boot_Page.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Image\Image_Boot_Page.c</FilePath>
             </File>
             <File>
               <FileName>Image_Main_Page.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image_Main_Page.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Image\Image_Main_Page.c</FilePath>
             </File>
             <File>
               <FileName>Image_Weather.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Image\Image_Weather.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Image\Image_Weather.c</FilePath>
+            </File>
+            <File>
+              <FileName>ImageTable.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Image\ImageTable.c</FilePath>
             </File>
             <File>
               <FileName>Boot_Page.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Page\Boot_Page.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Page\Boot_Page.c</FilePath>
             </File>
             <File>
               <FileName>Main_Page.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\Third_Resource\LCD_Resource\Src\Page\Main_Page.c</FilePath>
+              <FilePath>..\User\Third_Resource\Screen_Resource\Src\Page\Main_Page.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -539,6 +564,16 @@
               <FileName>W25Q64.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\W25Q64.c</FilePath>
+            </File>
+            <File>
+              <FileName>Asset.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\Asset.c</FilePath>
+            </File>
+            <File>
+              <FileName>Profiling.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\Profiling.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -854,6 +889,31 @@
               <FileName>port.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Third_Lib\FreeRTOS\portable\port.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>THIRD_LIB/LittleFS</GroupName>
+          <Files>
+            <File>
+              <FileName>LFS_Operation.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\LittleFS\LittleFS_Operation\Src\LFS_Operation.c</FilePath>
+            </File>
+            <File>
+              <FileName>lfs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\LittleFS\Src\lfs.c</FilePath>
+            </File>
+            <File>
+              <FileName>lfs_util.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\LittleFS\Src\lfs_util.c</FilePath>
+            </File>
+            <File>
+              <FileName>lfs_port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Third_Lib\LittleFS\Src\lfs_port.c</FilePath>
             </File>
           </Files>
         </Group>

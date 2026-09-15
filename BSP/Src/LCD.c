@@ -1,7 +1,14 @@
 #include "LCD.h"
+#include "Asset.h"
 
 #define GRAM_DMA_MAX_HALFWORD 65535U // DMA NDTR(16bit)单次最大半字数
 #define SCRATCH_H_PX 48              // 最大渲染行高(对齐Font_48)
+
+/* 图片流式发送的乒乓缓冲: 每块 WIDTH*16 像素 = 7680 字节, 两块共 15360 字节,
+ * 在 ST7789_Init() 里从 FreeRTOS heap 分配。
+ * 必须落在 SRAM1(heap_4 的 ucHeap 位于 .bss 段) —— DMA 访问不了 CCM。 */
+#define PIC_BLK_LINES 16
+#define PIC_BLK_PX    (WIDTH * PIC_BLK_LINES)
 
 static void ST7789_Rest(void);
 static void ST7789_Set_Backlight(bool state);
@@ -20,9 +27,21 @@ static void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc);
 static void ST7789_Write_Gram(const uint8_t data[], uint32_t len, bool increase);
 static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold);
+static void ST7789_DMA_Start(const uint8_t *src, uint32_t halfwords);
+static bool ST7789_DMA_WaitDone(void);
+static bool ST7789_PicBuf_Init(void);
+static void ST7789_PixTransparent(uint8_t *buf, uint32_t px, uint16_t target_back);
+static void ST7789_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
+                                    bool transparency, uint16_t target_back);
 
 /* 渲染缓冲: 一满行(240px)*最高48px*2字节, 字符串整行与图标共用 */
 static uint8_t s_scratch[WIDTH * SCRATCH_H_PX * 2];
+
+/* 图片乒乓缓冲(heap 分配)。任一块为 NULL 表示分配失败, 退化为单缓冲串行 */
+static uint8_t *s_picBuf[2] = {NULL, NULL};
+
+/* 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行) */
+static uint8_t s_glyph[ASSET_GLYPH_BYTES_MAX];
 
 /* ============ SPI 数据宽度(8位命令/16位像素) ============ */
 static uint8_t s_spi_datasize = 0; // 0=未设置 8=8位 16=16位
@@ -212,6 +231,204 @@ static void ST7789_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
 }
 
 /**
+ * @brief 非阻塞启动一次 SPI3_TX DMA 发送(内存地址自增), 供图片双缓冲使用
+ * @param src 要发送的数据指针(需 2 字节对齐)
+ * @param halfwords 要发送的半字数(不超过 65535)
+ * @note 启动后必须用 ST7789_DMA_WaitDone() 收尾, 否则下一次 Start 会打断本次传输
+ */
+static void ST7789_DMA_Start(const uint8_t *src, uint32_t halfwords)
+{
+    DMA_Cmd(DMA1_Stream5, DISABLE);
+    while (DMA_GetCmdStatus(DMA1_Stream5) != DISABLE)
+        ;
+
+    DMA1_Stream5->NDTR = (uint16_t)halfwords; // 传输半字数
+    DMA1_Stream5->M0AR = (uint32_t)src;       // 内存基地址
+    DMA1_Stream5->CR |= DMA_SxCR_MINC;        // 内存地址增加
+
+    DMA_ClearFlag(DMA1_Stream5, DMA_FLAG_FEIF5 | DMA_FLAG_TCIF5 | DMA_FLAG_TEIF5);
+    DMA_Cmd(DMA1_Stream5, ENABLE);
+}
+
+/**
+ * @brief 等待当前 DMA 发送结束
+ * @return true 正常完成; false 传输出错(已中止)
+ */
+static bool ST7789_DMA_WaitDone(void)
+{
+    while (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TCIF5) == RESET)
+    {
+        if (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TEIF5) != RESET)
+        {
+            DMA_Cmd(DMA1_Stream5, DISABLE);
+            printf("[ERR]DMA transfer error\r\n");
+            return false;
+        }
+    }
+
+    DMA_ClearFlag(DMA1_Stream5, DMA_FLAG_TCIF5);
+    return true;
+}
+
+/**
+ * @brief 分配图片乒乓缓冲(只在首次调用时真正分配, 之后常驻)
+ * @return true 双缓冲可用; false 分配失败, 调用方退化为单缓冲
+ */
+static bool ST7789_PicBuf_Init(void)
+{
+    if (s_picBuf[0] != NULL && s_picBuf[1] != NULL)
+        return true;
+
+    s_picBuf[0] = (uint8_t *)pvPortMalloc((uint32_t)PIC_BLK_PX * 2U);
+    s_picBuf[1] = (uint8_t *)pvPortMalloc((uint32_t)PIC_BLK_PX * 2U);
+
+    if (s_picBuf[0] == NULL || s_picBuf[1] == NULL)
+    {
+        if (s_picBuf[0] != NULL)
+        {
+            vPortFree(s_picBuf[0]);
+            s_picBuf[0] = NULL;
+        }
+        if (s_picBuf[1] != NULL)
+        {
+            vPortFree(s_picBuf[1]);
+            s_picBuf[1] = NULL;
+        }
+        printf("[LCD ] ping-pong buffer alloc failed, fallback to single buffer\r\n");
+        return false;
+    }
+
+    printf("[LCD ] ping-pong buffer ready: %u x 2 = %u bytes\r\n",
+           (unsigned)((uint32_t)PIC_BLK_PX * 2U), (unsigned)((uint32_t)PIC_BLK_PX * 4U));
+    return true;
+}
+
+/**
+ * @brief 把缓冲里接近白色的像素替换成目标背景色(原地修改)
+ * @param buf 像素缓冲(RGB565, 低字节在前)
+ * @param px  像素个数
+ * @param target_back 替换成的目标背景色
+ */
+static void ST7789_PixTransparent(uint8_t *buf, uint32_t px, uint16_t target_back)
+{
+    for (uint32_t i = 0; i < px; i++)
+    {
+        uint16_t pixel = (uint16_t)((uint16_t)buf[i * 2U] | ((uint16_t)buf[i * 2U + 1U] << 8));
+
+        if (Color_IsClose(pixel, COLOR_WHITE, 90))
+        {
+            pixel = target_back;
+            buf[i * 2U] = (uint8_t)(pixel & 0xFFU);
+            buf[i * 2U + 1U] = (uint8_t)(pixel >> 8);
+        }
+    }
+}
+
+/**
+ * @brief 从 W25Q64 流式读取图片并写入 LCD(可选透明色替换)
+ *
+ * @param x,y         绘制起始坐标
+ * @param img         图片描述(宽高 + littlefs 路径)
+ * @param transparency 是否把接近白色的像素替换为 target_back
+ * @param target_back 透明替换的目标色
+ *
+ * @note 双缓冲的核心: 一块数据正由 DMA 发送时, CPU 同时从 SPI1 读下一块。
+ *       SPI1 与 SPI3 同为 21MHz, 因此全屏图的读取时间可以被完全隐藏。
+ *       heap 分配失败时自动退化为单缓冲串行, 功能不受影响。
+ */
+static void ST7789_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
+                                    bool transparency, uint16_t target_back)
+{
+    if (img == NULL)
+        return;
+
+    uint16_t w = img->width;
+    uint16_t h = img->height;
+
+    if (x > WIDTH - 1 || y > HEIGHT - 1 || (uint32_t)x + w > WIDTH || (uint32_t)y + h > HEIGHT)
+        return;
+
+    /* 资源缺失时填背景色, 保证画面结构不塌也不花屏 */
+    if (!Asset_ImageOk(img))
+    {
+        ST7789_Fill_Color(x, y, x + w - 1, y + h - 1, transparency ? target_back : COLOR_BLACK);
+        return;
+    }
+
+    lfs_file_t f;
+    if (Asset_ImageOpen(img, &f) != 0)
+        return;
+
+    uint32_t total_px = (uint32_t)w * (uint32_t)h;
+    bool dbl = (s_picBuf[0] != NULL && s_picBuf[1] != NULL);
+    uint32_t blk = dbl ? (uint32_t)PIC_BLK_PX : (uint32_t)(sizeof(s_scratch) / 2);
+    uint8_t *buf[2];
+
+    if (dbl) // 双缓冲: 发送与读取并行
+    {
+        buf[0] = s_picBuf[0];
+        buf[1] = s_picBuf[1];
+    }
+    else // 回退: 复用字符串渲染缓冲, 串行收发
+    {
+        buf[0] = s_scratch;
+        buf[1] = s_scratch;
+    }
+
+    ST7789_SetWindow(x, y, x + w - 1, y + h - 1);
+    ST7789_SPI_SetDataSize(16);
+    GPIO_ResetBits(ST7789_CS_PORT, ST7789_CS_PIN);
+    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
+
+    uint32_t remain = total_px;
+    int cur = 0;
+
+    /* 预读第 0 块: 此时 DMA 尚未开始, 这一段无法并行 */
+    uint32_t n0 = (remain > blk) ? blk : remain;
+    if (Asset_ImageRead(&f, buf[0], n0 * 2U) != 0)
+    {
+        remain = 0;
+    }
+    else if (transparency)
+    {
+        ST7789_PixTransparent(buf[0], n0, target_back);
+    }
+
+    while (remain > 0)
+    {
+        uint32_t n = (remain > blk) ? blk : remain;
+
+        ST7789_DMA_Start(buf[cur], n); // 非阻塞启动发送
+        remain -= n;
+
+        int nxt = cur ^ 1;
+        if (remain > 0)
+        {
+            /* 与上面的 DMA 并行: CPU 从 SPI1 把下一块读进来 */
+            uint32_t n2 = (remain > blk) ? blk : remain;
+
+            if (Asset_ImageRead(&f, buf[nxt], n2 * 2U) != 0)
+            {
+                remain = 0;
+            }
+            else if (transparency)
+            {
+                ST7789_PixTransparent(buf[nxt], n2, target_back);
+            }
+        }
+
+        if (!ST7789_DMA_WaitDone())
+            break;
+
+        cur = nxt;
+    }
+
+    ST7789_Wait_BSY();
+    GPIO_SetBits(ST7789_CS_PORT, ST7789_CS_PIN);
+    Asset_ImageClose(&f);
+}
+
+/**
  * @brief 写入GRAM内存
  * @param data 要写入的数据指针
  * @param len 要写入的数据长度(字节)
@@ -368,6 +585,7 @@ void ST7789_Init(void)
     ST7789_SPI_Init();
     ST7789_DMA_Init();
     ST7789_Display_Init();
+    (void)ST7789_PicBuf_Init(); // 分配图片乒乓缓冲(失败则内部退化为单缓冲)
 }
 
 /**
@@ -412,12 +630,13 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
         if (y + size > HEIGHT)
             return;
 
-        /* 收集当前行(run): 记录每个字符的模型、宽度与本行内的像素偏移 */
+        /* 收集当前行(run): 只记录每个字符的资源位置与宽度, 这一步不碰 Flash */
         typedef struct
         {
-            const uint8_t *model; // NULL=未收录字符, 按背景填充
-            uint16_t w;           // 该字符的像素宽度（中文=size，英文=size/2）
-            uint16_t offset;      // 该字符在当前行内的起始列偏移（相对于行首 x）
+            uint8_t fid;      // 资源文件 ID; ASSET_FID_NONE = 未收录, 按背景填充
+            uint32_t off;     // 字模在该文件中的字节偏移
+            uint16_t w;       // 该字符的像素宽度（中文=size，英文=size/2）
+            uint16_t offset;  // 该字符在当前行内的起始列偏移（相对于行首 x）
         } GRef_t;
         GRef_t g[40];      // 当前行字符引用数组
         uint16_t n = 0;    // 当前行已收集的字符个数
@@ -427,42 +646,42 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
         {
             bool is_cn = Is_GB2312(*p);            // 是否为中文
             uint16_t gw = is_cn ? size : size / 2; // 当前字符的像素宽度（中文=size，英文=size/2）
-            const uint8_t *model = NULL;
+            uint8_t fid = ASSET_FID_NONE;
+            uint32_t off = 0;
 
             if (is_cn)
             {
-                char ch[3];
-                ch[0] = p[0];
-                ch[1] = p[1];
-                ch[2] = '\0';
-                const Chinese_Font_t *cf = font->chinese;
-                while (cf && cf->name)
+                /* 汉字用 GB2312 区位码直接定位: 偏移 O(1) 算出,
+                 * 不再像过去那样按名字线性遍历整张字库表。 */
+                if (font->cn_id != ASSET_FID_NONE)
                 {
-                    if (strcmp(cf->name, ch) == 0)
+                    uint8_t qu = (uint8_t)p[0]; // 区码
+                    uint8_t we = (uint8_t)p[1]; // 位码
+
+                    if (qu >= 0xB0U && qu <= 0xD7U && we >= 0xA1U && we <= 0xFEU)
                     {
-                        model = cf->model;
-                        break;
+                        uint32_t idx = (uint32_t)(qu - 0xB0U) * 94U + (uint32_t)(we - 0xA1U);
+                        if (idx < ASSET_GLYPH_COUNT)
+                        {
+                            fid = font->cn_id;
+                            off = idx * font->cn_bytes;
+                        }
                     }
-                    cf++;
                 }
-                if (!(cf && cf->name))
-                    model = NULL; // 字库未收录该汉字
             }
-            else if ((uint8_t)*p >= 0x20 && (uint8_t)*p <= 0x7E && font->ascii_model) // 是否为ASCII字符,ASCII 可打印字符（0x20 ~ 0x7E）
+            else if ((uint8_t)*p >= 0x20 && (uint8_t)*p <= 0x7E && font->ascii_id != ASSET_FID_NONE) // 是否为ASCII字符,ASCII 可打印字符（0x20 ~ 0x7E）
             {
-                uint16_t aw = size / 2;                                                 // ASCII 字符宽度
-                uint16_t ob = (aw + 7) / 8;                                             // ASCII 每行点阵占用的字节数(向上取整)
-                model = font->ascii_model + (uint32_t)((uint8_t)*p - 0x20) * ob * size; // 计算ASCII字符模型偏移
-            }
-            else
-            {
-                model = NULL; // 不可打印/控制字符, 按背景填充
+                uint16_t aw = size / 2;                           // ASCII 字符宽度
+                uint16_t ob = (aw + 7) / 8;                       // ASCII 每行点阵占用的字节数(向上取整)
+                fid = font->ascii_id;                             // ASCII 表所在的资源文件
+                off = (uint32_t)((uint8_t)*p - 0x20) * ob * size; // 计算ASCII字符模型偏移
             }
 
             if (xpos + gw > WIDTH) // 放不下当前行, 该字符换到下一行
                 break;
 
-            g[n].model = model;     // 记录当前字符的模型指针
+            g[n].fid = fid;         // 记录资源文件(ASSET_FID_NONE 表示未收录)
+            g[n].off = off;         // 记录字模偏移
             g[n].w = gw;            // 记录当前字符的像素宽度（中文=size，英文=size/2）
             g[n].offset = xpos - x; // 记录当前字符在当前行内的起始列偏移（相对于行首 x）
             n++;                    // 当前行已收集的字符个数++
@@ -476,27 +695,43 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
         uint16_t run_px = xpos - x; // 当前行已收集的字符像素宽度（像素）
         if (run_px > 0)
         {
-            /* 逐行扫描: 把run内的字符像素铺进连续缓冲([lo][hi]) */
-            uint8_t *buf = s_scratch;                 // 指向全局缓冲区的起点
-            for (uint16_t row = 0; row < size; row++) // 外层：从上到下扫描像素行
+            /* 逐字符读字模再铺进缓冲。
+             * 外层是字符、内层是行: 每个字模只从 W25Q64 读一次, 先落在
+             * s_glyph, 再按行散写进 s_scratch 的对应列偏移。 */
+            uint8_t *buf = s_scratch; // 指向全局缓冲区的起点
+
+            for (uint16_t k = 0; k < n; k++)
             {
-                for (uint16_t k = 0; k < n; k++) // 内层：从左到右扫描当前行的字符
+                uint16_t gw2 = g[k].w;       // 当前字符的像素宽度（中文=size，英文=size/2）
+                uint16_t ob = (gw2 + 7) / 8; // 当前字符每行点阵占用的字节数(向上取整)
+                const uint8_t *mb = NULL;    // NULL = 未收录, 按背景色填充
+
+                if (g[k].fid != ASSET_FID_NONE)
                 {
-                    uint8_t *dst = buf + ((uint32_t)row * run_px + g[k].offset) * 2; // 当前字符在缓冲区的起始位置([lo][hi])
-                    uint16_t gw2 = g[k].w;                                           // 当前字符的像素宽度（中文=size，英文=size/2）
-                    const uint8_t *model = g[k].model;
-                    if (model)
+                    uint32_t need = (uint32_t)ob * size; // 该字模字节数, 最大 144(48号ASCII的3*48)
+
+                    if (need <= sizeof(s_glyph) &&
+                        Asset_ReadFont(g[k].fid, g[k].off, s_glyph, need) == 0)
                     {
-                        uint16_t ob = (gw2 + 7) / 8;                    // 当前字符每行点阵占用的字节数(向上取整)
-                        const uint8_t *mb = model + (uint32_t)row * ob; // 指向当前字符第 row 行的点阵数据
+                        mb = s_glyph;
+                    }
+                }
+
+                for (uint16_t row = 0; row < size; row++) // 从上到下扫描像素行
+                {
+                    uint8_t *dst = buf + ((uint32_t)row * run_px + g[k].offset) * 2; // 当前字符第row行的起始位置([lo][hi])
+
+                    if (mb != NULL)
+                    {
+                        const uint8_t *sr = mb + (uint32_t)row * ob; // 第 row 行的点阵数据
                         for (uint16_t c = 0; c < gw2; c++)
                         {
-                            uint16_t color = (mb[c >> 3] & (1 << (c & 7))) ? color_font : color_back;
+                            uint16_t color = (sr[c >> 3] & (1 << (c & 7))) ? color_font : color_back;
                             *dst++ = (uint8_t)(color & 0xFF); // 写入低字节
                             *dst++ = (uint8_t)(color >> 8);   // 写入高字节
                         }
                     }
-                    else // 字库未收录该字符, 按背景填充
+                    else // 字库未收录该字符, 按背景色填充
                     {
                         for (uint16_t c = 0; c < gw2; c++)
                         {
@@ -521,21 +756,14 @@ void ST7789_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font,
     }
 }
 
+/**
+ * @brief 绘制图片(像素数据来自 W25Q64)
+ * @param x,y   绘制起始坐标
+ * @param image 图片结构体指针(只含宽高与 littlefs 路径)
+ */
 void ST7789_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image)
 {
-    if (image == NULL)
-        return;
-
-    uint16_t width = image->width;
-    uint16_t height = image->height;
-
-    if (x > WIDTH - 1 || y > HEIGHT - 1 || x + width > WIDTH || y + height > HEIGHT)
-        return;
-
-    uint32_t pixel_count = (uint32_t)(width * height);
-
-    ST7789_SetWindow(x, y, x + width - 1, y + height - 1);
-    ST7789_Write_Gram(image->data, pixel_count * 2, true);
+    ST7789_DrawImage_Stream(x, y, image, false, COLOR_BLACK);
 }
 
 /**
@@ -565,58 +793,12 @@ static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold)
 
 /**
  * @brief 绘制图片，自动检测并替换背景色(透明效果)
- *        换色在CPU完成, 像素流经缓冲后再走DMA发送
+ *        改色在缓冲内原地完成, 之后再走 DMA 发送
  * @param x,y        绘制起始坐标
  * @param image       图片结构体指针
  * @param target_back 目标背景色（例如 COLOR_WHITE）
  */
 void ST7789_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_back)
 {
-    if (image == NULL)
-        return;
-    uint16_t width = image->width;
-    uint16_t height = image->height;
-    const uint8_t *data = image->data;
-
-    if (x + width > WIDTH || y + height > HEIGHT)
-        return;
-
-    // 固定背景色为白色
-    uint16_t back_color = COLOR_WHITE;
-    // 颜色接近阈值
-    uint8_t threshold = 90;
-
-    ST7789_SetWindow(x, y, x + width - 1, y + height - 1);
-
-    ST7789_SPI_SetDataSize(16);
-    GPIO_ResetBits(ST7789_CS_PORT, ST7789_CS_PIN);
-    GPIO_SetBits(ST7789_DC_PORT, ST7789_DC_PIN);
-
-    uint32_t pixel_count = (uint32_t)width * height;
-    uint32_t remain = pixel_count;
-    uint32_t i = 0;
-    uint32_t block_max = sizeof(s_scratch) / 2; /* 一块缓冲最多容纳的像素数 */
-
-    while (remain > 0)
-    {
-        uint32_t block = (remain > block_max) ? block_max : remain;
-        uint8_t *dst = s_scratch;
-
-        for (uint32_t k = 0; k < block; k++)
-        {
-            uint16_t pixel = (uint16_t)((data[(i + k) * 2 + 1] << 8) | data[(i + k) * 2]);
-            if (Color_IsClose(pixel, back_color, threshold))
-                pixel = target_back;
-            *dst++ = (uint8_t)(pixel & 0xFF);
-            *dst++ = (uint8_t)(pixel >> 8);
-        }
-
-        ST7789_DMA_Pump(s_scratch, block, true);
-
-        i += block;
-        remain -= block;
-    }
-
-    ST7789_Wait_BSY();
-    GPIO_SetBits(ST7789_CS_PORT, ST7789_CS_PIN);
+    ST7789_DrawImage_Stream(x, y, image, true, target_back);
 }

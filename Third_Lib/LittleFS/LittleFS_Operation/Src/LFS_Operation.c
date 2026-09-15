@@ -32,11 +32,11 @@ static uint16_t get_u16(const uint8_t *p)
  *   +--------+--------+----------------------------+
  *
  * @param path  目标文件路径
- * @param image 图像结构体指针
+ * @param data  像素数据指针(RGB565, 低字节在前)
  *
  * @return 0 成功；其他值为 littlefs 错误码
  */
-int SaveImage(const char *path, const Image_t *image)
+int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
 {
     lfs_file_t file;             // 文件句柄
     uint8_t header[HEADER_SIZE]; // 文件头缓冲区：width(2) + height(2)
@@ -44,13 +44,13 @@ int SaveImage(const char *path, const Image_t *image)
     lfs_ssize_t ret;             // 单次读写返回的实际字节数，负数表示错误
     int err;                     // 错误码
 
-    if ((path == NULL) || (image == NULL) || (image->data == NULL))
+    if ((path == NULL) || (data == NULL) || (w == 0U) || (h == 0U))
     {
         printf("SaveImage: invalid argument\n");
         return LFS_ERR_INVAL;
     }
 
-    data_size = (uint32_t)image->width * (uint32_t)image->height * IMAGE_BYTES_PER_PIXEL; // 像素数据大小
+    data_size = (uint32_t)w * (uint32_t)h * IMAGE_BYTES_PER_PIXEL; // 像素数据大小
 
     /* 打开文件，写入模式，创建并截断文件 */
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
@@ -61,8 +61,8 @@ int SaveImage(const char *path, const Image_t *image)
     }
 
     /* 文件头: width(2) + height(2), 大端 */
-    put_u16(&header[0], image->width);
-    put_u16(&header[2], image->height);
+    put_u16(&header[0], w);
+    put_u16(&header[2], h);
     ret = lfs_file_write(&g_lfs, &file, header, HEADER_SIZE);
     if (ret != (lfs_ssize_t)HEADER_SIZE)
     {
@@ -72,7 +72,7 @@ int SaveImage(const char *path, const Image_t *image)
     }
 
     /* 写入像素数据 */
-    ret = lfs_file_write(&g_lfs, &file, image->data, data_size);
+    ret = lfs_file_write(&g_lfs, &file, data, data_size);
     if (ret != (lfs_ssize_t)data_size)
     {
         printf("SaveImage: write data failed, ret = %d, want = %u\n", (int)ret, (unsigned)data_size);
@@ -183,7 +183,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
 /**
  * @brief 保存字体二进制数据到 littlefs 文件系统。
  *
- * @param path 目标文件路径
+ * @param w,h   图像宽高(像素)
  * @param data 字体数据指针
  * @param size 数据字节数
  *

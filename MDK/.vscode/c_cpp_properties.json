@@ -5,7 +5,7 @@
             "includePath": [
                 "d:\\Code\\Keil\\Project4\\User",
                 "d:\\Code\\Keil\\Project4\\User\\Inc",
-                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\LCD_Resource\\Inc",
+                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\Screen_Resource\\Inc",
                 "d:\\Code\\Keil\\Project4\\BSP\\Inc",
                 "d:\\Code\\Keil\\Project4\\Core",
                 "d:\\Code\\Keil\\Project4\\Core\\Startup",
@@ -13,14 +13,18 @@
                 "d:\\Code\\Keil\\Project4\\STM32F4xx_StdPeriph_Driver\\src",
                 "d:\\Code\\Keil\\Project4\\Third_Lib\\FreeRTOS\\include",
                 "d:\\Code\\Keil\\Project4\\Third_Lib\\FreeRTOS\\portable",
+                "d:\\Code\\Keil\\Project4\\Third_Lib\\LittleFS\\Inc",
+                "d:\\Code\\Keil\\Project4\\Third_Lib\\LittleFS\\LittleFS_Operation\\Inc",
                 "D:\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Keil5\\ARM\\ARMCC\\include\\rw",
                 "d:\\Code\\Keil\\Project4\\User\\Src",
-                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\LCD_Resource\\Src\\Font",
-                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\LCD_Resource\\Src\\Image",
-                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\LCD_Resource\\Src\\Page",
+                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\Screen_Resource\\Src\\Font",
+                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\Screen_Resource\\Src\\Image",
+                "d:\\Code\\Keil\\Project4\\User\\Third_Resource\\Screen_Resource\\Src\\Page",
                 "d:\\Code\\Keil\\Project4\\BSP\\Src",
-                "d:\\Code\\Keil\\Project4\\Third_Lib\\FreeRTOS"
+                "d:\\Code\\Keil\\Project4\\Third_Lib\\FreeRTOS",
+                "d:\\Code\\Keil\\Project4\\Third_Lib\\LittleFS\\LittleFS_Operation\\Src",
+                "d:\\Code\\Keil\\Project4\\Third_Lib\\LittleFS\\Src"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",

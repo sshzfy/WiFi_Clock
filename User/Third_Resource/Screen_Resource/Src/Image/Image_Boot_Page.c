@@ -1,6 +1,10 @@
 #include "Image.h"
 
-/* 开机页面, 未连接, 等待连接 */
+/* 开机页�? 未连�? 等待连接 */
+#include "BuildConfig.h"
+
+#if (RESOURCE_DATA_IN_ROM == 1) && (PROVISION_BATCH == 2)
+
 const unsigned char gImage_Boot_Page_Waitconnect[153600] = { /* 0X00,0X10,0XF0,0X00,0X40,0X01,0X01,0X1B, */
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
@@ -9604,8 +9608,11 @@ const unsigned char gImage_Boot_Page_Waitconnect[153600] = { /* 0X00,0X10,0XF0,0
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
 };
 
+#endif /* RESOURCE_DATA_IN_ROM && PROVISION_BATCH == 2 */
+
 const Image_t Boot_Page_Waitconnect = {
-    .width = 240,
+    .width  = 240,
     .height = 320,
-    .data = gImage_Boot_Page_Waitconnect,
+    .path   = "/img/boot.bin",
 };
+

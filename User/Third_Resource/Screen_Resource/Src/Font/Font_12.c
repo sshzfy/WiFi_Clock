@@ -1,5 +1,9 @@
 #include "Font.h"
 
+#include "BuildConfig.h"
+
+#if (RESOURCE_DATA_IN_ROM == 1) && (PROVISION_BATCH == 3)
+
 const uint8_t Font_12_Table[] =
     {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /*" ",0*/
@@ -99,9 +103,11 @@ const uint8_t Font_12_Table[] =
         0x16, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /*"~",94*/
     };
 
-const Font_t Font_12 =
-    {
-        .size = 12, // 字体大小
-        .ascii_model = Font_12_Table,
-        .chinese = NULL,
+#endif /* RESOURCE_DATA_IN_ROM && PROVISION_BATCH == 3 */
+
+const Font_t Font_12 = {
+    .size     = 12,
+    .ascii_id = ASSET_FID_AS12,
+    .cn_id    = ASSET_FID_NONE,
+    .cn_bytes = 0,
 };

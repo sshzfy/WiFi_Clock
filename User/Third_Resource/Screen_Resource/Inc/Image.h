@@ -2,16 +2,33 @@
 #define __IMAGE_H__
 
 #include "main.h"
+#include "BuildConfig.h"
 
+/* ============================================================
+ * 图片资源描述
+ * ------------------------------------------------------------
+ * 像素数据(RGB565, 小端) 全部存放在 W25Q64 的 littlefs 文件里,
+ * MCU Flash 里只保留宽高与文件路径。文件格式为:
+ *   width(2, 大端) + height(2, 大端) + 像素数据
+ * 读取时跳过 4 字节头即可, 格式与 LFS_Operation 的 SaveImage 一致。
+ * ============================================================ */
 typedef struct
 {
     uint16_t width;
     uint16_t height;
-    const uint8_t *data;
+    const char *path; // W25Q64 上的 littlefs 路径
 } Image_t;
 
-/* 供littlefs使用 */
-extern const unsigned char gImage_Boot_Page_Waitconnect[153600]; // 开机页面, 未连接, 等待连接
+/* 全部图片资源清单, 供 Asset 自检与 Provision 烧录遍历 */
+extern const Image_t *const g_AllImages[];
+extern const uint32_t g_AllImageCount;
+
+/* ------------------------------------------------------------
+ * 资源数据本体声明
+ * 只在烧录固件(RESOURCE_DATA_IN_ROM=1)里编译, 正式固件不引用。
+ * ------------------------------------------------------------ */
+#if (RESOURCE_DATA_IN_ROM == 1)
+extern const unsigned char gImage_Boot_Page_Waitconnect[153600]; // 开机页面, 等待连接
 extern const unsigned char gImage_Main_Page[153600];             // 主页面
 
 extern const unsigned char gImage_err[3200];         // 错误图片
@@ -45,10 +62,12 @@ extern const unsigned char gImage_heavy_snow[5000];              // 大雪,code:
 extern const unsigned char gImage_snowstorm[5000];               // 雪,code:19
 extern const unsigned char gImage_foggy[5000];                   // 雾,code:20
 extern const unsigned char gImage_haze[5000];                    // 雾,code:21
+#endif /* RESOURCE_DATA_IN_ROM */
 
 /* 开机引用图片 */
 extern const Image_t Image_err;             // 错误图片
 extern const Image_t Boot_Page_Waitconnect; // 开机页面, 等待连接
+extern const Image_t Image_Main_Page;       // 主页面全屏底图
 
 /* 主页面引用图片 */
 extern const Image_t Image_wifi;        // WiFi图标

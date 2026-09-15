@@ -1,5 +1,9 @@
 #include "Image.h"
 
+#include "BuildConfig.h"
+
+#if (RESOURCE_DATA_IN_ROM == 1) && (PROVISION_BATCH == 3)
+
 const unsigned char gImage_sunny[5000] = { /* 0X00,0X10,0X32,0X00,0X32,0X00,0X01,0X1B, */
 0XDF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
@@ -6930,156 +6934,137 @@ const unsigned char gImage_haze[5000] = { /* 0X00,0X10,0X32,0X00,0X32,0X00,0X01,
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,};
 
-const Image_t Image_sunny = 
-{
-    .width = 50,
+#endif /* RESOURCE_DATA_IN_ROM && PROVISION_BATCH == 3 */
+
+const Image_t Image_sunny = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_sunny,
+    .path   = "/img/w_sunny.bin",
 };
 
-const Image_t Image_star = 
-{
-    .width = 50,
+const Image_t Image_star = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_star,
+    .path   = "/img/w_star.bin",
 };
 
-const Image_t Image_overcast = 
-{
-    .width = 50,
+const Image_t Image_overcast = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_overcast,
+    .path   = "/img/w_overcast.bin",
 };
 
-const Image_t Image_cloudy = 
-{
-    .width = 50,
+const Image_t Image_cloudy = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_cloudy,
+    .path   = "/img/w_cloudy.bin",
 };
 
-const Image_t Image_light_rain = 
-{
-    .width = 50,
+const Image_t Image_light_rain = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_light_rain,
+    .path   = "/img/w_light_rain.bin",
 };
 
-const Image_t Image_moderate_rain = 
-{
-    .width = 50,
+const Image_t Image_moderate_rain = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_moderate_rain,
+    .path   = "/img/w_moderate_rain.bin",
 };
 
-const Image_t Image_heavy_rain = 
-{
-    .width = 50,
+const Image_t Image_heavy_rain = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_heavy_rain,
+    .path   = "/img/w_heavy_rain.bin",
 };
 
-const Image_t Image_storm = 
-{
-    .width = 50,
+const Image_t Image_storm = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_storm,
+    .path   = "/img/w_storm.bin",
 };
 
-const Image_t Image_heavy_storm = 
-{
-    .width = 50,
+const Image_t Image_heavy_storm = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_heavy_storm,
+    .path   = "/img/w_heavy_storm.bin",
 };
 
-const Image_t Image_severe_storm = 
-{
-    .width = 50,
+const Image_t Image_severe_storm = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_severe_storm,
+    .path   = "/img/w_severe_storm.bin",
 };
 
-const Image_t Image_ice_rain = 
-{
-    .width = 50,
+const Image_t Image_ice_rain = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_ice_rain,
+    .path   = "/img/w_ice_rain.bin",
 };
 
-const Image_t Image_shower = 
-{
-    .width = 50,
+const Image_t Image_shower = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_shower,
+    .path   = "/img/w_shower.bin",
 };
 
-const Image_t Image_thundershower =
-{
-    .width = 50,
+const Image_t Image_thundershower = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_thundershower,
+    .path   = "/img/w_thundershower.bin",
 };
 
-const Image_t Image_thundershower_with_hail = 
-{
-    .width = 50,
+const Image_t Image_thundershower_with_hail = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_thundershower_with_hail,
+    .path   = "/img/w_thunder_hail.bin",
 };
 
-const Image_t Image_sleet =
-{
-    .width = 50,
+const Image_t Image_sleet = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_sleet,
+    .path   = "/img/w_sleet.bin",
 };
 
-const Image_t Image_snow_flurry =
-{
-    .width = 50,
+const Image_t Image_snow_flurry = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_snow_flurry,
+    .path   = "/img/w_snow_flurry.bin",
 };
 
-const Image_t Image_light_snow =
-{
-    .width = 50,
+const Image_t Image_light_snow = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_light_snow,
+    .path   = "/img/w_light_snow.bin",
 };
 
-const Image_t Image_moderate_snow = 
-{
-    .width = 50,
+const Image_t Image_moderate_snow = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_moderate_snow,
+    .path   = "/img/w_moderate_snow.bin",
 };
 
-const Image_t Image_heavy_snow = 
-{
-    .width = 50,
+const Image_t Image_heavy_snow = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_heavy_snow,
+    .path   = "/img/w_heavy_snow.bin",
 };
 
-const Image_t Image_snowstorm =
-{
-    .width = 50,
+const Image_t Image_snowstorm = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_snowstorm,
+    .path   = "/img/w_snowstorm.bin",
 };
 
-const Image_t Image_foggy = 
-{
-    .width = 50,
+const Image_t Image_foggy = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_foggy,
+    .path   = "/img/w_foggy.bin",
 };
 
-const Image_t Image_haze = 
-{
-    .width = 50,
+const Image_t Image_haze = {
+    .width  = 50,
     .height = 50,
-    .data = gImage_haze,
+    .path   = "/img/w_haze.bin",
 };
+

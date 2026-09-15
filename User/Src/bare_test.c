@@ -719,15 +719,16 @@ static void LFS_BareMetal_Test(void)
               (err == 0) && (err2 == 1024) && (memcmp(Font_12_Table, s_test_rd, 1024) == 0),
               "save = %d, load = %d", err, err2);
 
-    /*  T10: 图片存取(40x40 RGB565, 真实图片 = 3200 字节)  */
-    err = SaveImage("/img_err.bin", &Image_err);
+    /*  T10: 图片存取(40x40 RGB565 = 3200 字节, 用测试图案)  */
+    Test_FillPattern(s_test_rd, LFS_TEST_IMG_SIZE, 0x5A);
+    err = SaveImage("/img_err.bin", s_test_rd, LFS_TEST_IMG_W, LFS_TEST_IMG_H);
     memset(s_test_buf, 0, LFS_TEST_IMG_SIZE);
     err2 = LoadImage("/img_err.bin", &w, &h, s_test_buf, TEST_BUF_SIZE);
     /* 注意只比较 3200 字节: Image_err.data 指向的 gImage_err 就是 3200 字节,
-     * 按 TEST_BUF_SIZE(4096) 比较会越界读 */
+     * 只比较前 3200 字节 */
     LFS_CHECK("T10 SaveImage/LoadImage",
               (err == 0) && (err2 == 0) && (w == LFS_TEST_IMG_W) && (h == LFS_TEST_IMG_H) &&
-                  (memcmp(Image_err.data, s_test_buf, LFS_TEST_IMG_SIZE) == 0),
+                  (memcmp(s_test_rd, s_test_buf, LFS_TEST_IMG_SIZE) == 0),
               "save = %d, load = %d, w = %u, h = %u", err, err2, (unsigned)w, (unsigned)h);
 
     /*  T11: 打开不存在的文件应返回 NOENT  */

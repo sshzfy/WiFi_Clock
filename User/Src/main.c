@@ -6,7 +6,25 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#if (USE_FREERTOS == 1)
+#if (RESOURCE_PROVISION == 1)
+
+/* ===== 资源烧录固件: 把备份在源码里的字库/图片写入 W25Q64 ===== */
+#include "Provision.h"
+#include "Usart.h"
+
+int main(void)
+{
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+    Board_Peripheral_Init(); /* 外设时钟初始化(含SPI1, 供W25Q64使用) */
+    Usart2_Debug_Init();     /* 烧录进度全部从串口输出 */
+
+    Provision_Run(); /* 内部是死循环, 不返回 */
+
+    while (1)
+        ; /* never reached */
+}
+
+#elif (USE_FREERTOS == 1)
 
 #include "app_task.h"
 
@@ -39,7 +57,7 @@ int main(void)
         ; /* never reached */
 }
 
-#endif /* USE_FREERTOS */
+#endif /* RESOURCE_PROVISION / USE_FREERTOS */
 
 void vAssertCalled(const char *file, int line)
 {

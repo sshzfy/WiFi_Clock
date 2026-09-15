@@ -1,5 +1,9 @@
 #include "Image.h"
 
+#include "BuildConfig.h"
+
+#if (RESOURCE_DATA_IN_ROM == 1) && (PROVISION_BATCH == 3)
+
 const unsigned char gImage_err[3200] = { /* 0X00,0X10,0X28,0X00,0X28,0X00,0X01,0X1B, */
 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XDF,0XFF,0XDF,0XFF,0XFF,0XFF,0XDE,0XFF,
 0XFF,0XFF,0XDE,0XFF,0XFF,0XFF,0XFF,0XFF,0XDE,0XFF,0X9E,0XFF,0XBA,0XFE,0XF3,0XFC,
@@ -1360,50 +1364,53 @@ const unsigned char gImage_thermometer[5000] = { /* 0X00,0X10,0X32,0X00,0X32,0X0
 0XAE,0X73,0X75,0XAD,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
 0XFF,0XFF,0XDF,0XFF,0XFF,0XFF,0XFF,0XFF,};
 
+#endif /* RESOURCE_DATA_IN_ROM && PROVISION_BATCH == 3 */
+
 const Image_t Image_err = {
-    .width = 40,
+    .width  = 40,
     .height = 40,
-    .data = gImage_err,
+    .path   = "/img/err.bin",
 };
 
 const Image_t Image_wifi = {
-    .width = 20,
+    .width  = 20,
     .height = 20,
-    .data = gImage_wifi,
+    .path   = "/img/wifi.bin",
 };
 
-const Image_t Image_wifi_off = {   
-    .width = 20,
+const Image_t Image_wifi_off = {
+    .width  = 20,
     .height = 20,
-    .data = gImage_wifi_off,
+    .path   = "/img/wifi_off.bin",
 };
 
 const Image_t Image_location = {
-    .width = 20,
+    .width  = 20,
     .height = 20,
-    .data = gImage_location,
+    .path   = "/img/loc.bin",
 };
 
 const Image_t Image_no_location = {
-    .width = 20,
+    .width  = 20,
     .height = 20,
-    .data = gImage_no_location,
+    .path   = "/img/noloc.bin",
 };
 
 const Image_t Image_temperature = {
-    .width = 50,
+    .width  = 50,
     .height = 50,
-    .data = gImage_temperature,
+    .path   = "/img/temp.bin",
 };
 
 const Image_t Image_humidity = {
-    .width = 50,
+    .width  = 50,
     .height = 50,
-    .data = gImage_humidity,
+    .path   = "/img/humi.bin",
 };
 
 const Image_t Image_thermometer = {
-    .width = 50,
+    .width  = 50,
     .height = 50,
-    .data = gImage_thermometer,
+    .path   = "/img/thermo.bin",
 };
+

@@ -38,7 +38,11 @@
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION                             0
 #define configSUPPORT_DYNAMIC_ALLOCATION                            1
-#define configTOTAL_HEAP_SIZE                                       1024 * 95
+/* 任务栈合计约 13.6KB(ui 4K + net 4K + dht22 2K + light 2K + idle 0.5K),
+ * 原来的 95KB 长期闲置大半却占掉近 20% 的 SRAM。资源迁到 W25Q64 后
+ * 静态 RAM 需求上升(资源层句柄 + 字模缓冲 + 图片乒乓缓冲), 这里下调到
+ * 88KB, 仍留出约 74KB 空闲堆, 足够图片乒乓缓冲的 15KB 分配。 */
+#define configTOTAL_HEAP_SIZE                                       1024 * 88
 #define configAPPLICATION_ALLOCATED_HEAP                            0
 #define configSTACK_ALLOCATION_FROM_SEPARATE_HEAP                   0
 
