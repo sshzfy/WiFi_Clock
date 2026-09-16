@@ -4,6 +4,9 @@
 /* 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行) */
 static uint8_t s_oled_glyph[ASSET_GLYPH_BYTES_MAX];
 
+/* 清屏用的全零页: 一次 I2C 事务写满一整页(128 列) */
+static uint8_t s_oled_zeros[OLED_WIDTH];
+
 Soft_I2C_t oled_i2c = {
     .SCL_Port = GPIOB,
     .SDA_Port = GPIOB,
@@ -53,16 +56,16 @@ static void OLED_SetCursor(uint8_t page, uint8_t col)
 
 /**
  * @brief 清除OLED显示
+ *
+ * @note 按页整块写: 每页一次 I2C 事务写 128 字节, 共 8 次。
+ *       原先逐列发 1024 次单字节事务, 上电清屏要花约 240ms。
  * */
 void OLED_Clear(void)
 {
     for (uint8_t page = 0; page < 8; page++)
     {
         OLED_SetCursor(page, 0);
-        for (uint8_t i = 0; i < OLED_WIDTH; i++)
-        {
-            OLED_WriteData(0x00);
-        }
+        Soft_I2C_Send_Bytes(&oled_i2c, OLED_ADDR, OLED_DATA_BYTE, s_oled_zeros, OLED_WIDTH);
     }
 }
 
@@ -229,7 +232,10 @@ void OLED_Init(void)
     OLED_WriteCmd(0xA6); /* 非反显 */
     OLED_WriteCmd(0x8D);
     OLED_WriteCmd(0x14); /* 开启内部 DC-DC (电荷泵) */
-    OLED_WriteCmd(0xAF); /* 开启显示 */
 
+    /* 先清屏, 再开显示: 否则从开显示到清屏写完的这段时间,
+     * 屏上亮着的是上一次留下的内容(例如刚跑完的裸机测试画面) */
     OLED_Clear();
+
+    OLED_WriteCmd(0xAF); /* 开启显示 */
 }

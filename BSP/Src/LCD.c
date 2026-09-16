@@ -503,7 +503,11 @@ static void ST7789_Display_Init(void)
     ST7789_Write_Reg(0xE1, (uint8_t[]){0xF0, 0x0B, 0x0F, 0x0F, 0x0D, 0x26, 0x31, 0x43, 0x47, 0x38, 0x14, 0x14, 0x2C, 0x32}, 14);
     // ST7789_Write_Reg(0x21, NULL, 0);
 
-    // ST7789_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, 0x001F); // 填充背景颜色（显示打开前）
+    /* 打开显示前先把GRAM刷黑: ST7789复位不清GRAM, 若不清, 打开显示与背光
+     * 后会先亮出复位前残留在GRAM里的旧画面(例如上次加载完的主页), 一直挂到
+     * 调用方画完第一帧为止 —— 表现为复位后约1秒的残留。 */
+    ST7789_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, 0x0000);
+
     ST7789_Write_Reg(0x29, NULL, 0); // 打开显示
     vTaskDelay(pdMS_TO_TICKS(10));
     ST7789_Set_Backlight(true); // 开启背光

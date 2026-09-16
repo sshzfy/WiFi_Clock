@@ -11,7 +11,7 @@
  * BM_TEST_MODULE (only used when USE_FREERTOS == 0):
  *   BM_TEST_MODULE_OLED   = OLED (SSD1306 0.96, soft I2C PB6=SCL/PB7=SDA)
  *   BM_TEST_MODULE_LIGHT  = 光敏电阻 (DO: PC1/EXTI1; AO: PC0/ADC1_IN10)
- *   BM_TEST_MODULE_DS1302 = DS1302 外部RTC (PB0=RST/PB1=IO/PB2=CLK)
+ *   BM_TEST_MODULE_DS1302 = DS1302 外部RTC (PE7=RST/PE8=IO/PE9=CLK)
  *   BM_TEST_MODULE_W25Q64 = W25Q64 SPI Flash 裸驱动 (CS=PA4/CLK=PA5/MISO=PA6/MOSI=PA7)
  *   BM_TEST_MODULE_LFS    = littlefs 文件系统 (依赖 W25Q64)
  * ------------------------------------------------------------
@@ -51,7 +51,7 @@
 /* 烧录固件必然需要数据本体, 这里自动联动, 避免两个开关不一致 */
 #if (RESOURCE_PROVISION == 1)
 #undef  RESOURCE_DATA_IN_ROM
-#define RESOURCE_DATA_IN_ROM   0
+#define RESOURCE_DATA_IN_ROM   1
 #endif
 
 #if (USE_FREERTOS == 0)

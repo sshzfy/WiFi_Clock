@@ -1,5 +1,4 @@
 #include "app_task.h"
-#include "Asset.h"
 
 /* ================ 任务角色 ================
  * uiTask    (prio 3): LCD唯一写者。做板级初始化→开机等待画面→
@@ -9,6 +8,8 @@
  * DHT22Task (prio 4): DHT22温湿度周期采集, 更新后通知uiTask。
  *                     优先级高于ui, 避免UI抢占破坏DHT22的us级时序
  * LightSensorTask (prio 2): 光敏传感器中断采集, 更新后通知uiTask。
+ * KeyTask   (prio 2): 按键(PA0)手势识别, 产出单击/双击/三击/长按;
+ *                     目前单击 → 请求切换昼夜(交LightSensorTask裁决)
  * ========================================== */
 
 static volatile bool s_lowpower = false; // 低功耗模式(夜间进入,网络活动和温湿度传感器停止)
@@ -41,16 +42,19 @@ static void DHT22_Task(void *pvParameters)
         if (s_lowpower && !force)
             continue;
 
-        if (Service_Room_Update()) // DHT22 读取, 成功失败都会刷新room_info
+        if (Service_Room_Update()) /* DHT22 读取, 成功失败都会刷新room_info */
         {
             xEventGroupSetBits(g_evt, EV_ROOM);
         }
     }
 }
 
-/* ==================== Light Sensor Task ==================== */
+/* ==================== 任务间共享状态 ==================== */
+static TaskHandle_t s_light_task = NULL;         // 光敏任务句柄, 供中断回调与按键任务通知
+static TaskHandle_t s_key_task = NULL;           // 按键任务句柄, 供中断回调通知
+static volatile bool s_key_toggle_night = false; // 按键请求: 切换昼夜(交光敏任务统一裁决)
 
-static TaskHandle_t s_light_task = NULL; // 光敏传感器任务句柄
+/* ==================== Light Sensor Task ==================== */
 
 /** @brief 光敏中断回调(ISR上下文): 仅通知任务, 去抖在任务内完成
  *  @note 仅通知任务, 不处理中断逻辑, 任务内会去抖并根据状态切换uiTask的显示
@@ -61,8 +65,8 @@ static void Light_IRQ_Notify(void)
 
     if (s_light_task != NULL)
     {
-        vTaskNotifyGiveFromISR(s_light_task, &woken); // 通知正在阻塞的任务,解除阻塞状态
-        portYIELD_FROM_ISR(woken);                    // 请求一次上下文切换
+        vTaskNotifyGiveFromISR(s_light_task, &woken); /* 通知正在阻塞的任务,解除阻塞状态 */
+        portYIELD_FROM_ISR(woken);                    /* 请求一次上下文切换 */
     }
 }
 
@@ -70,37 +74,67 @@ static void Light_IRQ_Notify(void)
 #define LIGHT_SENSOR_TASK_STACK_SIZE 512
 TaskHandle_t lightsensor_task_handle;
 
+/** @brief 提交一次昼夜切换: 置事件位通知 UI, 并等待 UI 确认
+ */
+static void App_Apply_Night(bool night)
+{
+    xEventGroupSetBits(g_evt, night ? EV_LOWERPOWER : EV_WAKEUP);
+    xEventGroupWaitBits(g_evt, EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000)); /* 等待UI确认 */
+}
+
+/** @brief 处理按键的"手动切换昼夜"请求
+ *  @details 翻转状态, 并把当前光照记为自动判定基线, 使光敏不会立刻把它改回去;
+ *           只有环境光真正变化后, 自动跟随才重新生效
+ *  @return true=本次处理了按键请求
+ */
+static bool Light_HandleKeyToggle(bool *requested_night, bool *baseline_dark)
+{
+    if (!s_key_toggle_night)
+        return false;
+
+    s_key_toggle_night = false;
+    *requested_night = !*requested_night;
+    *baseline_dark = Light_Sensor_IsDark();
+    printf("[LIGHT] key switch -> %s\r\n", *requested_night ? "night" : "day");
+    App_Apply_Night(*requested_night);
+    return true;
+}
+
 static void LightSensor_Task(void *pvParameters)
 {
     (void)pvParameters;
 
     s_light_task = xTaskGetCurrentTaskHandle();      // 保存当前任务句柄, 用于中断回调
-    Light_Sensor_RegisterCallback(Light_IRQ_Notify); // 注册中断回调函数
-    Light_Sensor_Init();                             // 初始化光敏传感器
+    Light_Sensor_RegisterCallback(Light_IRQ_Notify); /* 注册中断回调函数 */
+    Light_Sensor_Init();                             /* 初始化光敏传感器 */
 
-    bool requested_night = false; // 与UI默认(白天)一致
-    bool first_run = true;        // 上电先做一次初始判定
+    bool requested_night = false;                // 与UI默认(白天)一致
+    bool baseline_dark = !Light_Sensor_IsDark(); // 自动判定基线: 取反以强制上电先判定一次
+    bool first_run = true;                       // 上电先做一次初始判定
 
     printf("[LIGHT] task ready: DO_state=%d dark=%d\r\n",
            (int)Light_Sensor_DO_State, (int)Light_Sensor_IsDark());
 
     for (;;)
     {
-        bool notified = false;
+        /* ---- 按键手动切换优先于自动判定 ---- */
+        if (Light_HandleKeyToggle(&requested_night, &baseline_dark))
+            continue;
 
         if (!first_run)
         {
             /* 等待中断通知; 1000ms 超时用作轮询兜底, 保证 EXTI 未触发时仍能切换 */
-            notified = (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000)) > 0);
+            (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
         }
         first_run = false;
 
-        if (!notified)
-        {
-            /* 轮询兜底: 电平与当前模式一致则无需处理(避免重复切换) */
-            if (Light_Sensor_IsDark() == requested_night)
-                continue;
-        }
+        /* ---- 等待期间可能被按键唤醒 ---- */
+        if (Light_HandleKeyToggle(&requested_night, &baseline_dark))
+            continue;
+
+        /* ---- 自动判定: 只在光照相对基线发生变化时介入 ---- */
+        if (Light_Sensor_IsDark() == baseline_dark)
+            continue; // 边沿抖动或电平回归基线, 无需处理
 
         /* 2s 去抖: 期间若再来中断则重新计时 */
         TickType_t t0 = xTaskGetTickCount();
@@ -109,27 +143,142 @@ static void LightSensor_Task(void *pvParameters)
             TickType_t remain = pdMS_TO_TICKS(DEBOUNCE_MS) - (xTaskGetTickCount() - t0); // 去抖时间剩余
             if ((int32_t)remain <= 0)
                 break; // 去抖时间到
+            if (s_key_toggle_night)
+                break; // 按键请求优先: 立即结束去抖, 交循环顶部处理
             if (ulTaskNotifyTake(pdTRUE, remain) > 0)
                 t0 = xTaskGetTickCount(); /* 新边沿, 重新去抖 */
         }
 
+        /* ---- 去抖期间可能收到按键请求 ---- */
+        if (Light_HandleKeyToggle(&requested_night, &baseline_dark))
+            continue;
+
         bool dark = Light_Sensor_IsDark(); // 判断是否为“暗”
-        printf("[LIGHT] debounce done: level=%s, mode=%s\r\n",
+        if (dark == baseline_dark)
+            continue; // 去抖结束后电平回到基线, 本次判定作废
+
+        baseline_dark = dark;
+        printf("[LIGHT] auto: level=%s, mode=%s\r\n",
                dark ? "dark" : "bright", requested_night ? "night" : "day");
 
-        if (dark && !requested_night)
+        if (dark != requested_night)
         {
-            requested_night = true;
-            printf("[LIGHT] request NIGHT\r\n");
-            xEventGroupSetBits(g_evt, EV_LOWERPOWER);                                          // 进入夜晚: LCD关, OLED显示
-            xEventGroupWaitBits(g_evt, EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000)); // 等待UI确认
+            requested_night = dark;
+            printf("[LIGHT] auto request %s\r\n", requested_night ? "NIGHT" : "DAY");
+            App_Apply_Night(requested_night);
         }
-        else if (!dark && requested_night)
+    }
+}
+
+/* ==================== Key Task ==================== */
+
+/** @brief 按键中断回调(ISR上下文): 仅通知任务
+ *  @note 按下与松开都会触发, 手势识别在任务上下文完成
+ */
+static void Key_IRQ_Notify(void)
+{
+    BaseType_t woken = pdFALSE; // 是否唤醒任务
+
+    if (s_key_task != NULL)
+    {
+        vTaskNotifyGiveFromISR(s_key_task, &woken); /* 通知正在阻塞的任务,解除阻塞状态 */
+        portYIELD_FROM_ISR(woken);                  /* 请求一次上下文切换 */
+    }
+}
+
+#define KEY_TASK_PRIORITY 2
+#define KEY_TASK_STACK_SIZE 1024
+TaskHandle_t key_task_handle;
+
+/** @brief 把累计击数映射为手势枚举 */
+static Key_Gesture_t Key_ClickGesture(uint8_t clicks)
+{
+    switch (clicks)
+    {
+    case 1:
+        return KEY_GESTURE_CLICK_1;
+    case 2:
+        return KEY_GESTURE_CLICK_2;
+    default:
+        return KEY_GESTURE_CLICK_3;
+    }
+}
+
+/** @brief 手势分发
+ *  @note 目前只接单击(切换昼夜), 双击/三击/长按留作扩展点
+ */
+static void Key_OnGesture(Key_Gesture_t gesture)
+{
+    switch (gesture)
+    {
+    case KEY_GESTURE_CLICK_1:
+        /* 交光敏任务统一裁决: 昼夜状态机在它手里, 避免两个任务各自改状态 */
+        s_key_toggle_night = true;
+        if (s_light_task != NULL)
+            xTaskNotifyGive(s_light_task);
+        break;
+
+    case KEY_GESTURE_CLICK_2: /* TODO: 待分配 */
+    case KEY_GESTURE_CLICK_3: /* TODO: 待分配 */
+    case KEY_GESTURE_LONG:    /* TODO: 待分配 */
+    case KEY_GESTURE_NONE:
+    default:
+        break;
+    }
+}
+
+/** @brief 按键手势识别
+ *  @details 时序: 等按下 → 长按阈值内松开算短按, 超时即触发长按(按住即响应)
+ *                → 连击窗口内再次按下则累加, 窗口超时后结算累计击数
+ */
+static void Key_Task(void *pvParameters)
+{
+    (void)pvParameters;
+
+    uint8_t clicks = 0;
+
+    s_key_task = xTaskGetCurrentTaskHandle(); // 保存任务句柄, 用于中断回调
+    Key_RegisterCallback(Key_IRQ_Notify);     /* 注册中断回调函数 */
+    Key_Init();                               /* 初始化按键(PA0 + EXTI0) */
+
+    printf("[KEY] task ready: pressed=%d\r\n", (int)Key_IsPressed());
+
+    for (;;)
+    {
+        /* 已累计击数时只等连击窗口, 否则无限等待下一次按下 */
+        TickType_t wait = (clicks == 0) ? portMAX_DELAY : pdMS_TO_TICKS(KEY_MULTI_GAP_MS);
+
+        if (ulTaskNotifyTake(pdTRUE, wait) == 0)
         {
-            requested_night = false;
-            printf("[LIGHT] request DAY\r\n");
-            xEventGroupSetBits(g_evt, EV_WAKEUP);                                              // 回到白天: OLED关, LCD恢复
-            xEventGroupWaitBits(g_evt, EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000)); // 等待UI确认
+            if (clicks > 0)
+            {
+                Key_OnGesture(Key_ClickGesture(clicks)); // 连击窗口超时: 结算
+                clicks = 0;
+            }
+            continue;
+        }
+
+        if (!Key_IsPressed())
+            continue; // 边沿抖动或误触发: 不是真正的按下
+
+        /* 长按阈值内松开 → 短按; 超时 → 长按(按住即触发) */
+        if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(KEY_LONG_PRESS_MS)) == 0)
+        {
+            Key_OnGesture(KEY_GESTURE_LONG);
+
+            /* 等松开, 并清掉松开时的残留通知, 避免影响下一次判定 */
+            while (Key_IsPressed())
+                (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(KEY_RELEASE_POLL_MS));
+            (void)ulTaskNotifyTake(pdTRUE, 0);
+            clicks = 0;
+            continue;
+        }
+
+        clicks++;
+        if (clicks >= KEY_CLICK_MAX)
+        {
+            Key_OnGesture(Key_ClickGesture(clicks)); // 达到上限: 立即结算
+            clicks = 0;
         }
     }
 }
@@ -147,13 +296,13 @@ static void Net_Task(void *pvParameters)
 
     printf("[NET] Init Start\r\n");
 
-    /* ---- 开机阶段: AT/WiFi初始化 + 连接 ---- */
+    /* 开机阶段: AT/WiFi初始化 + 连接 */
     s_boot.wifi_ok = Wireless_Init();
     if (s_boot.wifi_ok)
         s_boot.wifi_ok = Service_WiFi_Connect();
     wifi_up = s_boot.wifi_ok;
 
-    /* ---- 开机阶段: SNTP + 天气(需WiFi) ---- */
+    /* 开机阶段: SNTP + 天气(需WiFi) */
     if (wifi_up)
         AT_SNTP_Init();
     bool t_ok = wifi_up && Service_Time_Sync();
@@ -164,7 +313,7 @@ static void Net_Task(void *pvParameters)
     /* 通知UI: 开机阶段完成(无论成败), 之后后台继续重试 */
     xEventGroupSetBits(g_evt, EV_NET_READY);
 
-    /* ---- 周期调度初值 ---- */
+    /*  周期调度初值  */
     wifi_c = wifi_up ? WIFI_PERIOD_S : RETRY_WIFI_S;       // WiFi检查周期,连接上30min,未连10s
     sntp_c = t_ok ? SNTP_PERIOD_S : RETRY_SNTP_S;          // SNTP周期,成功后4h,未成功5s
     weather_c = w_ok ? WEATHER_PERIOD_S : RETRY_WEATHER_S; // 天气周期,成功后1h,未成功60s
@@ -201,7 +350,7 @@ static void Net_Task(void *pvParameters)
             {
                 wifi_up = true;
                 wifi_c = WIFI_PERIOD_S;
-                if (r > 0) // 刚重连成功: 重新配置SNTP并立即补SNTP+天气
+                if (r > 0) /* 刚重连成功: 重新配置SNTP并立即补SNTP+天气 */
                 {
                     AT_SNTP_Init();
                     sntp_c = 1U;
@@ -209,7 +358,7 @@ static void Net_Task(void *pvParameters)
                 }
             }
             if (r != 0 || !was_up)
-                xEventGroupSetBits(g_evt, EV_WIFI); // 状态变化/首次连上: 刷顶部条
+                xEventGroupSetBits(g_evt, EV_WIFI); /* 状态变化/首次连上: 刷顶部条 */
         }
 
         if (--sntp_c == 0U)
@@ -367,10 +516,10 @@ static void UI_Enter_Night(void)
     OLED_Display_On(); // 0xAF 开显示 + 清屏
 
     bool time_source = RTC_ReadDataTime(&t);                  // 从RTC读取时间
-    OLED_ShowClock(t.hour, t.minute, t.year, t.month, t.day); // 显示时间+日期
+    OLED_ShowClock(t.hour, t.minute, t.year, t.month, t.day); /* 显示时间+日期 */
 
     /* 关闭LCD，并置全局状态位 */
-    ST7789_Display_Power(false); // 关闭背光 + 0x28 显示睡眠
+    ST7789_Display_Power(false); /* 关闭背光 + 0x28 显示睡眠 */
     s_lcd_on = false;            // 关闭LCD
     s_oled_on = true;            // 显示OLED
 
@@ -382,8 +531,8 @@ static void UI_Enter_Day(void)
 {
     OLED_Display_Off();
 
-    ST7789_Display_Power(true); // 0x29 显示开 + 开背光
-    Main_Page_Display();        // 夜间未刷新, 全量重绘一次
+    ST7789_Display_Power(true); /* 0x29 显示开 + 开背光 */
+    Main_Page_Display();        /* 夜间未刷新, 全量重绘一次 */
     s_lcd_on = true;            // 开启LCD
     s_oled_on = false;          // 关闭OLED
 
@@ -407,7 +556,7 @@ static void UI_Task(void *pvParameters)
 
     g_evt = xEventGroupCreate(); // 事件组: 仅被等待的bit置位才会唤醒
 
-    Board_Init(); // TIM5/LCD/USART2/ST7789 初始化
+    Board_Init(); /* TIM5/LCD/USART2/ST7789 初始化 */
     printf("[SYS]Build Date:%s %s\r\n", __DATE__, __TIME__);
     printf("[UI] Board init done, boot page\r\n");
 
@@ -419,7 +568,7 @@ static void UI_Task(void *pvParameters)
         printf("[UI] WARN: flash the provision firmware to write fonts/images\r\n");
     }
 
-    Boot_Page_Wait(); // 开机等待画面
+    Boot_Page_Wait(); /* 开机等待页面 */
 
     /* 创建DHT22/服务任务(sensor=4保护DHT22时序, net=2低于ui避免饿死显示) */
     xTaskCreate(DHT22_Task, "dht22", DHT22_TASK_STACK_SIZE, NULL, DHT22_TASK_PRIORITY, &dht22_task_handle);
@@ -429,13 +578,15 @@ static void UI_Task(void *pvParameters)
     xEventGroupWaitBits(g_evt, EV_NET_READY, pdTRUE, pdFALSE, pdMS_TO_TICKS(30 * 1000));
     printf("[UI] Boot net stage done: wifi=%d service=%d\r\n", (int)s_boot.wifi_ok, (int)s_boot.service_ok);
 
-    Boot_Page_Show(s_boot.wifi_ok, s_boot.service_ok); // 开机结果(连接详情)
-    vTaskDelay(pdMS_TO_TICKS(2500));                   // 结果页停留, 便于查看详情
+    Boot_Page_Show(s_boot.wifi_ok, s_boot.service_ok); /* 开机结果(连接详情) */
+    vTaskDelay(pdMS_TO_TICKS(2500));                   /* 结果页停留, 便于查看详情 */
     printf("[UI] Enter main page\r\n");
-    Main_Page_Display(); // 进入主页面(数据已就绪, 首绘即正确)
+    Main_Page_Display(); /* 进入主页面(数据已就绪, 首绘即正确) */
 
-    /* 进入主页面后再启动光敏任务: 保证昼夜切换只发生在开机完成之后 */
+    /* 进入主页面后再启动光敏任务与按键任务: 保证昼夜切换只发生在开机完成之后 */
     xTaskCreate(LightSensor_Task, "light_sensor", LIGHT_SENSOR_TASK_STACK_SIZE, NULL, LIGHT_SENSOR_TASK_PRIORITY, &lightsensor_task_handle);
+    if (xTaskCreate(Key_Task, "key", KEY_TASK_STACK_SIZE, NULL, KEY_TASK_PRIORITY, &key_task_handle) != pdPASS)
+        printf("[KEY] create FAILED (heap low)\r\n");
 
     for (;;)
     {
@@ -462,14 +613,14 @@ static void UI_Task(void *pvParameters)
         if (s_lcd_on)
         {
             if (bits & EV_WIFI)
-                Main_Page_Net_Update(); // WiFi连接状态变化: 刷顶部WiFi/定位条
+                Main_Page_Net_Update(); /* WiFi连接状态变化: 刷顶部WiFi/定位条 */
             if (bits & EV_WEATHER)
             {
                 Main_Page_Weather_Update();
-                Main_Page_Net_Update(); // 天气到位后同步城市/定位图标
+                Main_Page_Net_Update(); /* 天气到位后同步城市/定位图标 */
             }
             if (bits & EV_ROOM)
-                Main_Page_Room_Update();
+                Main_Page_Room_Update(); /* 房间温度更新 */
         }
 
         /* 夜间OLED仅显示时间+日期(分钟变化才刷新); 白天刷新LCD时钟 */
@@ -478,7 +629,7 @@ static void UI_Task(void *pvParameters)
             static uint8_t last_h = 0xFF, last_m = 0xFF, last_d = 0xFF;
             AT_Date_Info_t t;
 
-            (void)RTC_ReadDataTime(&t); // 夜间时间优先取外部RTC, 失败时内部已回退软件时钟
+            (void)RTC_ReadDataTime(&t); /* 夜间时间优先取外部RTC, 失败时内部已回退软件时钟 */
             if (t.hour != last_h || t.minute != last_m || t.day != last_d)
             {
                 last_h = t.hour;
@@ -489,7 +640,7 @@ static void UI_Task(void *pvParameters)
         }
         else
         {
-            Main_Page_Clock_Update(); // 时钟/日期刷新
+            Main_Page_Clock_Update(); /* 时钟/日期刷新 */
         }
     }
 }

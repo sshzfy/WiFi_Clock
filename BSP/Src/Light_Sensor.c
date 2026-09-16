@@ -8,9 +8,9 @@ static Light_Sensor_IRQ_Callback_t s_irq_cb = NULL;
 /** @brief 注册光敏传感器中断回调函数
  * @param cb 中断回调函数指针, 用于在ISR中通知任务
  */
-void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t cb)
+void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t callback)
 {
-    s_irq_cb = cb;
+    s_irq_cb = callback;
 }
 
 static inline void Light_Sensor_Notify(void)
@@ -80,7 +80,7 @@ static void Light_Sensor_ADC_Init(void)
     ADC_InitStruct.ADC_NbrOfConversion = 1;                                  // 1次转换
     ADC_Init(ADC1, &ADC_InitStruct);
 
-    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_56Cycles); // 通道0
+    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_56Cycles); /* 通道0 */
 
     /* 模拟看门狗: 单通道(IN0); 先装"免疫窗口"[0,4095]避免启动瞬间误触发 */
     ADC_AnalogWatchdogThresholdsConfig(ADC1, 4095, 0);
@@ -100,8 +100,8 @@ static void Light_Sensor_ADC_Init(void)
 uint16_t Light_Sensor_Read(void)
 {
     while (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET)
-        ;                                // 连续转换模式: 等一次转换完成
-    return ADC_GetConversionValue(ADC1); // 读取并清EOC
+        ;                                /* 连续转换模式: 等一次转换完成 */
+    return ADC_GetConversionValue(ADC1); /* 读取并清EOC */
 }
 
 /**
@@ -114,7 +114,7 @@ void ADC_IRQHandler(void)
         ADC_ClearITPendingBit(ADC1, ADC_IT_AWD);
 
         ao_dark = !ao_dark;             // 越界事件对应状态翻转
-        Light_Sensor_AWD_Arm(!ao_dark); // 反向装订, 防止连续越界中断风暴
+        Light_Sensor_AWD_Arm(!ao_dark); /* 反向装订, 防止连续越界中断风暴 */
         Light_Sensor_Notify();
     }
 }
@@ -124,7 +124,7 @@ void Light_Sensor_Init(void)
     Light_Sensor_AO_GPIO_Init();
     Light_Sensor_ADC_Init();
 
-    ADC_SoftwareStartConv(ADC1); // 启动连续转换
+    ADC_SoftwareStartConv(ADC1); /* 启动连续转换 */
 
     /* 采样一次确定初始状态, 并按"反向"装订AWD(避免立即触发) */
     uint16_t v = Light_Sensor_Read();
@@ -179,23 +179,6 @@ static void Light_Sensor_NVIC_Init(void)
     NVIC_Init(&NVIC_InitStruct);
 }
 
-void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
-{
-    if (EXTI_GetITStatus(LIGHT_SENSOR_DO_EXTI_LINE) == SET)
-    {
-        EXTI_ClearITPendingBit(LIGHT_SENSOR_DO_EXTI_LINE);
-        if (GPIO_ReadInputDataBit(LIGHT_SENSOR_DO_GPIO_PORT, LIGHT_SENSOR_DO_GPIO_PIN) == Bit_RESET)
-        {
-            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光照强度达到设定值,DO输出低电平
-        }
-        else
-        {
-            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // 光照强度低于设定值,DO输出高电平
-        }
-        Light_Sensor_Notify(); // 通知任务(边沿事件)
-    }
-}
-
 void Light_Sensor_Init(void)
 {
     Light_Sensor_DO_GPIO_Init();
@@ -211,6 +194,23 @@ void Light_Sensor_Init(void)
 uint16_t Light_Sensor_Read(void)
 {
     return 0;
+}
+
+void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
+{
+    if (EXTI_GetITStatus(LIGHT_SENSOR_DO_EXTI_LINE) == SET)
+    {
+        EXTI_ClearITPendingBit(LIGHT_SENSOR_DO_EXTI_LINE);
+        if (GPIO_ReadInputDataBit(LIGHT_SENSOR_DO_GPIO_PORT, LIGHT_SENSOR_DO_GPIO_PIN) == Bit_RESET)
+        {
+            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光照强度达到设定值,DO输出低电平
+        }
+        else
+        {
+            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // 光照强度低于设定值,DO输出高电平
+        }
+        Light_Sensor_Notify(); /* 通知任务(边沿事件) */
+    }
 }
 
 #endif /* AO_DO_SWITCH */

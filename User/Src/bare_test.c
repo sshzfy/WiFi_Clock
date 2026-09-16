@@ -141,7 +141,7 @@ static void DS1302_BareMetal_Test(void)
     OLED_Clear();
 
     DS1302_Init();
-    printf("[RTC] DS1302 init done (pins: PB0=RST PB1=IO PB2=CLK)\r\n");
+    printf("[RTC] DS1302 init done (pins: PE7=RST PE8=IO PE9=CLK)\r\n");
 
     /* 首次读取, 必要时写入基准时间 */
     bool first_ok = DS1302_ReadTime(&t);

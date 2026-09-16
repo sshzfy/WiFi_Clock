@@ -6,8 +6,8 @@
 #include "stm32f4xx_adc.h"
 #include "stm32f4xx_exti.h"
 
-/* AO/DO 选择: 1 = 模拟量 AO(PA0/ADC1_IN0, 软件阈值判断)
- *             0 = 数字量 DO(PA1/EXTI1, 板载电位器调阈值) */
+/* AO/DO 选择: 1 = 模拟量 AO(PC0/ADC123_IN10, 软件阈值判断)
+ *             0 = 数字量 DO(PC1/EXTI1, 板载电位器调阈值) */
 #define AO_DO_SWITCH 0
 
 /* AO 输出引脚 */
@@ -49,6 +49,6 @@ bool Light_Sensor_IsDark(void);
 
 /* 中断回调(由 RTOS 层注册, ISR 内调用): DO边沿 / AO看门狗阈值越界时触发 */
 typedef void (*Light_Sensor_IRQ_Callback_t)(void);
-void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t cb);
+void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t callback);
 
 #endif /* __LIGHT_SENSOR_H__ */

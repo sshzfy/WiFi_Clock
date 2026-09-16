@@ -1,6 +1,7 @@
 #include "Board.h"
 #include "Asset.h"
 #include "Profiling.h"
+#include "OLED.h"
 
 void Board_Peripheral_Init(void)
 {
@@ -26,6 +27,9 @@ void Board_Init(void)
     Prof_Init();         // 使能DWT周期计数器, 用于测量渲染耗时
     ST7789_Init();       // 初始化ST7789, 并分配图片乒乓缓冲
     Asset_Init();        // 初始化资源层: W25Q64 + littlefs(字库与图片)
+    OLED_Init();         // 上电就初始化并清屏: SSD1306不断电会一直保留
+                         // 上次的画面(如裸机测试内容), 不清掉就会一直挂在屏上
+    OLED_Display_Off();  // 白天由LCD显示, OLED保持关闭
 }
 
 static void Test_LED_GPIO_init(void)

@@ -230,6 +230,10 @@ bool DS1302_ReadTime(DS1302_Time_t *time)
 
     DS1302_BurstRead(buf);
 
+    /* 秒寄存器 bit7 = CH(Clock Halt)。CH=1 表示振荡器已停, 读取到的时间无效。 */
+    if (buf[0] & 0x80)
+        return false;
+
     time->sec = Bcd2Dec(buf[0] & 0x7F);
     time->min = Bcd2Dec(buf[1] & 0x7F);
     time->hour = Bcd2Dec(buf[2] & 0x3F); /* 24小时制 */
