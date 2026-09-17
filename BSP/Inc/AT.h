@@ -64,6 +64,7 @@ const char *AT_Get_Response(void);
 bool AT_WiFi_Init(void);
 bool AT_Connect_WiFi(const char *ssid, const char *password, const char *mac);
 bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info);
+bool AT_Set_Sleep(uint8_t mode);
 bool AT_Is_WiFi_Conected(void);
 bool Parse_Weather_Response(const char *response, AT_Weather_Info_t *info);
 bool AT_SNTP_Init(void);

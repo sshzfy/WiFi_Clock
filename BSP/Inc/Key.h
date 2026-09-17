@@ -13,8 +13,6 @@
 #define KEY_EXTI_PORT_SOURCE    EXTI_PortSourceGPIOA  /* SYSCFG 端口源, 不是中断号 */
 #define KEY_EXTI_PIN_SOURCE     EXTI_PinSource0
 #define KEY_EXTI_IRQn           EXTI0_IRQn            /* NVIC 通道 */
-/* 注意: Key.c 中中断函数名必须与本宏"大小写完全一致", 否则宏不会展开,
- *       中断会落到 startup 的 [WEAK] 默认实现(B . 死循环), 表现为"一按就卡死" */
 #define KEY_EXTI_IRQHandler     EXTI0_IRQHandler
 
 /* 手势: 由 RTOS 层的按键任务识别后产生(本层只上报按下/松开边沿) */

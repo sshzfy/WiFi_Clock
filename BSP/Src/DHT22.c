@@ -92,6 +92,9 @@ static uint8_t DHT22_Wait_For_Reset(uint32_t max_us)
  * @brief 读取一个字节
  * @param out 输出字节指针
  * @return 0=成功, 1=超时
+ * @note  用TIM5测量"高电平持续时间"来判别0/1, 而不是在固定时刻采样:
+ *        固定延时30us采样时, 位"0"(26~28us)的裕量只有2~5us,
+ *        任何中断插入把采样点推后都有误判风险
  */
 static uint8_t DHT22_ReadByte(uint8_t *out)
 {
@@ -99,13 +102,18 @@ static uint8_t DHT22_ReadByte(uint8_t *out)
 
     for (uint8_t i = 0; i < 8; i++)
     {
-        if (DHT22_Wait_For_Set(300) != 0) /* 等位起始(低电平结束) */
+        if (DHT22_Wait_For_Set(300) != 0) /* 等位起始(50us低电平结束) */
             return DHT22_ERR_TIMEOUT;
-        delay_us(30); /* 采样窗口 */
-        if (DHT22_READ_DATA == SET)
+
+        uint64_t t_rise = TIM5_Get_us(); /* 记录该位上升沿时刻 */
+
+        if (DHT22_Wait_For_Reset(300) != 0) /* 等该位高电平结束 */
+            return DHT22_ERR_TIMEOUT;
+
+        /* 高电平宽度 > 40us 判为1, 否则判为0。
+         * 用有符号比较: 采样值一旦回退, 无符号相减会下溢成巨大值而被误判为1 */
+        if ((int64_t)(TIM5_Get_us() - t_rise) > (int64_t)DHT22_BIT_THRESHOLD_US)
             data |= (uint8_t)(1U << (7 - i));
-        if (DHT22_Wait_For_Reset(300) != 0) /* 等位结束(回到低) */
-            return DHT22_ERR_TIMEOUT;
     }
 
     *out = data;

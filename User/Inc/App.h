@@ -19,6 +19,7 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out);
 
 bool Wireless_Init(void);
 bool Service_WiFi_Connect(void);
+bool Service_WiFi_Sleep(bool enable);
 
 bool Service_Time_Sync(void);
 int Service_WiFi_Update(void);

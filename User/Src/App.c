@@ -158,6 +158,18 @@ err:
 /* ================ WiFi 连接 ================ */
 
 /**
+ * @brief 整体替换wifi_info(临界区内赋值, 避免UI读到半写状态)
+ * @param info 新的WiFi信息
+ * @return None
+ */
+static void WiFi_Info_Store(const AT_WiFi_Info_t *info)
+{
+    taskENTER_CRITICAL();
+    wifi_info = *info;
+    taskEXIT_CRITICAL();
+}
+
+/**
  * @brief 连接WiFi并刷新wifi_info
  * @return true 已连接
  */
@@ -182,10 +194,8 @@ bool Service_WiFi_Connect(void)
             vTaskDelay(pdMS_TO_TICKS(200));
     }
 
-    taskENTER_CRITICAL();
     if (ok)
-        wifi_info = tmp; /* 一次性整体替换, 避免ui读到半写状态 */
-    taskEXIT_CRITICAL();
+        WiFi_Info_Store(&tmp); /* 一次性整体替换, 避免ui读到半写状态 */
 
     if (ok && wifi_info.connected)
     {
@@ -199,7 +209,97 @@ bool Service_WiFi_Connect(void)
     return (ok && wifi_info.connected);
 }
 
+/* ================ WiFi 省电 ================ */
+
+/* ESP32-C3的Wi-Fi睡眠档位(见 AT+SLEEP 命令):
+ * 0=关闭睡眠(全速, 约80mA)
+ * 1=Modem-sleep, RF按AP的DTIM周期关闭(ESP32-C3约20mA)  ← 夜间使用
+ * 2=Light-sleep(约130uA, 但必须先用 AT+SLEEPWKCFG 配好唤醒源;
+ *   ESP32-C3只支持定时器/GPIO唤醒, 当前硬件未连唤醒GPIO, 故不使用)
+ * 3=Modem-sleep, RF按 AT+CWJAP 的 listen interval 关闭 */
+#define WIFI_SLEEP_MODE_IDLE 1U /* 空闲(夜间无网络活动)档位 */
+#define WIFI_SLEEP_MODE_FULL 0U /* 全速(白天需要快速响应)档位 */
+
+/**
+ * @brief 切换ESP32-C3的Wi-Fi省电档位
+ * @param enable true=进入省电(夜间), false=恢复全速(白天)
+ * @return true 设置成功
+ * @note  只改变RF的开关占空比, Wi-Fi连接保持, 因此退出夜间无需重新连接;
+ *        设置失败时调用方保持原状态, 下个周期会自动重试
+ */
+bool Service_WiFi_Sleep(bool enable)
+{
+    if (!AT_Set_Sleep(enable ? WIFI_SLEEP_MODE_IDLE : WIFI_SLEEP_MODE_FULL))
+    {
+        printf("[NET] WiFi sleep set FAILED\r\n");
+        return false;
+    }
+
+    printf("[NET] WiFi %s\r\n", enable ? "modem-sleep" : "wake");
+    return true;
+}
+
 /* ================ 周期任务(由netTask/sensorTask调度) ================ */
+
+/**
+ * @brief 周期任务: WiFi连接检查/重连
+ * @note  "AT查询失败"与"模组确实没连上"是两回事: 前者只重试查询, 不触发重连,
+ *        避免AT指令抖动(模组忙/串口残留)被误判成掉线而做一次无谓的CWJAP
+ * @return 0=已连接, 1=本次刚重连成功, -1=查询失败或重连失败
+ */
+int Service_WiFi_Update(void)
+{
+    AT_WiFi_Info_t tmp;
+    bool ok = false;
+
+    /* 查询失败≠掉线: 先重试一次; 两次都失败则只报告, 不动连接状态 */
+    for (int i = 0; i < 2 && !ok; i++)
+    {
+        memset(&tmp, 0, sizeof(tmp)); /* 清零, 失败时不残留上次结果 */
+        ok = AT_Get_WiFi_Info(&tmp);
+        if (!ok)
+            vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
+    if (!ok)
+    {
+        printf("[NET] WiFi state query FAILED\r\n");
+        return -1;
+    }
+
+    if (tmp.connected) /* 查询成功且已连接 */
+    {
+        WiFi_Info_Store(&tmp);
+        printf("[NET] WiFi check OK: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
+        return 0;
+    }
+
+    /* 查询成功但确实未连接: 重连 */
+    printf("[NET] WiFi lost, reconnecting...\r\n");
+    if (!AT_Connect_WiFi(ssid, password, mac)) /* 连接WiFi */
+    {
+        WiFi_Info_Store(&tmp); /* connected=0, 让UI同步切到离线图标 */
+        printf("[NET] WiFi reconnect FAILED\r\n");
+        return -1;
+    }
+
+    /* 重连后重试查询: 与Service_WiFi_Connect保持一致(模组状态更新有延迟) */
+    for (int i = 0; i < 3; i++)
+    {
+        memset(&tmp, 0, sizeof(tmp)); /* 清零, 失败时不残留上次结果 */
+        if (AT_Get_WiFi_Info(&tmp) && tmp.connected)
+        {
+            WiFi_Info_Store(&tmp);
+            printf("[NET] WiFi reconnected: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
+            return 1;
+        }
+        vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
+    WiFi_Info_Store(&tmp); /* 保守置为离线, 下个周期重试会纠正 */
+    printf("[NET] WiFi reconnect FAILED: no valid info\r\n");
+    return -1;
+}
 
 /**
  * @brief 周期任务: SNTP时间同步
@@ -225,44 +325,6 @@ bool Service_Time_Sync(void)
 
     printf("[NET] SNTP sync FAILED\r\n");
     return false;
-}
-
-/**
- * @brief 周期任务: WiFi连接检查/重连
- * @return 0=已连接, 1=本次刚重连成功, -1=重连失败
- */
-int Service_WiFi_Update(void)
-{
-    AT_WiFi_Info_t tmp;
-    bool ok;
-
-    memset(&tmp, 0, sizeof(tmp));
-    ok = AT_Get_WiFi_Info(&tmp);
-    if (ok && tmp.connected)
-    {
-        taskENTER_CRITICAL();
-        wifi_info = tmp;
-        taskEXIT_CRITICAL();
-        printf("[NET] WiFi check OK: ssid=%s rssi=%d\r\n", wifi_info.ssid, wifi_info.rssi);
-        return 0;
-    }
-
-    printf("[NET] WiFi lost, reconnecting...\r\n");
-    if (!AT_Connect_WiFi(ssid, password, mac))
-    {
-        printf("[NET] WiFi reconnect FAILED\r\n");
-        return -1;
-    }
-
-    memset(&tmp, 0, sizeof(tmp));
-    if (AT_Get_WiFi_Info(&tmp))
-    {
-        taskENTER_CRITICAL();
-        wifi_info = tmp;
-        taskEXIT_CRITICAL();
-    }
-    printf("[NET] WiFi reconnected: ssid=%s rssi=%d\r\n", wifi_info.ssid, wifi_info.rssi);
-    return 1;
 }
 
 /**

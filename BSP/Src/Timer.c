@@ -76,11 +76,13 @@ uint64_t TIM5_Get_us(void)
 {
     uint32_t cnt;
     uint64_t ms;
+    uint8_t uif;
 
     do
     {
         cnt = TIM5->CNT;
         ms = TIM5_ms;
+        uif = (TIM5->SR & TIM_SR_UIF) != 0; // 更新事件已发生但中断尚未处理
     } while (ms != TIM5_ms); // ms在采样期间被中断更新则重读
 
     if (cnt < 256U) // CNT接近回绕起点, 复检ms是否已进位
@@ -90,13 +92,22 @@ uint64_t TIM5_Get_us(void)
             ms = ms2; // 已进入下一毫秒, 当前cnt属于ms2
     }
 
+    /* CNT已回绕、但更新中断还没执行时, 上面的ms还是回绕前的值, 结果会比实际
+     * 小1000us(时间倒流)。此时UIF仍置位, 据此补上这一毫秒, 保证本函数单调不减。 */
+    if (uif && cnt < 500U)
+        ms++;
+
     return ms * 1000U + cnt;
 }
 
 void delay_us(uint32_t us)
 {
-    uint64_t now = TIM5_Get_us();
-    while (TIM5_Get_us() - now < (uint64_t)us)
+    uint64_t start = TIM5_Get_us();
+
+    /* 用有符号差比较而不是无符号: 采样值一旦出现回退, 无符号相减会下溢成巨大值,
+     * 循环条件立刻不成立而提前返回(实测会把DS1302的SCLK半周期压到200ns以下,
+     * 表现为随机位错误)。有符号比较会把它看成负的"已过时间", 继续等待。 */
+    while ((int64_t)(TIM5_Get_us() - start) < (int64_t)us)
         ;
 }
 

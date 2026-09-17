@@ -34,13 +34,13 @@ static inline void W25Q64_CS_High(void)
  * */
 static uint8_t W25Q64_RWByte(uint8_t data)
 {
-    while (SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET) // 等待发送寄存器为空
+    while (SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET) /* 等待发送寄存器为空 */
         ;
-    SPI_SendData(SPI1, data);                               // 发送数据
-    while (SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE) == RESET) // 等待接收完成
+    SPI_SendData(SPI1, data);                               /* 发送数据 */
+    while (SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE) == RESET) /* 等待接收完成 */
         ;
 
-    return SPI_ReceiveData(SPI1); // 返回接收寄存器数据
+    return SPI_ReceiveData(SPI1); /* 返回接收寄存器数据 */
 }
 
 static void W25Q64_GPIO_Init(void)
@@ -93,9 +93,9 @@ void W25Q64_Init(void)
 {
     W25Q64_GPIO_Init();
     W25Q64_SPI_Init();
-    W25Q64_CS_High(); // 上电先释放片选, 保证首个命令的起始沿被芯片识别
+    W25Q64_CS_High(); /* 上电先释放片选, 保证首个命令的起始沿被芯片识别 */
     W25Q64_CS_Low();
-    W25Q64_RWByte(W25Q64_CMD_RELEASE_PD); // 释放保护模式，恢复正常工作
+    W25Q64_RWByte(W25Q64_CMD_RELEASE_PD); /* 释放保护模式，恢复正常工作 */
     W25Q64_CS_High();
 
     /* 芯片从掉电模式唤醒需要 tRES1(典型 3us)，这里做保守延时 */
@@ -124,10 +124,10 @@ static bool W25Q64_WaitBusy(void)
     do
     {
         W25Q64_CS_Low();
-        W25Q64_RWByte(W25Q64_CMD_READ_SR1); // 读状态寄存器1
+        W25Q64_RWByte(W25Q64_CMD_READ_SR1); /* 读状态寄存器1 */
         status = W25Q64_RWByte(0xFF);       // 发送0xFF，读一字节状态
-        W25Q64_CS_High();                   // 必须释放片选
-    } while ((status & W25Q64_SR1_BUSY) && (--timeout != 0U)); // 等待 BUSY 清零或超时
+        W25Q64_CS_High();                   /* 必须释放片选 */
+    } while ((status & W25Q64_SR1_BUSY) && (--timeout != 0U)); /* 等待 BUSY 清零或超时 */
 
     /* 超时或芯片无响应, 计数 + 1，返回 false */
     if (status & W25Q64_SR1_BUSY)
@@ -162,15 +162,15 @@ uint16_t W25Q64_ReadId(void)
     uint16_t id;
 
     W25Q64_CS_Low();
-    W25Q64_RWByte(W25Q64_CMD_READ_ID); // 0x90: 缺少此命令字节会读到无效数据
-    W25Q64_RWByte(0x00);               // 地址高字节 = 00，伪字节占位
-    W25Q64_RWByte(0x00);               // 地址中字节 = 00，伪字节占位
-    W25Q64_RWByte(0x00);               // 地址低字节 = 00，伪字节占位
+    W25Q64_RWByte(W25Q64_CMD_READ_ID); /* 0x90: 缺少此命令字节会读到无效数据 */
+    W25Q64_RWByte(0x00);               /* 地址高字节 = 00，伪字节占位 */
+    W25Q64_RWByte(0x00);               /* 地址中字节 = 00，伪字节占位 */
+    W25Q64_RWByte(0x00);               /* 地址低字节 = 00，伪字节占位 */
 
     id = W25Q64_RWByte(0xFF) << 8; // 读厂商 ID（0xEF）
     id |= W25Q64_RWByte(0xFF);     // 读器件 ID（0x16）
-    W25Q64_CS_High();              // 拉高片选
-
+    W25Q64_CS_High();              /* 拉高片选 */
+    
     return id;
 }
 
@@ -179,7 +179,7 @@ uint32_t W25Q64_ReadJedecId(void)
     uint32_t id;
 
     W25Q64_CS_Low();
-    W25Q64_RWByte(W25Q64_CMD_JEDEC_ID); // 发送 9Fh
+    W25Q64_RWByte(W25Q64_CMD_JEDEC_ID); /* 发送 9Fh */
     id = W25Q64_RWByte(0xFF) << 16;     // 厂商 ID
     id |= W25Q64_RWByte(0xFF) << 8;     // 存储类型
     id |= W25Q64_RWByte(0xFF);          // 容量
@@ -203,10 +203,10 @@ uint8_t W25Q64_IsBusy(void)
 void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 {
     W25Q64_CS_Low();
-    W25Q64_RWByte(W25Q64_CMD_READ_DATA);
-    W25Q64_RWByte((addr >> 16) & 0xFF); // 地址高字节
-    W25Q64_RWByte((addr >> 8) & 0xFF);  // 地址中字节
-    W25Q64_RWByte(addr & 0xFF);         // 地址低字节
+    W25Q64_RWByte(W25Q64_CMD_READ_DATA); /* 读取数据 */
+    W25Q64_RWByte((addr >> 16) & 0xFF); /* 地址高字节 */
+    W25Q64_RWByte((addr >> 8) & 0xFF);  /* 地址中字节 */
+    W25Q64_RWByte(addr & 0xFF);         /* 地址低字节 */
 
     while (len--)
     {

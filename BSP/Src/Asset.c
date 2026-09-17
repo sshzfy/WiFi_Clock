@@ -1,17 +1,9 @@
 #include "Asset.h"
-#include "lfs_port.h"
-#include "W25Q64.h"
-#include <stdio.h>
 
 /* ============================================================
  * 字库资源文件表
  * 顺序必须与 Font.h 里的 Asset_FontId_t 枚举严格一致。
  * ============================================================ */
-typedef struct
-{
-    const char *path; // W25Q64 上的 littlefs 路径
-    uint32_t size;    // 文件应有的字节数, 自检用
-} Asset_FontFile_t;
 
 static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] = {
     {"/font/cn16.bin", ASSET_CN16_SIZE},   /* ASSET_FID_CN16 */
@@ -27,17 +19,16 @@ static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] = {
     {"/font/as48b.bin", ASSET_AS48B_SIZE}, /* ASSET_FID_AS48B */
 };
 
-static bool s_ready = false;      // littlefs 是否已挂载
-static uint32_t s_missing = 0;    // 自检发现的问题项数
-static uint32_t s_checked = 0;    // 自检核对过的项数
+static bool s_ready = false;   // littlefs 是否已挂载
+static uint32_t s_missing = 0; // 自检发现的问题项数
+static uint32_t s_checked = 0; // 自检核对过的项数
 
 /* 常开句柄: 字模读取非常频繁, 每次 open/close 都要走一遍目录查找, 太浪费 */
-static lfs_file_t s_file[ASSET_FID_COUNT];
-static bool s_open[ASSET_FID_COUNT];
-static uint32_t s_pos[ASSET_FID_COUNT]; // 记录当前文件位置, 位置相同就跳过 seek
+static lfs_file_t s_file[ASSET_FID_COUNT]; // 字库文件句柄
+static bool s_open[ASSET_FID_COUNT];       // 字库文件是否已打开
+static uint32_t s_pos[ASSET_FID_COUNT];    // 记录当前文件位置, 位置相同就跳过 seek
 
-/* 图片自检结果位图, 最多 32 张 */
-static uint32_t s_imageMask = 0;
+static uint32_t s_imageMask = 0; // 图片自检结果位图, 最多 32 张
 
 /* ==================== 自检 ==================== */
 
@@ -52,7 +43,7 @@ static void Asset_SelfCheck(void)
     /* 字库文件 */
     for (int i = 0; i < ASSET_FID_COUNT; i++)
     {
-        int err = lfs_stat(&g_lfs, s_fontFiles[i].path, &info);
+        int err = lfs_stat(&g_lfs, s_fontFiles[i].path, &info); // 获取字库文件信息
         s_checked++;
 
         if ((err != LFS_ERR_OK) || (info.size != s_fontFiles[i].size))
@@ -76,8 +67,8 @@ static void Asset_SelfCheck(void)
     {
         const Image_t *im = g_AllImages[i];
         uint32_t want = (uint32_t)ASSET_IMAGE_HEADER_SIZE +
-                        (uint32_t)im->width * (uint32_t)im->height * 2U;
-        int err = lfs_stat(&g_lfs, im->path, &info);
+                        (uint32_t)im->width * (uint32_t)im->height * 2U; // 期望的图片大小 = 4 字节头 + 宽*高*2
+        int err = lfs_stat(&g_lfs, im->path, &info);                     // 获取图片文件信息
         s_checked++;
 
         if ((err != LFS_ERR_OK) || (info.size != want))
@@ -95,28 +86,34 @@ static void Asset_SelfCheck(void)
         }
         else
         {
-            s_imageMask |= (1UL << i);
+            s_imageMask |= (1UL << i); // 标记为已核对通过
         }
     }
 }
 
 /* ==================== 对外接口 ==================== */
 
+/**
+ * @brief 初始化资源层: 初始化 W25Q64 -> 挂载 littlefs -> 打开字库 -> 自检
+ * @return 0 表示全部资源就绪; 负数表示失败或存在缺失项(详见串口日志)
+ */
 int Asset_Init(void)
 {
+    /* 初始化状态 */
     s_ready = false;
     s_missing = 0;
     s_checked = 0;
     s_imageMask = 0;
 
+    /* 初始化文件句柄和位置 */
     for (int i = 0; i < ASSET_FID_COUNT; i++)
     {
         s_open[i] = false;
         s_pos[i] = 0;
     }
 
+    /* 初始化 W25Q64 并检查 JEDEC ID */
     W25Q64_Init();
-
     uint32_t jedec = W25Q64_ReadJedecId();
     if (jedec != 0xEF4017U)
     {
@@ -129,7 +126,7 @@ int Asset_Init(void)
 
     /* 只挂载, 绝不自动格式化:
      * 正式固件里格式化会把字库和图片全部清空。挂载失败只能提示重新烧录。 */
-    int err = lfs_mount(&g_lfs, &g_lfs_config);
+    int err = lfs_mount(&g_lfs, &g_lfs_config); // 挂载 littlefs
     if (err != LFS_ERR_OK)
     {
         printf("[ASSET] ERROR: littlefs mount failed, err = %d\r\n", err);
@@ -137,17 +134,17 @@ int Asset_Init(void)
         return -2;
     }
 
-    s_ready = true;
+    s_ready = true; // 标记为已挂载
     printf("[ASSET] littlefs mounted: %lu blocks x %lu B\r\n",
            (unsigned long)g_lfs_config.block_count, (unsigned long)g_lfs_config.block_size);
 
     /* 常开全部字库句柄 */
     for (int i = 0; i < ASSET_FID_COUNT; i++)
     {
-        err = lfs_file_open(&g_lfs, &s_file[i], s_fontFiles[i].path, LFS_O_RDONLY);
+        err = lfs_file_open(&g_lfs, &s_file[i], s_fontFiles[i].path, LFS_O_RDONLY); // 打开字库文件
         if (err == LFS_ERR_OK)
         {
-            s_open[i] = true;
+            s_open[i] = true; // 标记为已打开
         }
         else
         {
@@ -155,8 +152,8 @@ int Asset_Init(void)
         }
     }
 
+    /* 自检资源文件 */
     Asset_SelfCheck();
-
     printf("[ASSET] selfcheck: checked=%lu, missing=%lu\r\n",
            (unsigned long)s_checked, (unsigned long)s_missing);
 
@@ -170,25 +167,35 @@ int Asset_Init(void)
     return (s_missing == 0U) ? 0 : -3;
 }
 
+/** @brief littlefs 是否已成功挂载 */
 bool Asset_Ready(void)
 {
     return s_ready;
 }
 
+/** @brief 自检发现的问题项数(文件缺失或大小不符) */
 uint32_t Asset_MissingCount(void)
 {
     return s_missing;
 }
 
+/** @brief 自检核对过的资源项总数 */
 uint32_t Asset_CheckedCount(void)
 {
     return s_checked;
 }
 
+/**
+ * @brief 从字库资源文件读取字体数据
+ * @param fid 资源文件 ID(见 Asset_FontId_t)
+ * @param off 文件内字节偏移
+ * @param buf 输出缓冲区
+ * @param len 要读取的字节数
+ * @return 0 成功; 负数失败
+ */
 int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
 {
-    if ((!s_ready) || (fid >= ASSET_FID_COUNT) || (!s_open[fid]) ||
-        (buf == NULL) || (len == 0U))
+    if ((!s_ready) || (fid >= ASSET_FID_COUNT) || (!s_open[fid]) || (buf == NULL) || (len == 0U))
     {
         return -1;
     }
@@ -217,6 +224,12 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
     return 0;
 }
 
+/**
+ * @brief 打开图片文件并跳过 4 字节文件头
+ * @param img 图片描述
+ * @param f   输出: 打开的文件句柄
+ * @return 0 成功; 负数失败
+ */
 int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
 {
     if ((!s_ready) || (img == NULL) || (f == NULL))
@@ -241,6 +254,12 @@ int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
     return 0;
 }
 
+/** @brief 从已打开的图片文件顺序读取 len 字节
+ * @param f   图片文件句柄
+ * @param buf 输出缓冲区
+ * @param len 读取的字节数
+ * @return 0 成功; 负数失败
+ */
 int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len)
 {
     if ((!s_ready) || (f == NULL) || (buf == NULL))
@@ -256,6 +275,9 @@ int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len)
     return 0;
 }
 
+/** @brief 关闭图片文件
+ * @param f 图片文件句柄
+ */
 void Asset_ImageClose(lfs_file_t *f)
 {
     if (s_ready && (f != NULL))
@@ -264,6 +286,10 @@ void Asset_ImageClose(lfs_file_t *f)
     }
 }
 
+/** @brief 该图片是否已通过自检(存在且大小正确)
+ * @param img 图片描述
+ * @return true 已通过自检; false 未通过自检
+ */
 bool Asset_ImageOk(const Image_t *img)
 {
     if (img == NULL)

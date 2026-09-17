@@ -215,13 +215,13 @@ static void DS1302_BurstRead(uint8_t raw[8])
 }
 
 /**
- * @brief 从DS1302读取时间
+ * @brief 读一次DS1302时间(突发读 + 合法性判断)
  *
  * @param time 存储读取到的时间结构体指针
  * @return true 成功
  * @return false 失败
  */
-bool DS1302_ReadTime(DS1302_Time_t *time)
+static bool DS1302_ReadOnce(DS1302_Time_t *time)
 {
     uint8_t buf[8];
 
@@ -258,6 +258,38 @@ bool DS1302_ReadTime(DS1302_Time_t *time)
     if (time->week < 1 || time->week > 7)
         return false;
 
+    return true;
+}
+
+/**
+ * @brief 从DS1302读取时间(连读两次比对)
+ *
+ * @param time 存储读取到的时间结构体指针
+ * @return true 成功
+ * @return false 失败
+ *
+ * @note  突发读期间若时钟半周期被压缩, 可能只错某一位而结果仍落在合法范围内
+ *        (例如 00:13 被读成 01:13), 单靠范围校验挡不住。这里连读两次比对:
+ *        两次间隔约2ms, 除"秒"以外的字段不应变化, 不一致就判本次读取失败,
+ *        由调用方下个周期重试。代价是读取耗时翻倍(约2ms → 约4ms)。
+ */
+bool DS1302_ReadTime(DS1302_Time_t *time)
+{
+    DS1302_Time_t a, b;
+
+    if (time == NULL)
+        return false;
+
+    if (!DS1302_ReadOnce(&a))
+        return false;
+    if (!DS1302_ReadOnce(&b))
+        return false;
+
+    if ((a.min != b.min) || (a.hour != b.hour) || (a.day != b.day) ||
+        (a.month != b.month) || (a.week != b.week) || (a.year != b.year))
+        return false;
+
+    *time = a;
     return true;
 }
 

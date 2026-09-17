@@ -3,6 +3,10 @@
 /* DWT(Data Watchpoint and Trace) 的 CYCCNT 是一个自由运行的 32 位周期计数器,
  * 在 168MHz 下约 25.6 秒回绕一次, 足够覆盖单次渲染的测量窗口。 */
 
+/**
+ * @brief 初始化性能测量模块
+ * @return 无
+ */
 void Prof_Init(void)
 {
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // 使能跟踪与调试模块
@@ -10,11 +14,20 @@ void Prof_Init(void)
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            // 启动周期计数器
 }
 
+/**
+ * @brief 获取当前周期数
+ * @return uint32_t 当前周期数
+ */
 uint32_t Prof_Cycles(void)
 {
     return DWT->CYCCNT;
 }
 
+/**
+ * @brief 计算从 start 开始到当前时间的微秒数
+ * @param start 开始时间的周期数
+ * @return uint32_t 从 start 开始到当前时间的微秒数
+ */
 uint32_t Prof_Us(uint32_t start)
 {
     uint32_t delta = DWT->CYCCNT - start; // 无符号相减, 自动处理回绕

@@ -12,6 +12,7 @@
  *   width(2, 大端) + height(2, 大端) + 像素数据
  * 读取时跳过 4 字节头即可, 格式与 LFS_Operation 的 SaveImage 一致。
  * ============================================================ */
+
 typedef struct
 {
     uint16_t width;
@@ -20,8 +21,8 @@ typedef struct
 } Image_t;
 
 /* 全部图片资源清单, 供 Asset 自检与 Provision 烧录遍历 */
-extern const Image_t *const g_AllImages[];
-extern const uint32_t g_AllImageCount;
+extern const Image_t *const g_AllImages[]; // 图片资源清单
+extern const uint32_t g_AllImageCount;     // 图片资源总数
 
 /* ------------------------------------------------------------
  * 资源数据本体声明

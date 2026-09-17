@@ -7,6 +7,7 @@
 #include "Image.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "Asset.h"
 
 /* ST7789 显示区域 */
 #define WIDTH 240

@@ -39,7 +39,7 @@
 - 用 **DHT22/AM2302** 采集室内温度与湿度；
 - 用 **一个轻触按键（PA0）** 支持单击 / 双击 / 三击 / 长按手势，目前单击用于手动切换昼夜；
 - **FreeRTOS** 负责调度：显示、联网、传感器、光敏、按键各自独立任务，通过事件组通信；
-- **夜晚进入低功耗模式**：关闭彩屏、只保留 OLED 显示时间，并暂停 WiFi / SNTP / 天气 / 室内温湿度的周期更新；退出时立即补更一次。
+- **夜晚进入低功耗模式**：关闭彩屏、只保留 OLED 显示时间，暂停 WiFi / SNTP / 天气 / 室内温湿度的周期更新，并让 ESP32-C3 进入 Wi-Fi Modem-sleep（保持连接，RF 按 AP 的 DTIM 周期关闭）；退出时**先唤醒模组再补更**一次。
 
 时间基准白天为 **SNTP 校时 + TIM5 1ms 计数** 推算的软件时钟（见 8.3）；夜间切换到 **DS1302 外部 RTC**（进入夜间前用网络时间回写并回读校验），因此夜间不依赖网络也能正常走时。
 
@@ -248,7 +248,7 @@ Project4/
 - `configTICK_RATE_HZ = 1000`、`configMAX_PRIORITIES = 5`（优先级 0~4）
 - `configUSE_TIME_SLICING = 0`、`configTOTAL_HEAP_SIZE = 88KB`（heap_4）
 - `configCHECK_FOR_STACK_OVERFLOW = 2`；`configASSERT` 失败进入 `vAssertCalled`
-- 未开启 tickless idle（`configUSE_TICKLESS_IDLE = 0`）
+- **未开启 tickless idle**（`configUSE_TICKLESS_IDLE = 0`）。曾短暂启用并实测，因 TIM5 的 1ms 中断会把睡眠切碎、收益有限而回退，详细原因见 §8.4
 
 > `app_task.c` 里 `WIFI_PERIOD_S` 附近有一句"连接上 30min"的旧注释，与 `app_task.h` 的 `60UL` 不符，**以头文件为准**。
 
@@ -365,7 +365,7 @@ W25Q64 ──SPI1 21MHz──▶ Asset 层 ──▶ 字模: (区码-0xB0)*94+(�
 
 | 功能 | 引脚 | 说明 |
 | --- | --- | --- |
-| DHT22 DATA | PE6 | 单总线，输出/输入切换，输入上拉 |
+| DHT22 DATA | PE6 | 单总线，输出/输入切换，输入上拉；位判别用 `TIM5_Get_us()` 测**高电平宽度**（阈值 `DHT22_BIT_THRESHOLD_US = 40`），不是在固定时刻采样 |
 | 光敏 AO | PC0 | `GPIOC + GPIO_Pin_0`，对应 `ADC123_IN10`（驱动里的 ADC 通道仍是 `ADC_Channel_0`，见第 13 节） |
 | 光敏 DO | PC1 | `GPIOC + GPIO_Pin_1` → `EXTI1`（端口源为 `EXTI_PortSourceGPIOC`），上升沿/下降沿双沿触发 |
 | 按键 KEY | PA0 | `GPIOA + GPIO_Pin_0` → `EXTI0`（端口源 `EXTI_PortSourceGPIOA`）；**下拉输入**：空闲低、按下高；上升/下降沿双沿触发，手势识别见 8.7 |
@@ -418,8 +418,18 @@ Wireless_Init():
 
 Service_WiFi_Connect():
     AT+CWJAP="<ssid>","<password>"          # 超时 10000ms
-    AT+CWSTATE?                 # 解析连接状态与 SSID（必需项）
+    AT+CWSTATE?                 # 解析连接状态与 SSID（必需项），失败最多重试 3 次
     AT+CWJAP?                   # 解析 BSSID / channel / RSSI（失败不影响整体）
+
+Service_WiFi_Update():          # 周期 60s；失败后缩短为 10s
+    AT+CWSTATE?                 # 查询失败 → 重试 1 次；仍失败则只报错返回，不重连
+    已连接   → 刷新 wifi_info，返回 0
+    未连接   → AT+CWJAP 重连
+               └ 重连后最多查 3 次（间隔 200ms）确认状态：成功返回 1，
+                 失败则把 wifi_info 置为离线后返回 -1
+
+Service_WiFi_Sleep(enable):     # 夜间省电，见 8.4
+    AT+SLEEP=1 / 0              # 1=Modem-sleep(RF按AP的DTIM周期关闭)，0=全速
 
 AT_SNTP_Init():
     AT+CIPSNTPCFG=1,8           # 使能 SNTP，东八区
@@ -430,6 +440,10 @@ Service_Time_Sync():
 Service_Weather_Update():
     AT+HTTPCLIENT=2,1,"<url>",,,2   # 直接返回 JSON 响应体
 ```
+
+> **「查询失败」≠「掉线」**：`Service_WiFi_Update()` 只有在 **AT 查询成功、且模组报告未连接** 时才发 `AT+CWJAP`。纯粹拿不到 AT 回复（模组忙、上一条 HTTP 响应残留）只会重试一次查询后返回 `-1`，不会触发一次无谓的 10s 阻塞重连，也不会把 SNTP / 天气一起停掉。
+>
+> 失败路径同样会写回 `wifi_info`（`connected = 0`），使顶部状态条与 `Net_Task` 的 `wifi_up` 保持同步。旧实现在失败时不写回，导致 `wifi_info.connected` 一旦为 1 就再也不会回落，顶栏会一直显示「已连接」。
 
 `AT_SNTP_Get_Time` 会把 `1970` 年等无效时间判为失败，等待下一轮重试。
 
@@ -458,14 +472,14 @@ Service_Weather_Update():
 ```
 LightSensor_Task                          UI_Task                    Net_Task / DHT22_Task
   中断通知(或1s轮询兜底) → 2s 去抖
-  暗 & !requested_night:
+  暗 & !s_night:
      置 EV_LOWERPOWER  ───────────────▶  ① RTC_Sync_From_SystemClock()（回读校验）
                                         ② s_lowpower = true
                                         ③ OLED 开 → RTC_ReadDataTime() → 显示
                                         ④ ST7789 睡眠 + 关背光
      等 EV_LOWPOWER_ACK(2s) ◀──────────  ⑤ 置 EV_LOWPOWER_ACK
                                                                    → 下一拍起冻结计数器 / 跳过采集
-  亮 & requested_night:
+  亮 & s_night:
      置 EV_WAKEUP      ───────────────▶  ① OLED 关 → ST7789 恢复 → Main_Page_Display()
                                         ② s_lowpower = false
                                         ③ 置 EV_NET_UPDATE_NOW|EV_SENSOR_UPDATE_NOW ─▶ 立即补更/补采
@@ -479,12 +493,27 @@ LightSensor_Task                          UI_Task                    Net_Task / 
 - **冻结周期计数器**：`if (s_lowpower) continue;` 放在递减之前。若边暂停边递减，退出夜间时三个计数器会同时归零，导致同一秒内连发多次 AT 事务。
 - **补更走独立事件位**：`Net_Task` 等 `EV_NET_UPDATE_NOW`、`DHT22_Task` 等 `EV_SENSOR_UPDATE_NOW`，均为清除式等待，互不抢占。
 - **正在执行的 AT 事务不被打断**：进入夜间时若 `Net_Task` 正在收发 AT（最长 10s），本轮跑完后下一拍才进入跳过状态；`UI_Task` 不等待 Net_Task，仍立即回 ACK。
+- **模组省电与补更的先后**：`Net_Task` 在事件组等待返回后、`if (s_lowpower) continue;` **之前**检查 `s_lowpower` 是否变化，变化则发 `AT+SLEEP=1`（夜间）/ `AT+SLEEP=0`（白天）切换 ESP32-C3 的 Wi-Fi 档位。顺序上必须**先唤醒模组再做补更**，否则补更的第一条 AT 命令会落在仍处于省电的模组上（Modem-sleep 不掉连接，只是响应会晚一个 DTIM 周期）。设置失败时保持原状态，下个周期自动重试。
+
+**为什么最终没有启用 MCU 的 Sleep（tickless idle）**：`configUSE_TICKLESS_IDLE` 保持 `0`。曾短暂设为 `1` 实测，结论是不划算：
+
+- FreeRTOS 的 `vPortSuppressTicksAndSleep` 用 `__disable_irq()`（PRIMASK）而不是 `taskENTER_CRITICAL()` 进临界区，**正是为了让中断仍能唤醒 WFI**（`port.c` 里那段注释写明了这一点）。而本系统 **TIM5 以 1ms 周期产生中断、优先级 2**，于是每次 `__WFI` 最多睡约 1ms 就被唤醒，`xMaximumPossibleSuppressedTicks` 算出的 99ms 上限（168MHz / 1kHz = 168000 周期/tick，SysTick 为 24 位）根本用不上。
+- 换算下来每秒多出约 1000 次"进/出睡眠 + 重载 SysTick + `vTaskStepTick`"的开销，换来的只是把 idle 空转的 CPU 停掉约 1ms/次，**收益远低于预期**。
+- 且启用后夜间 OLED 出现数字跳变（见 §8.5），回退后一并排除嫌疑。
+
+> 若将来要重新评估：**先把 TIM5 的 `ARR` 拉长**（例如 999 → 9999，中断周期 1ms → 10ms，同时把 `TIM5_Get_us()` 里的 `ms * 1000` 改成 `ms * 10000`），让单次睡眠能到 10ms 量级，再开启 tickless。
+
+**MCU 侧的其他情况**：`TIM5` 是外设、时钟由 APB1 提供，因此在任何睡眠讨论中都不受 CPU 停机影响，`TIM5_Get_ms()` / `TIM5_Get_us()` / `delay_us()` 以及依赖它们的**软件时钟、DHT22 位时序、DS1302 时序**都保持有效；USART1 收到字节由 RXNE 中断处理并存入环形缓冲；SPI3 刷屏用的 DMA 不依赖 CPU。
+
+> **再往下的 Stop 模式需要三件配套**：① Stop 下只有 EXTI 与 RTC 能唤醒，而夜间 OLED 每分钟要刷新、DS1302 又**没有中断输出接到 MCU**（只有 RST/IO/CLK 三线），所以必须启用 MCU 内部 RTC 当唤醒定时器（需要 LSE 晶振或 LSI——代码里目前一处 `RCC_LSEConfig` 都没有）；② `vPortSuppressTicksAndSleep` 的 tick 补偿完全基于 SysTick 计数，Stop 下 SysTick 停摆该算式不成立，必须改写成用 RTC 计算实际睡眠时长；③ Stop 退出后系统跑在 HSI(16MHz)，必须重配 HSE+PLL 回到 168MHz 并更新 `SystemCoreClock`，否则 `TIM5_Get_us()` 时基错乱，DHT22 与 DS1302 时序会整体失准。此外 Stop 前应把 OLED 的 SCL/SDA 停在高电平，避免 SSD1306 卡在半次传输。
 
 ### 8.5 DS1302 夜间时间源
 
 - 三个内部静态辅助函数（`User/Src/app_task.c`）：`RTC_Ensure_Init()`（懒初始化）、`RTC_Sync_From_SystemClock()`（用网络时间回写并回读校验）、`RTC_ReadDataTime()`（优先读 DS1302，失败回退软件时钟并返回来源标志）。
 - 回读校验：`DS1302_SetTime()` **恒返回 `true`**（无写校验），因此必须用 `DS1302_ReadTime()` 回读比对；比较"当日分钟总数"而非单独比较分钟字段，允许写入耗时造成的 2 分钟偏差且能跨小时。
 - **CH（Clock Halt）位检查**：`DS1302_ReadTime()` 在 BCD 转换前先判断秒寄存器 bit7，`CH=1`（振荡器停）时直接返回 `false`，让调用方回退软件时钟。否则读到的秒值被冻结，界面会显示一个不动的钟、而日志仍报 `time_source=RTC`。CH 与写保护位的**上电状态均未定义**（见 DS1302 手册），只有 `DS1302_SetTime()` 会把它清 0。
+- **`delay_us()` 单调性加固（本轮"数字乱跳"的根因）**：`TIM5_Get_us()` 在"CNT 已回绕、但更新中断还没执行"时会返回比实际小 1000 的值。原 `delay_us()` 用无符号相减判断，遇到这种"时间倒流"会**下溢成约 2⁶⁴ 的巨大值**，循环条件立刻不成立而**提前返回**——DS1302 的 SCLK 半周期被压到 200ns 以下（低于手册要求的 250ns），于是随机读错位。修法分两层：`TIM5_Get_us()` 借助 `TIM5->SR` 的 `UIF` 标志补上缺失的 1ms 以保证单调；`delay_us()` 改用**有符号差比较**兜底。`DHT22_ReadByte()` 里直接做差的那处同样改成了有符号比较（否则位宽会被误判为 1）。
+- **连读两次比对**：`DS1302_ReadTime()` 现在连读两次（间隔约 2ms），除"秒"外的字段（分/时/日/月/周/年）必须完全一致，否则判本次读取失败。因为位错误未必越界——实测把 `00:13` 读成 `01:13`、把 18 日读成 20 日，**范围校验挡不住**。代价是读取耗时约 2ms → 4ms，每 2s 一次可忽略。
 - 星期语义统一为 DS1302 的 **1~7**：`DS1302_ReadTime()` 对 `week < 1` 直接判失败，若写入星期 0（旧写法 `weekday - 1`），周一会同步失败。
 - **白天不停振**：退出夜间后代码不再访问 DS1302，但它持续走时（芯片只要有 VCC 或 VBAT 就在计时），以便断电重启后仍能给出正确时间；下次进入夜间时若软件时钟已同步，会被 `DS1302_SetTime()` 覆盖对齐。
 - 失败降级：`RTC_LOWPOWER_ENABLE = 0` 或 DS1302 读取失败（含 CH=1）时，夜间改用软件时钟显示，日志打印 `time_source=SoftClock`。
@@ -514,14 +543,14 @@ LightSensor_Task                          UI_Task                    Net_Task / 
 
 **分发**（`Key_OnGesture()`）：目前**只接单击**——置 `s_key_toggle_night` 并用 `xTaskNotifyGive` 唤醒 `LightSensor_Task`，由后者统一裁决昼夜（昼夜状态机在它手里，避免两个任务各自改状态）。双击/三击/长按为留空的 `TODO` 扩展点。
 
-**手动切换与自动跟随的关系**：`LightSensor_Task` 新增 `baseline_dark`（自动判定基线）。手动切换后把"当前光照"记为基线，因此光敏**不会立刻把手动结果改回去**；只有环境光真正发生反向变化（`IsDark() != baseline_dark`）时，自动跟随才重新生效。
+**手动切换与自动跟随的关系**：`LightSensor_Task` 用 `s_baseline_dark` 记录"自动判定基线"（= 当前已生效的光照状态）。手动切换后把"当前光照"记入基线，因此光敏**不会立刻把手动结果改回去**；只有环境光真正发生反向变化（`IsDark() != s_baseline_dark`）时，自动跟随才重新生效。上电时基线取反（`!IsDark()`），使"与基线相同则跳过"不成立，从而强制先跟随一次环境光。
 
 ```
-环境暗(baseline=暗, 夜晚) ──单击──▶ 白天, baseline 仍=暗
+环境暗(s_baseline_dark=暗, 手动切到白天) ──单击──▶ 白天, 基线仍=暗
                                     │
                           环境一直暗: 保持白天(手动优先)
-                          环境变亮 : baseline=亮, 自动跟随(已是白天, 无需切换)
-                          环境再变暗: baseline=暗, 自动切回夜晚
+                          环境变亮 : 基线=亮, 自动跟随(已是白天, 无需切换)
+                          环境再变暗: 基线=暗, 自动切回夜晚
 ```
 
 **串口日志**：
@@ -622,20 +651,20 @@ Total ROM Size: 355556
 迁移后（资源存放在 W25Q64，**当前状态**，含按键手势）：
 
 ```text
-Program Size: Code=51940  RO-data=3748  RW-data=412  ZI-data=126740
-Total RO  Size (Code + RO Data)          55688
+Program Size: Code=52324  RO-data=3748  RW-data=412  ZI-data=126740
+Total RO  Size (Code + RO Data)          56072
 Total RW  Size (RW Data + ZI Data)      127152
-Total ROM Size (Code + RO Data + RW Data) 56100
+Total ROM Size (Code + RO Data + RW Data) 56484
 ```
 
 | 项 | 迁移前 | 迁移后 | 说明 |
 | --- | --- | --- | --- |
-| Code | 31844 | 51940 | +20096 字节：主要是 littlefs 被真正引用后链入（此前虽编译却被链接器整体丢弃）；按键与手势状态机约 +1.0KB |
+| Code | 31844 | 52324 | +20480 字节：主要是 littlefs 被真实引用后链入（此前虽编译却被链接器整体丢弃）；按键与手势状态机约 +1.0KB，其后 WiFi 重连改造、光敏任务整理、DHT22 位判别、模组省电、`delay_us` 时基加固与 DS1302 双读校验合计约 +0.5KB |
 | RO-data | 323604 | **3748** | −319856 字节：只剩 `Font_t` / `Image_t` 描述表与图片指针表 |
-| **Total ROM** | **355556** | **56100** | **−299456 字节（−84.2%）** |
+| **Total ROM** | **355556** | **56484** | **−299072 字节（−84.1%）** |
 | ZI-data | 128240 | 126740 | 堆由 95KB 降到 88KB（−7168 字节），抵消资源层与 OLED 清屏缓冲新增的约 5.7KB 静态 RAM 后仍净减 1500 字节 |
 
-- Flash 约 **54.4KB / 512KB**（`Total RO Size`），余量充足。
+- Flash 约 **54.8KB / 512KB**（`Total RO Size`），余量充足。
 - SRAM 约 **124.2KB / 128KB**（`Total RW Size`），**静态余量仅约 3.8KB**。
 - 两大 RAM 占用：FreeRTOS 堆 **88KB** + LCD 渲染缓冲 **约 23KB**（`s_scratch`）。
 - 图片乒乓缓冲 **15KB**（`s_picBuf` 两块）与 5 个任务栈（约 17KB，`Key_Task` 因含 `printf` 取 4KB）都从这 88KB 的 FreeRTOS 堆里分配，因此堆内实际余量约 **56KB**（不能用 88KB 直接减任务栈）。
@@ -774,6 +803,8 @@ Total ROM Size (Code + RO Data + RW Data) 56100
 > 说明：`DS1302_Init()` 已不再写 `0x80` 清零秒寄存器（只把写保护置为开启），否则每次上电都会把时间重置为 `00:00:00`，无法验证断电走时；启动振荡器由 `DS1302_SetTime()` 负责。
 >
 > 时序：**读操作采用手册标准时序**——数据由 DS1302 在 SCLK 下降沿输出、主机在 SCLK 上升沿采样；位操作半周期延时 `10µs`（`delay_us`，TIM5 基准），CE 拉高后同样等待 `10µs`。本模块 DAT 没有外部上拉、仅靠 MCU 内部约 40k 上拉，放宽半周期是必要的（实测 `ER=0`，读数与串口时间戳同步）。
+>
+> ⚠️ **这条时序对 `delay_us()` 是绝对依赖**：半周期只要被压缩到 250ns 以下，DS1302 就来不及在下降沿输出新位而被主机采到旧值，表现为**随机单一位错误**。曾出现的"OLED 数字乱跳"就是 `delay_us()` 下溢提前返回所致，根因与修法见 §8.5。
 
 ---
 
@@ -812,34 +843,49 @@ static const char *weather_url =
 上电典型输出：
 
 ```
-[SYS]Build Date:Sep 15 2026 20:53:12
 [LCD ] ping-pong buffer ready: 7680 x 2 = 15360 bytes
 [ASSET] W25Q64 jedec = 0xEF4017
 [ASSET] littlefs mounted: 2048 blocks x 4096 B
 [ASSET] selfcheck: checked=43, missing=0
+[SYS]Build Date:Sep 16 2026 17:02:34
 [UI] Board init done, boot page
 [NET] Init Start
 [NET] AT init OK
 [NET] WiFi init OK
 [NET] WiFi connecting to <ssid> ...
-[NET] WiFi connected: ssid=... bssid=... channel=6 rssi=-58
-[NET] SNTP sync OK: 2026-09-15 20:53:26
-[NET] Weather OK: Cloudy, code=4, temp=29.0
+[NET] WiFi connected: ssid=... bssid=... channel=1 rssi=-72
+[NET] SNTP sync OK: 2026-09-16 17:53:56
+[NET] Weather OK: Cloudy, code=4, temp=22.0
 [UI] Boot net stage done: wifi=1 service=1
 [UI] Enter main page
-[LIGHT] task ready: DO_state=1 dark=1
+[LIGHT] task ready: DO_state=0 dark=0
+[KEY] task ready: pressed=0
+[SENSOR] DHT22 OK: T=26.4 H=59.2
+[LIGHT] auto: level=bright, mode=day
 ```
+
+> **开头 4 行为什么在 `[SYS]` 之前**：`[LCD ]` / `[ASSET]` 是 `Board_Init()` **内部**打印的
+> （`ST7789_Init()` 与 `Asset_Init()`），而 `[SYS]Build Date` 在 `UI_Task` 中位于
+> `Board_Init()` **返回之后**（`app_task.c:560`）。`Board_Init()` 的前 4 步
+> （`Test()` / `TIM5_Init()` / `Usart2_Debug_Init()` / `Prof_Init()`）都不打印，
+> 且串口本身要到第 3 步才初始化，因此上电后可见的**第一条**日志必然是 LCD 的乒乓缓冲分配结果。
+> 首次运行还会在 `[UI] Board init done` 前多出 `[UI] WARN: asset layer not ready...`（W25Q64 未烧录时）。
 
 运行期日志：
 
 ```
 [NET] WiFi check OK: ssid=... rssi=-58
+[NET] WiFi state query FAILED
 [NET] WiFi lost, reconnecting...
 [NET] WiFi reconnected: ssid=... rssi=-55
 [NET] AT init FAILED
 [NET] WiFi connect FAILED
 [NET] WiFi info FAILED
 [NET] WiFi reconnect FAILED
+[NET] WiFi reconnect FAILED: no valid info
+[NET] WiFi modem-sleep
+[NET] WiFi wake
+[NET] WiFi sleep set FAILED
 [NET] SNTP sync FAILED
 [NET] Weather HTTP FAILED
 [NET] Weather parse FAILED
@@ -850,13 +896,17 @@ static const char *weather_url =
 昼夜切换与低功耗日志（验证第 8 章行为时重点看这几行）：
 
 ```
-[LIGHT] debounce done: level=dark, mode=day      # 去抖结束后的电平与当前模式
-[LIGHT] request NIGHT                            # 请求进入夜间
+[LIGHT] task ready: DO_state=0 dark=0            # 上电时的 DO 电平与判定结果
+[LIGHT] auto: level=dark, mode=day               # 去抖结束后的光照级别与当前模式
+[LIGHT] auto request NIGHT                       # 请求进入夜间
 [LP] Sync RTC time done                          # 进入夜间前回写 DS1302 并回读校验(失败为 fail)
 [LP] Enter night: LCD off, OLED on, time_source=RTC
+[NET] WiFi modem-sleep                           # Net_Task 下一拍让 ESP32-C3 进入省电档位
 [UI] Enter day: OLED off, LCD on                 # 退出夜间
+[NET] WiFi wake                                  # 先唤醒模组, 再执行补更
 [NET] LowPower exit, reset update                # Net_Task 收到补更请求
-[LIGHT] request DAY
+[LIGHT] auto: level=bright, mode=night
+[LIGHT] auto request DAY
 ```
 
 资源层日志（字库/图片全部来自 W25Q64，这组是显示异常的排障重点）：
@@ -908,9 +958,11 @@ static const char *weather_url =
 | 现象 | 结论 |
 | --- | --- |
 | 没有 `[LIGHT] task ready` | 光敏任务未创建（检查 `UI_Task` 是否走到创建任务那一步） |
-| 遮挡 1s 后仍无 `[LIGHT] debounce done` | 电平从未变化 → 接线/供电/模块问题（现有 1s 轮询兜底，不会像纯中断方案那样"永远不动"） |
+| 遮挡 1s 后仍无 `[LIGHT] auto:` 或 `[LIGHT] key switch` | 电平从未变化 → 接线/供电/模块问题（现有 1s 轮询兜底，不会像纯中断方案那样"永远不动"） |
 | `level` 始终为 `bright` | 极性相反（模块可能是"暗→DO 低"），需反转 `Light_Sensor_IsDark()` 的判定 |
 | 有 `request NIGHT` 但无 `[LP] Enter night` | 问题在 `UI_Task` 的事件处理分支 |
+
+DHT22 位读取用 `TIM5_Get_us()` 测量**高电平持续时间**来判别 0/1（位"0"为 26~28us、位"1"为 70us，阈值取中点 `DHT22_BIT_THRESHOLD_US = 40`），不再在固定时刻采样——对十几 us 的中断延迟抖动免疫，因此 `DHT22_ERR_TIMEOUT` 只会在真正等不到电平翻转（300us 超时）时出现。
 
 DHT22 错误码（`BSP/Inc/DHT22.h`）：
 
@@ -942,7 +994,7 @@ Stack overflow in task <name>
 | 2 | 光敏引脚与 EXTI 端口源必须成对修改 | `Light_Sensor.h` 中 GPIO 端口/引脚与 `..._EXTI_PORT_SOURCE`/`..._PIN_SOURCE` 不一致时中断永不触发（已踩过一次：GPIO 改到 PC1、EXTI 仍挂 PA1，表现为遮挡无任何反应）。另外该头文件顶部的引脚注释仍是旧的 `PA0/PA1` |
 | 3 | `Board.c` 的 `Test()` 无条件拉低 PB2 | `Test()` 里无条件执行 `GPIO_ResetBits(GPIOB, GPIO_Pin_2)`，而 PB2 只在**裸机分支**用作测试 LED（FreeRTOS 分支用 PC5）。它与 DS1302 无关（DS1302 在 PE7/PE8/PE9），当前无害；建议把该语句放进 `#if (USE_FREERTOS == 0)` 分支 |
 | 4 | `DS1302_ReadReg()` 未被引用 | `External_RTC.c` 中的单寄存器读函数始终没有调用者，全量重编会给出 `#177-D` 告警（不影响功能，可删可留） |
-| 5 | 夜间只是"降载"，不是 MCU 睡眠 | `configUSE_TICKLESS_IDLE = 0`；夜间仅关屏 + 暂停网络/传感器 update，MCU 与 ESP32-C3 模组功耗不变。进一步省电需先做模组侧省电（`AT+SLEEP` 或硬件断电），再评估 Stop 模式 |
+| 5 | 夜间未做 MCU 睡眠 | `configUSE_TICKLESS_IDLE = 0`（曾启用 tickless idle 后回退，原因见 §8.4）。夜间只做了模组侧省电：ESP32-C3 进入 Wi-Fi Modem-sleep（`AT+SLEEP=1`，Espressif 实测平均电流约 20mA）。MCU 侧若需进一步省电需评估 Stop 模式（见 §8.4 末尾） |
 | 6 | 进入夜间时可能等一个 AT 事务结束 | 若 `Net_Task` 正在收发 AT（最长 10s），它会跑完本轮才进入暂停；这是刻意设计（不打断 AT 事务），代价是暂停生效最多延迟约 10s |
 | 7 | 天气接口为第三方免费版 | 有调用频率限制，`key` 与配额由使用者自行申请 |
 | 8 | 凭据硬编码 | WiFi 密码与天气 API Key 直接写在 `App.c`，建议后续抽到配置区或外部存储 |

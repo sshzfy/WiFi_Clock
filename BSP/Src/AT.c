@@ -275,6 +275,21 @@ bool AT_Is_WiFi_Conected(void)
 }
 
 /**
+ * @brief 设置ESP32-C3的Wi-Fi睡眠模式
+ * @param mode 0=关闭睡眠(全速); 1=Modem-sleep按AP的DTIM; 2=Light-sleep; 3=Modem-sleep按listen interval
+ * @return true 设置成功,false 失败
+ * @note  该设置不写入flash, 且AT_Init()中的AT+RESTORE会重启模组, 因此每次都需要重新下发。
+ *        Modem-sleep只按周期关闭RF, Wi-Fi连接保持, 不会掉线。
+ */
+bool AT_Set_Sleep(uint8_t mode)
+{
+    char cmd[16];
+
+    snprintf(cmd, sizeof(cmd), "AT+SLEEP=%u", (unsigned)mode);
+    return AT_Write_Command(cmd, 2000);
+}
+
+/**
  * @brief 解析CWSTATE回复
  * @param response CWSTATE回复字符串
  * @param info WiFi信息结构体指针

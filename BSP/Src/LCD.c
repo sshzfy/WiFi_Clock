@@ -1,5 +1,4 @@
 #include "LCD.h"
-#include "Asset.h"
 
 #define GRAM_DMA_MAX_HALFWORD 65535U // DMA NDTR(16bit)单次最大半字数
 #define SCRATCH_H_PX 48              // 最大渲染行高(对齐Font_48)

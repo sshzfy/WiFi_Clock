@@ -32,7 +32,7 @@ typedef enum
     ASSET_FID_AS32B,    /* /font/as32b.bin  32 号 ASCII(B) */
     ASSET_FID_AS48,     /* /font/as48.bin   48 号 ASCII */
     ASSET_FID_AS48B,    /* /font/as48b.bin  48 号 ASCII(B) */
-    ASSET_FID_COUNT
+    ASSET_FID_COUNT     /* 字库资源 ID 数量 */
 } Asset_FontId_t;
 
 #define ASSET_FID_NONE 0xFFU /* 该字体没有这一类字模 */
@@ -43,7 +43,7 @@ typedef struct
     uint8_t ascii_id; // ASCII 表资源 ID; ASSET_FID_NONE = 无
     uint8_t cn_id;    // 汉字库资源 ID; ASSET_FID_NONE = 纯ASCII字体
     uint8_t cn_bytes; // 汉字每字字节数(16号=32, 22号=66); 0 = 无汉字
-    uint8_t reserved;
+    uint8_t reserved; // 对齐填充
 } Font_t;
 
 /* 各资源文件的字节数, 供烧录与开机自检使用 */
@@ -51,15 +51,15 @@ typedef struct
 
 #define ASSET_CN16_SIZE  (ASSET_GLYPH_COUNT * 32U) /* 120160 */
 #define ASSET_CN22_SIZE  (ASSET_GLYPH_COUNT * 66U) /* 247830 */
-#define ASSET_AS12_SIZE  (95U * 12U * 1U)
-#define ASSET_AS16_SIZE  (95U * 16U * 1U)
-#define ASSET_AS16B_SIZE (95U * 16U * 1U)
-#define ASSET_AS22_SIZE  (95U * 22U * 2U)
-#define ASSET_AS22B_SIZE (95U * 22U * 2U)
-#define ASSET_AS32_SIZE  (95U * 32U * 2U)
-#define ASSET_AS32B_SIZE (95U * 32U * 2U)
-#define ASSET_AS48_SIZE  (95U * 48U * 3U)
-#define ASSET_AS48B_SIZE (95U * 48U * 3U)
+#define ASSET_AS12_SIZE  (95U * 12U * 1U)          /* 12 号 ASCII */
+#define ASSET_AS16_SIZE  (95U * 16U * 1U)          /* 16 号 ASCII */
+#define ASSET_AS16B_SIZE (95U * 16U * 1U)          /* 16 号 ASCII(加粗) */
+#define ASSET_AS22_SIZE  (95U * 22U * 2U)          /* 22 号 ASCII */
+#define ASSET_AS22B_SIZE (95U * 22U * 2U)          /* 22 号 ASCII(加粗) */
+#define ASSET_AS32_SIZE  (95U * 32U * 2U)          /* 32 号 ASCII */
+#define ASSET_AS32B_SIZE (95U * 32U * 2U)          /* 32 号 ASCII(加粗) */
+#define ASSET_AS48_SIZE  (95U * 48U * 3U)          /* 48 号 ASCII */
+#define ASSET_AS48B_SIZE (95U * 48U * 3U)          /* 48 号 ASCII(加粗) */
 
 /* ASCII 单字符点阵字节数 = ob * size */
 #define ASSET_ASCII_GLYPH_BYTES(sz) (((((sz) / 2U) + 7U) / 8U) * (sz))

@@ -5,6 +5,19 @@
  * 按下与松开均为边沿触发, 手势(短按/长按/连击)由 RTOS 层按键任务识别
  * ================================== */
 
+static Key_IRQ_Callbacks_t s_irq_cb = NULL;
+
+void Key_RegisterCallback(Key_IRQ_Callbacks_t callback)
+{
+    s_irq_cb = callback;
+}
+
+static inline void Key_Notify(void)
+{
+    if (s_irq_cb != NULL)
+        s_irq_cb();
+}
+
 static void Key_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -59,19 +72,6 @@ void Key_Init(void)
 bool Key_IsPressed(void)
 {
     return (GPIO_ReadInputDataBit(KEY_GPIO_PORT, KEY_GPIO_PIN) == Bit_SET);
-}
-
-static Key_IRQ_Callbacks_t s_irq_cb = NULL;
-
-void Key_RegisterCallback(Key_IRQ_Callbacks_t callback)
-{
-    s_irq_cb = callback;
-}
-
-static inline void Key_Notify(void)
-{
-    if (s_irq_cb != NULL)
-        s_irq_cb();
 }
 
 void KEY_EXTI_IRQHandler(void)

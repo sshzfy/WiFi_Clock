@@ -1,6 +1,6 @@
 #include "Light_Sensor.h"
 
-volatile Light_Sensor_DO_State_t Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW;
+volatile Light_Sensor_DO_State_t Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光敏传感器DO默认状态（低电平，亮状态）
 
 /* ISR → RTOS 层回调(由 app_task 注册, 可为 NULL): ISR 内仅做通知 */
 static Light_Sensor_IRQ_Callback_t s_irq_cb = NULL;
