@@ -2,6 +2,7 @@
 
 /* ================ DS1302 时序 ==================
  * CE 拉高使能, 命令/数据为 LSB ,SCLK 上升沿采样输入,下降沿输出
+ * LSB
  * ================================*/
 
 static inline void DS1302_CLK_HIGH() { GPIO_SetBits(DS1302_PORT, DS1302_CLK_PIN); }
@@ -103,9 +104,11 @@ static void DS1302_WriteByte(uint8_t data)
  * @brief 从DS1302读取一个字节, 低位先读
  *
  * @return 读取到的字节
- * @note 采用手册标准时序: 数据在 SCLK 下降沿由 DS1302 输出,
- *       主机在 SCLK 上升沿采样。上升沿前已有一个完整半周期用于建立,
- *       对"没有外部上拉、仅靠 MCU 内部约 40k 上拉"的场合更鲁棒。
+ * @note 采样必须在 SCLK 拉高"之前"完成。DS1302 只在上升沿后极短的 t_CDH 内
+ *       保持数据, 随后就释放 IO(高阻), 此时线电平由 MCU 内部约 40k 上拉拉高;
+ *       若先拉高、延时 10us 再读, 采到的必然是 1(实测每次读回 0xFF)。
+ *       下降沿已把本位数据准备好, 整个 SCLK 低电平期间都是有效窗口,
+ *       因此先读、再产生上升沿。
  */
 static uint8_t DS1302_ReadByte(void)
 {
@@ -117,12 +120,13 @@ static uint8_t DS1302_ReadByte(void)
     {
         data >>= 1;
 
-        DS1302_CLK_HIGH(); /* 上升沿采样 */
-        delay_us(10);
-        if (DS1302_IO_Read())
+        if (DS1302_IO_Read()) /* 先读入引脚数据，再拉高 SCLK */
             data |= 0x80U;
 
-        DS1302_CLK_LOW(); /* 下降沿输出下一位 */
+        DS1302_CLK_HIGH(); /* 上升沿: 从机锁存 */
+        delay_us(10);
+
+        DS1302_CLK_LOW(); /* 下降沿: 从机输出 */
         delay_us(10);
     }
 

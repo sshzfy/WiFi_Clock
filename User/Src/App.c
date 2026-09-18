@@ -1,7 +1,7 @@
 #include "App.h"
 
 /* 初始化WiFi信息 */
-const char *ssid = "Laptop-S";
+const char *ssid = "Jasmine";
 const char *password = "Sun507109!";
 const char *mac = NULL;
 AT_WiFi_Info_t wifi_info = {0};
