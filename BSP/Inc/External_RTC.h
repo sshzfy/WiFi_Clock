@@ -6,15 +6,15 @@
 #include "Timer.h"
 
 /* DS1302 寄存器地址 */
-#define DS1302_REG_SEC                  0x80 /* 秒寄存器 */
-#define DS1302_REG_MIN                  0x82 /* 分寄存器 */
-#define DS1302_REG_HOUR                 0x84 /* 时寄存器 */
-#define DS1302_REG_DAY                  0x86 /* 日寄存器 */
-#define DS1302_REG_MONTH                0x88 /* 月寄存器 */
-#define DS1302_REG_DAY_OF_WEEK          0x8A /* 星期寄存器 */
-#define DS1302_REG_YEAR                 0x8C /* 年寄存器 */
-#define DS1302_REG_WP                   0x8E /* 写保护寄存器 */
-#define DS1302_REG_TRICKLK              0x90 /* 涓流充电寄存器 */
+#define DS1302_REG_SEC                  0x80 // 秒寄存器
+#define DS1302_REG_MIN                  0x82 // 分寄存器
+#define DS1302_REG_HOUR                 0x84 // 时寄存器
+#define DS1302_REG_DAY                  0x86 // 日寄存器
+#define DS1302_REG_MONTH                0x88 // 月寄存器
+#define DS1302_REG_DAY_OF_WEEK          0x8A // 星期寄存器
+#define DS1302_REG_YEAR                 0x8C // 年寄存器
+#define DS1302_REG_WP                   0x8E // 写保护寄存器
+#define DS1302_REG_TRICKLK              0x90 // 涓流充电寄存器
 
 /* DS1302 硬件引脚 */
 #define DS1302_PORT                     GPIOE

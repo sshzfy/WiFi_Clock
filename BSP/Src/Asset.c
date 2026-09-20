@@ -6,16 +6,16 @@
  * ============================================================ */
 
 static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] = {
-    {"/font/cn16.bin", ASSET_CN16_SIZE},   /* ASSET_FID_CN16 */
-    {"/font/cn22.bin", ASSET_CN22_SIZE},   /* ASSET_FID_CN22 */
-    {"/font/as12.bin", ASSET_AS12_SIZE},   /* ASSET_FID_AS12 */
-    {"/font/as16.bin", ASSET_AS16_SIZE},   /* ASSET_FID_AS16 */
+    {"/font/cn16.bin",  ASSET_CN16_SIZE},  /* ASSET_FID_CN16 */
+    {"/font/cn22.bin",  ASSET_CN22_SIZE},  /* ASSET_FID_CN22 */
+    {"/font/as12.bin",  ASSET_AS12_SIZE},  /* ASSET_FID_AS12 */
+    {"/font/as16.bin",  ASSET_AS16_SIZE},  /* ASSET_FID_AS16 */
     {"/font/as16b.bin", ASSET_AS16B_SIZE}, /* ASSET_FID_AS16B */
-    {"/font/as22.bin", ASSET_AS22_SIZE},   /* ASSET_FID_AS22 */
+    {"/font/as22.bin",  ASSET_AS22_SIZE},  /* ASSET_FID_AS22 */
     {"/font/as22b.bin", ASSET_AS22B_SIZE}, /* ASSET_FID_AS22B */
-    {"/font/as32.bin", ASSET_AS32_SIZE},   /* ASSET_FID_AS32 */
+    {"/font/as32.bin",  ASSET_AS32_SIZE},  /* ASSET_FID_AS32 */
     {"/font/as32b.bin", ASSET_AS32B_SIZE}, /* ASSET_FID_AS32B */
-    {"/font/as48.bin", ASSET_AS48_SIZE},   /* ASSET_FID_AS48 */
+    {"/font/as48.bin",  ASSET_AS48_SIZE},  /* ASSET_FID_AS48 */
     {"/font/as48b.bin", ASSET_AS48B_SIZE}, /* ASSET_FID_AS48B */
 };
 

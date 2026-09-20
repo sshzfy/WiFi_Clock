@@ -15,26 +15,35 @@ void TIM5_Init(void)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
     TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+    RCC_ClocksTypeDef RCC_Clocks;
+    RCC_GetClocksFreq(&RCC_Clocks);
 
-    uint32_t tim_clk = SystemCoreClock / 2; // APB1分频≥2时定时器时钟 = SystemCoreClock/2
+    uint32_t hclk1 = RCC_Clocks.HCLK_Frequency;  // AHB时钟频率
+    uint32_t pclk1 = RCC_Clocks.PCLK1_Frequency; // APB1时钟频率
+    uint32_t tim5_clk;
 
-    TIM_TimeBaseStructure.TIM_Prescaler = (uint16_t)(tim_clk / 1000000 - 1); // 计数时钟 = 1MHz
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    TIM_TimeBaseStructure.TIM_Period = (uint16_t)(1000 - 1); // 1kHz → 1ms
-    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+    if (hclk1 == pclk1) /* APB时钟1分频时, 定时器时钟 = APB1 */
+    {
+        tim5_clk = pclk1;
+    }
+    else /* APB时钟分频≥2,时, 定时器时钟 = APB1 * 2 */
+    {
+        tim5_clk = 2 * pclk1;
+    }
+
+    TIM_TimeBaseStructure.TIM_Prescaler = (uint16_t)(tim5_clk / 1000000 - 1); // 计数时钟 = 1MHz
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;               // 向上计数
+    TIM_TimeBaseStructure.TIM_Period = (uint16_t)(1000 - 1);                  // 1kHz → 1ms
+    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;                   // 1分频
     TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
     TIM_TimeBaseInit(TIM5, &TIM_TimeBaseStructure);
-
-    TIM_ITConfig(TIM5, TIM_IT_Update, ENABLE);
+    TIM_ITConfig(TIM5, TIM_IT_Update, ENABLE); /* 使能更新中断 */
 
     NVIC_InitTypeDef NVIC_InitStructure;
-
     NVIC_InitStructure.NVIC_IRQChannel = TIM5_IRQn;
-    /* 注意: 该优先级(2)高于configMAX_SYSCALL_INTERRUPT_PRIORITY(5),
-       因此TIM5中断内禁止调用任何FreeRTOS API, 只能做计数等简单操作 */
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2; /* 该优先级(2)高于configMAX_SYSCALL_INTERRUPT_PRIORITY(5), 因此TIM5中断内禁止调用任何FreeRTOS API, 只能做计数等简单操作 */
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; // 使能TIM5_IRQn
     NVIC_Init(&NVIC_InitStructure);
 
     TIM_Cmd(TIM5, ENABLE);
@@ -74,18 +83,18 @@ uint64_t TIM5_Get_ms(void)
  */
 uint64_t TIM5_Get_us(void)
 {
-    uint32_t cnt;
-    uint64_t ms;
-    uint8_t uif;
+    uint32_t cnt; // TIM5计数器值
+    uint64_t ms;  // TIM5毫秒计数器值
+    uint8_t uif;  // 更新事件标志位(1: 事件发生但中断尚未处理, 0: 事件未发生或中断已处理)
 
     do
     {
         cnt = TIM5->CNT;
         ms = TIM5_ms;
         uif = (TIM5->SR & TIM_SR_UIF) != 0; // 更新事件已发生但中断尚未处理
-    } while (ms != TIM5_ms); // ms在采样期间被中断更新则重读
+    } while (ms != TIM5_ms); /* ms在采样期间被中断更新则重读 */
 
-    if (cnt < 256U) // CNT接近回绕起点, 复检ms是否已进位
+    if (cnt < 256U) /* CNT接近回绕起点, 复检ms是否已进位 */
     {
         uint64_t ms2 = TIM5_ms;
         if (ms2 != ms)

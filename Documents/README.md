@@ -180,8 +180,8 @@ Project4/
 | | MOSI | PA7 | AF5（SPI1） | `BSP/Inc/W25Q64.h:17` |
 | ESP32-C3 | TX | PA9 | AF7（USART1） | `BSP/Inc/AT.h:12` |
 | | RX | PA10 | AF7（USART1） | `BSP/Inc/AT.h:13` |
-| 调试串口 | TX | PA2 | AF7（USART2） | `BSP/Src/Usart.c:208` |
-| | RX | PA3 | AF7（USART2，当前未使用） | `BSP/Src/Usart.c:209` |
+| 调试串口 | TX | PA2 | AF7（USART2） | `BSP/Src/Usart.c:241` |
+| | RX | PA3 | AF7（USART2，当前未使用） | `BSP/Src/Usart.c:242` |
 | SSD1306 OLED | SCL | PB6 | 开漏 + 内部上拉 | `BSP/Src/OLED.c:11,13` |
 | | SDA | PB7 | 开漏 + 内部上拉 | `BSP/Src/OLED.c:12,14` |
 | DHT22 | DATA | PE6 | 输出/输入动态切换，输入上拉 | `BSP/Inc/DHT22.h:10-11` |
@@ -198,9 +198,9 @@ Project4/
 | 外设 | 时钟 | 关键参数 | 定义位置 |
 | --- | --- | --- | --- |
 | USART1 | APB2 84MHz | 115200-8N1，RXNE 中断 + 512 字节环形缓冲，NVIC 抢占 5 | `BSP/Src/AT.c:50` |
-| USART2 | APB1 42MHz | 115200-8N1，TX 走 DMA1_Stream6 / Channel4，**无中断、轮询 TCIF** | `BSP/Src/Usart.c:102,225` |
+| USART2 | APB1 42MHz | 115200-8N1，TX 走 DMA1_Stream6 / Channel4，**无中断、轮询 TCIF** | `BSP/Src/Usart.c:255,124` |
 | SPI1 | APB2 84MHz | 主机、8 位、`CPOL=0 / CPHA=0`（**SPI Mode 0**）、预分频 4 → **21MHz** | `BSP/Src/W25Q64.c:79-82` |
-| SPI3 | APB1 42MHz | 主机、8/16 位可切、`CPOL=0 / CPHA=0`（**Mode 0**）、预分频 2 → **21MHz**，TX 走 DMA1_Stream5 / Channel0 | `BSP/Src/LCD.c:551-554` |
+| SPI3 | APB1 42MHz | 主机、8/16 位可切、`CPOL=0 / CPHA=0`（**Mode 0**）、预分频 2 → **21MHz**，TX 走 DMA1_Stream5 / Channel0 | `BSP/Src/LCD.c:556-559` |
 | TIM5 | APB1 42MHz ×2 = 84MHz | PSC = 83（1MHz 计数）、ARR = 999（1ms 更新中断），NVIC 抢占 2 | `BSP/Src/Timer.c:21-37` |
 | ADC1 | APB2 84MHz | 仅用于光敏 AO 模式；当前 `AO_DO_SWITCH = 0`，该分支不参与编译 | `BSP/Inc/Light_Sensor.h:11` |
 | EXTI0 / EXTI1 | SYSCFG | 双边沿触发，NVIC 抢占 5，ISR 内只做任务通知 | `BSP/Src/Key.c`、`Light_Sensor.c` |
@@ -240,11 +240,11 @@ SPI3 发送之后的前提（见 6.4）。改动任一侧的分频前请先看�
 **创建时机不是一次性的**，顺序本身构成依赖关系：
 
 1. `main()` → `App_Task_Init()` 只创建 `ui` 一个任务，随后 `vTaskStartScheduler()`
-   （`User/Src/app_task.c:668-671`）。
+   （`User/Src/app_task.c:676-679`）。
 2. `UI_Task` 内：`xEventGroupCreate()` → `Board_Init()` → 显示开机底图 → 创建 `dht22` 与 `net`
-   （`app_task.c:595-596`）。
+   （`app_task.c:600-601`）。
 3. 等待 `EV_NET_READY`（最长 30s）→ 显示结果页 → 停留 2.5s → 绘制主界面 → 创建
-   `light_sensor` 与 `key`（`app_task.c:607-609`）。
+   `light_sensor` 与 `key`（`app_task.c:615-617`）。
 
 把光敏与按键任务的创建推迟到主界面之后，是为了**保证昼夜切换只可能发生在开机流程完成之后**。
 
@@ -277,16 +277,16 @@ SPI3 发送之后的前提（见 6.4）。改动任一侧的分频前请先看�
 > 本项目实际踩过这个坑（见 11.2）。
 
 `UI_Task` 的主循环一次等待 `EV_WEATHER | EV_DHT22 | EV_WIFI | EV_LOWERPOWER | EV_WAKEUP`
-（`app_task.c:617`）；`Net_Task` 与 `DHT22_Task` 各自等待属于自己的位，是**唯一的消费者**。
+（`app_task.c:624-626`）；`Net_Task` 与 `DHT22_Task` 各自等待属于自己的位，是**唯一的消费者**。
 
 ### 3.3 同步手段
 
 | 机制 | 保护/传递的对象 | 位置 |
 | --- | --- | --- |
-| 事件组 `g_evt` | 上表 9 个事件位 | 创建于 `app_task.c:578` |
+| 事件组 `g_evt` | 上表 9 个事件位 | 创建于 `app_task.c:583` |
 | 任务通知（计数语义） | 光敏边沿 → `LightSensor_Task`；按键边沿 → `Key_Task`；按键"切换昼夜"请求 → `LightSensor_Task` | ISR 内 `vTaskNotifyGiveFromISR`，任务内 `ulTaskNotifyTake` |
 | 临界区 `taskENTER_CRITICAL()` | 软件时钟（`clock_synced` / `clock_epoch` / `clock_sync_ms`）、`wifi_info`、`weather_info`、`room_info` | 全部在 `User/Src/App.c` 内**整块赋值** |
-| 互斥量 `xSemaphoreCreateMutex` | 仅用于调试串口的**整行原子输出**（配合"行属主"记录） | `BSP/Src/Usart.c:160,179,216` |
+| 互斥量 `xSemaphoreCreateMutex` | 仅用于调试串口的**整行原子输出**（配合"行属主"记录） | `BSP/Src/Usart.c:212,217,232` |
 | —（未使用） | 未使用队列、二值/计数信号量、`vTaskSuspend` 做同步；`configUSE_COUNTING_SEMAPHORES = 0` | — |
 
 ### 3.4 三条并发约定
@@ -383,18 +383,19 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | --- | --- |
 | 引脚 | PA9 = TX，PA10 = RX，AF7 |
 | 参数 | 115200-8N1，无校验、无流控；RXNE 中断使能，TX 轮询 |
-| 中断 | `USART1_IRQHandler`（`BSP/Src/Usart.c:17-31`），NVIC 抢占 5 / 子 0 |
-| 接收链 | 中断逐字节 → **512 字节环形缓冲**（`Usart.c:11`）→ AT 层任务级轮询搬入 `rx_buf[1024]`（`AT.c:6`） |
-| 缓冲区满 | **丢弃新字节**，不覆盖旧数据（`Usart.c:22-28`） |
+| 中断 | `USART1_IRQHandler`（`BSP/Src/Usart.c:31-45`），NVIC 抢占 5 / 子 0 |
+| 接收链 | 中断逐字节 → **512 字节环形缓冲**（`Usart.c:11`）→ AT 层任务级轮询搬入 `rx_buf[1024]`（`AT.c:5`） |
+| 缓冲区满 | **丢弃新字节**，不覆盖旧数据（`Usart.c:36-42`） |
+| 发送前清场 | `Usart1_RX_Flush()` 丢弃未取走的残留；由 `AT_Send_Command()` 在发送前调用，见 11.11 |
 | 应答判定 | 按行累积到 `'\n'` 后与 4 条固定字符串做 **`strcmp` 完全匹配**：`"OK\r\n"` / `"ERROR\r\n"` / `"busy p...\r\n"` / `"ready\r\n"` |
-| 等待策略 | 用 TIM5 计时；无数据且调度器已运行时 `vTaskDelay(1)` 让出 CPU（`AT.c:104-114`） |
+| 等待策略 | 用 TIM5 计时；无数据且调度器已运行时 `vTaskDelay(1)` 让出 CPU（`AT.c:132-143`） |
 
 **封装的指令与超时**
 
 | 指令 | 用途 | 超时 |
 | --- | --- | --- |
 | `AT` | 启动探测：每 100ms 一次，最多 30 次 | ≈3s |
-| `AT+RESTORE` | 恢复出厂设置 | 2000ms |
+| `AT+RESTORE` | 恢复出厂设置。**不在开机必经路径上**，只在 AT 初始化失败时由 `AT_Factory_Reset()` 下发（见 11.11） | 2000ms |
 | `AT+CWMODE=1` | 设为 Station 模式 | — |
 | `AT+CWJAP="<ssid>","<pwd>"[,"<mac>"]` | 连接 AP（`mac` 为 `NULL` 时省略第三参数） | **10000ms** |
 | `AT+CWSTATE?` | 读连接状态与 SSID（判定必需项） | 2000ms |
@@ -408,9 +409,10 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 
 | 函数 | 职责 |
 | --- | --- |
-| `AT_Init()` | GPIO / USART1 / NVIC 初始化 → 等启动 → `AT+RESTORE` → 等 `ready` |
-| `AT_Wait_Ready(timeout)` | 等待 `ready` 行 |
-| `AT_Write_Command(cmd, timeout)` | 发指令（自动补 `\r\n`），**仅 `OK` 算成功** |
+| `AT_Init()` | GPIO / USART1 / NVIC 初始化 → `AT_Wait_Boot(3000)` 反复发 `AT` 直到拿到 `OK`。**不含 `AT+RESTORE`**（见 11.11） |
+| `AT_Factory_Reset()` | `AT+RESTORE` 恢复出厂 → `AT_Wait_Ready(5000)` 等模组重启完成。只在 AT 初始化失败时按需调用 |
+| `AT_Wait_Ready(timeout)` | 等待 `ready` 行；**忽略中途冒出的 `OK`/`ERROR`/`busy`**，一直等到 `ready` 或总超时（见 11.11） |
+| `AT_Send_Command(cmd, timeout)` | 发指令（自动补 `\r\n`），**仅 `OK` 算成功**；`busy p...` 在总超时内重发（发送前先清 RX 环形缓冲） |
 | `AT_Get_Response()` | 返回内部 `rx_buf` 指针 |
 | `AT_WiFi_Init()` | `AT+CWMODE=1` |
 | `AT_Connect_WiFi(ssid, password, mac)` | `AT+CWJAP` 连接 |
@@ -437,7 +439,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | --- | --- |
 | 引脚 | PA2 = TX，PA3 = RX，AF7（RX 当前未使用） |
 | 参数 | 115200-8N1；**未配置 NVIC、未使能中断** |
-| 发送 | `printf` → `fputc` → **256 字节行缓冲**（`Usart.c:58`）→ 遇 `'\n'` 或缓冲满 → DMA1_Stream6 / Channel4 整行发出 |
+| 发送 | `printf` → `fputc` → **256 字节行缓冲**（`Usart.c:94`）→ 遇 `'\n'` 或缓冲满 → DMA1_Stream6 / Channel4 整行发出 |
 | 完成判定 | 先等 `TCIF6`（字节搬进 DR），再等 USART 的 `TC`（最后一位移出）；等待期间可阻塞则 `vTaskDelay(1)` |
 | 整行原子 | 互斥量 `dbg_mtx` + 行属主 `dbg_line_owner`，同一任务后续字符免检 |
 | 上下文退化 | 处于中断中或调度器未运行时，退化为**逐字节轮询** |
@@ -453,7 +455,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | 引脚 | SCLK = PC10，MISO = PC11，MOSI = PC12（均 AF6）；CS = PE2，RESET = PE3，DC = PE4，BLK = PE5 |
 | 参数 | 主机、8/16 位可切、Mode 0、MSB First、预分频 2 → 21MHz |
 | 像素搬运 | DMA1_Stream5 / Channel0，HalfWord，Normal 模式，FIFO 关闭，**无中断**、轮询 `TCIF5` |
-| DMA 分块 | `NDTR` 单次上限 65535 半字，超出自动分块（`LCD.c:195-230`） |
+| DMA 分块 | `NDTR` 单次上限 65535 半字，超出自动分块（`LCD.c:196-231`） |
 | 数据宽度切换 | 命令阶段 8 位、像素阶段 16 位；切换前先等 `BSY` 并在 `SPE=0` 下调用 `SPI_DataSizeConfig` |
 
 **缓冲分配**
@@ -464,7 +466,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | `s_picBuf[2]` | 2 × **7680 B** | 图片乒乓双缓冲（240 × 16 行 × 2），从 FreeRTOS 堆分配 |
 | `s_glyph` | **144 B** | 单个字模最大字节数（48 号 ASCII = 3 字节/行 × 48 行） |
 
-**初始化顺序**（`LCD.c:482-513`）
+**初始化顺序**（`LCD.c:494-525`）
 
 复位（低 20ms → 高 120ms）→ `0x11` 退出睡眠 + 120ms → `0x36=0x00`（扫描方向）、
 `0x3A=0x55`（16bpp）→ 一批电源/伽马寄存器 → **GRAM 刷黑** → `0x29` 开显示 → 点亮背光。
@@ -488,7 +490,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 显存保留）/ `ST7789_Fill_Color` / `ST7789_Write_String` / `ST7789_Draw_Picture` /
 `ST7789_Draw_Picture_AutoTransparent`。
 
-> ⚠️ `Is_GB2312()`（`LCD.c:580-583`）用 `char` 与 `0xA1~0xF7` 比较，**依赖 ARMCC 默认 `char` 无符号**。
+> ⚠️ `Is_GB2312()`（`LCD.c:592-595`）用 `char` 与 `0xA1~0xF7` 比较，**依赖 ARMCC 默认 `char` 无符号**。
 > 换用默认有符号 `char` 的编译器（如 arm-none-eabi-gcc）会恒返回 false，汉字全部无法定位。
 
 ### 4.4 SPI1 — W25Q64
@@ -691,8 +693,17 @@ while ((int64_t)(TIM5_Get_us() - start) < (int64_t)us) ;
 `Prof_Us(start)` 用无符号减法自动处理 32 位回绕（168MHz 下约 25.6s 回绕一次），再除以
 `SystemCoreClock / 1000000` 得到微秒数。
 
-不占用定时器、不产生中断，适合评估渲染耗时。**当前 `Prof_Us()` 没有调用者**——文档中给出的
-渲染耗时是按传输带宽的理论估算，不是实测值。
+不占用定时器、不产生中断，适合评估渲染耗时。当前有**两个测量点**，都位于 `Board_Init()`
+的 `Prof_Init()` 之后；输出的日志格式见 10.3：
+
+| 测量点 | 位置 | 覆盖范围 |
+| --- | --- | --- |
+| 全屏图片绘制 | `LCD.c` 的 `ST7789_DrawImage_Stream()` | 只对 `240×320` 整屏图片计时（目前只有开机底图），范围从设置窗口到 SPI3 `BSY` 落下；小图标不计时以免刷屏。日志同时报告走了乒乓双缓冲还是单缓冲回退 |
+| 整页重绘 | `app_task.c` 的 `UI_Enter_Day()` 与首次进主页面 | `Main_Page_Display()` 全量重绘：整屏清屏填充 + 时钟/日期/天气/室内四个模块 |
+
+> 两个注意点：`DWT->CYCCNT` 在 CPU 进入 sleep（idle 的 `__WFI`）时**会停止**，所以不要用它
+> 测量跨越等待区间的时间（例如等网络响应）；`Prof_Us()` 内部做的是
+> `SystemCoreClock / 1000000` 整数除法，改主频时要求它是 1MHz 的整数倍。
 
 ## 5. 关键流程
 
@@ -736,10 +747,12 @@ UI_Task
 AT_Init()
     GPIO / USART1 / NVIC(抢占5)
     AT_Wait_Boot(3000)      反复发 "AT"，每 100ms 一次，最多 30 次
-    AT+RESTORE              恢复出厂
-    AT_Wait_Ready(5000)     等 "ready"
+                            （开机不再下发 AT+RESTORE，见 11.11）
 
-Wireless_Init()             AT+CWMODE=1
+Wireless_Init()             AT+CWMODE=1；整体最多尝试 3 次，间隔 200ms
+                            失败返回 false，不再"失败也报 OK"（见 11.11）
+                            第 1 次失败后追加一次 AT_Factory_Reset()
+                            （AT+RESTORE + 等 ready），仅此一次
 
 Service_WiFi_Connect()
     AT+CWJAP="<ssid>","<pwd>"          超时 10000ms
@@ -796,7 +809,7 @@ Service_Weather_Update()               AT+HTTPCLIENT=2,1,"<url>",,,2 → Parse_W
 
 ### 5.4 天气 JSON 解析
 
-`Parse_Weather_Response()`（`BSP/Src/AT.c:453-493`）不引入 JSON 库，直接用 `strstr` 定位字段：
+`Parse_Weather_Response()`（`BSP/Src/AT.c:525-577`）不引入 JSON 库，直接用 `strstr` 定位字段：
 
 | JSON 字段 | 目标成员 | 用途 |
 | --- | --- | --- |
@@ -1383,9 +1396,11 @@ static const char *weather_url =
 
 ### 10.1 日志通道
 
-日志走 **USART2 @ 115200-8N1**，接 USB-TTL 即可查看。AT 层另有收发调试打印，
-由 `BSP/Src/AT.c:3` 的 `AT_DEBUG` 控制，**当前为 `0`（关闭）**；置 `1` 后会输出
-`[EDBUG] Command:` 与 `[EDBUG] Response:` 两类行。
+日志走 **USART2 @ 115200-8N1**，接 USB-TTL 即可查看。
+
+> 早期版本里 AT 层另有一组 `AT_DEBUG` 收发打印（`[EDBUG] Command:` / `[EDBUG] Response:`），
+> **该开关已从 `AT.c` 中移除**，现在 AT 收发内容不再单独输出。定位 AT 问题靠
+> `[NET] AT init FAILED, retry=n/m, rx len=N: <原始回复>` 这一行（见 10.3 与 11.11）。
 
 ### 10.2 上电典型输出
 
@@ -1437,7 +1452,8 @@ static const char *weather_url =
 | | `[NET] SNTP sync OK: ...` / `SNTP sync FAILED` | 校时结果 |
 | | `[NET] Weather OK: ... , code=..., temp=...` | 天气更新成功 |
 | | `[NET] Weather HTTP FAILED` / `Weather parse FAILED` | 取数失败 / 解析失败 |
-| | `[NET] AT init FAILED` / `WiFi init FAILED` | 开机阶段失败 |
+| | `[NET] AT init OK` / `[NET] WiFi init OK` | 初始化成功（**只有真的成功才会打印**，见 11.11） |
+| | `[NET] AT init FAILED, retry=n/3, rx len=N: ...` / `... max retry reached` | 初始化失败并重试；`rx len` 为 0 表示模组**完全没回话**，非 0 时冒号后是模组原始回复 |
 | 传感器 | `[SENSOR] DHT22 OK: T=... H=...` | 采集成功 |
 | | `[SENSOR] DHT22 FAIL: code=n (原因)` | 采集失败，错误码见 4.6 |
 | 昼夜 | `[LIGHT] task ready: DO_state=.. dark=..` | 光敏任务启动，附上电电平 |
@@ -1447,6 +1463,8 @@ static const char *weather_url =
 | | `[LP] Sync RTC time done` / `fail` | 进入夜间前回写 DS1302 并回读校验 |
 | | `[LP] Enter night: LCD off, OLED on, time_source=RTC` | 进入夜间（`SoftClock` 表示降级） |
 | | `[UI] Enter day: OLED off, LCD on` | 退出夜间 |
+| 性能 | `[PROF] full-screen image 240x320, 153600 bytes, ping-pong, N us` | 整屏底图绘制耗时（`Prof_Us` 实测）。`single` 表示乒乓缓冲分配失败、退化为单缓冲，见 4.11 |
+| | `[PROF] main page render: N us` | `Main_Page_Display()` 整页重绘耗时 |
 | 按键 | `[KEY] task ready: pressed=0` | 按键任务启动 |
 | 系统 | `[SYS]Build Date:...` | 固件编译时间 |
 | | `[UI] Board init done, boot page` | 板级初始化完成 |
@@ -1728,6 +1746,73 @@ delay_us(10);
 > 该缺陷与 11.3 的 `delay_us` 下溢是**两个独立问题**：11.3 会让半周期被压缩而采到旧位
 > （表现为随机单一位错误），本节则是每次必错。修好其中一个不会掩盖另一个。
 
+### 11.11 AT_Init() 偶发失败：等 ready 被别的 ACK 打断 + 假重试
+
+**现象**：开机时偶发出现下面这组日志。注意"失败"之后紧跟"OK"：
+
+```
+[NET] Init Start
+[NET] AT init FAILED, retry=1
+[NET] AT init OK
+[NET] WiFi init FAILED, retry=2
+[NET] WiFi init OK
+[NET] WiFi connecting to Jasmine ...
+[NET] WiFi connect FAILED
+```
+
+从 `Init Start` 到 `WiFi connect FAILED` 只过了约 **120ms**——而 `AT_Init()` 内部光是
+`AT_Wait_Boot(3000)` 就该耗 3s。**耗时这么短说明它不是"等超时"，而是在某一步被立刻判了失败。**
+
+**根因有两层：**
+
+1. **`AT_Wait_Ready()` 语义错误**。它把 `AT_Usart_Wait_Receive()` 的返回值直接和
+   `AT_ACK_READY` 比较，而后者是"匹配到**任意**已知 ACK 就返回"。模组上电、或
+   `AT+RESTORE` 重启途中先吐出的 `OK` / `ERROR` / `busy p...` 会让本函数**立刻**返回
+   `false`，而不是继续等 `ready`。
+2. **`Wireless_Init()` 的"重试"是假的**。旧写法是
+   `if (!AT_Init() && retry < 5) { retry++; ... if (retry >= 5) ... }`——**没有循环**：
+   `AT_Init()` 只被调用一次，`retry` 最多自增到 1，`retry >= 5` 永远不成立，
+   于是失败后照样落到 `printf("[NET] AT init OK")` 并返回成功。
+   `max retry reached` 是不可达的死代码。
+
+后果比"多打一行日志"严重：`Net_Task` 拿到一个**假的 `wifi_ok = true`**，继续去发
+`AT+CWJAP`，12ms 后连接失败，开机网络阶段整体降级；而周期重试只重连 WiFi，
+**不会重新 `AT_Init()`**，模组可能长时间停在半初始化状态。
+
+**处理**：
+
+- `AT_Wait_Ready()` 改为显式循环：忽略过渡性的 `OK` / `ERROR` / `busy`，一直等到
+  `ready` 或总超时。
+- `AT_Send_Command()` 把 `busy p...` 当作"模组还没准备好"，在总超时内隔 100ms 重发；
+  `ERROR` 与超时仍然立即失败。
+- `AT_Send_Command()` 在**发送前**清一次 RX 环形缓冲（新增 `Usart1_RX_Flush()`）。
+  否则上一条命令的尾巴、模组启动日志或 URC（如 `WIFI CONNECTED`）会被下一条命令
+  当成自己的回复，造成"假成功"（读到旧 `OK`）或"假失败"。发送前清场不会丢本次回复——
+  回复只可能在发送之后到达。
+- `Wireless_Init()` 改成真正的重试循环（AT 与 WiFi 各 3 次，间隔 200ms），**失败就返回
+  `false`**，并把模组原始回复一并打出来：
+- **`AT+RESTORE` 从开机必经路径上摘下来**。`AT_Init()` 现在只做"外设初始化 + 反复发 `AT`
+  直到拿到 `OK`"，不再每次开机恢复出厂；恢复出厂被抽成 `AT_Factory_Reset()`，
+  由 `Wireless_Init()` 在**第一次初始化失败之后**才调用一次。
+
+  这是很关键的一步：`AT+RESTORE` 会**擦掉模组保存的配置并强制重启**，重启期间模组先吐的
+  是 `ready` / `busy p...` 而不是 `OK`——上面两个缺陷的触发窗口正是它制造的。平时开机不做
+  恢复出厂，窗口就不存在；而模组配置真的坏了（或停在异常状态不应答）时，仍有恢复手段。
+  代价是"第 1 次失败后多花约 2~7s"，只在异常路径上付出。
+
+```
+[NET] AT init FAILED, retry=1/3, rx len=<字节数>: <模组原始回复>
+[NET] AT init FAILED, max retry reached
+```
+
+> **排障提示**：`rx len=0` 表示模组**完全没回话**（接线 / 供电 / 波特率问题）；
+> `rx len` 非 0 时看内容——`busy p...` 是模组还没准备好（重试即可自愈），
+> `ERROR` 是命令被拒，`ready` 说明 AT 命令的回复被启动横幅抢先了。
+>
+> 代价：AT 初始化失败一次的正常代价只是 `AT_Wait_Boot` 的 3s；第 1 次失败还会追加一次
+> 恢复出厂（最多 2 + 5s）。最坏情况（模组完全不应答）3 次尝试合计约 **11~16s**，
+> UI 侧等待 `EV_NET_READY` 的兜底是 30s，不会把开机流程拖死。
+
 ## 12. 已知限制与待办
 
 ### 12.1 正确性问题
@@ -1737,15 +1822,14 @@ delay_us(10);
 | 1 | **AO 模式 ADC 通道号错误** | `Light_Sensor.c:83,87` 用 `ADC_Channel_0`（= PA0），而光敏 AO 实际接 **PC0 = ADC123_IN10**。当前 `AO_DO_SWITCH = 0` 使该分支不编译，**切到 AO 模式前必须先改** |
 | 2 | `Test_LED_GPIO_init()` 使用未初始化的结构体 | `Board.c:37` 声明 `GPIO_InitTypeDef GPIO_InitStructure;` 后，**裸机分支只赋值了 `GPIO_Pin` 与 `GPIO_Mode`**，`GPIO_OType` / `GPIO_PuPd` / `GPIO_Speed` 保持栈上垃圾值。FreeRTOS 分支赋值完整，所以当前未暴露 |
 | 3 | `Parse_Weather_Response()` 不清零输出结构体 | 响应中缺失的字段会**保留调用方的旧值**（对比 `AT_Get_WiFi_Info()` 里有 `memset`） |
-| 4 | 字符串渲染有两处换行判定相差 1 | `LCD.c:683` 用 `xpos + gw > WIDTH`，`LCD.c:694` 用 `(xpos - x) + gw > WIDTH - 1`，后者会让本行少放一个字符 |
-| 5 | `Is_GB2312()` 依赖编译器的 `char` 符号性 | `LCD.c:580-583` 用 `char` 与 `0xA1~0xF7` 比较，ARMCC 默认 `char` 无符号才成立；换成 arm-none-eabi-gcc 会恒为 false，汉字全部无法定位 |
+| 4 | 字符串渲染有两处换行判定相差 1 | `LCD.c:695` 用 `xpos + gw > WIDTH`，`LCD.c:706` 用 `(xpos - x) + gw > WIDTH - 1`，后者会让本行少放一个字符 |
+| 5 | `Is_GB2312()` 依赖编译器的 `char` 符号性 | `LCD.c:592-595` 用 `char` 与 `0xA1~0xF7` 比较，ARMCC 默认 `char` 无符号才成立；换成 arm-none-eabi-gcc 会恒为 false，汉字全部无法定位 |
 | 6 | `COLOR()` 宏缺最外层括号 | `LCD.h:39`，参与复杂表达式时可能因运算符优先级出错 |
 | 7 | `WIDTH` / `HEIGHT` 是通用宏名 | `LCD.h:13-14`，与其它模块存在命名冲突风险 |
 | 8 | `TIM5_ms` 跨上下文非原子 | 64 位 `volatile` 变量在 ISR 与任务间读写非原子；当前靠"重读 + UIF 补偿"规避，但并发写本身仍非原子 |
-| 9 | `AT_Wait_Ready()` 只看首条命中行 | 若 `OK` 先到会返回 `false` |
-| 10 | FreeRTOS 分支下对未初始化的 PB2 写 ODR | `Board.c:56` 在 `USE_FREERTOS == 1` 时未初始化 PB2 却执行 `GPIO_ResetBits(GPIOB, GPIO_Pin_2)`（无实际作用，但语义混乱） |
-| 11 | `Asset` 的图片掩码刚好只够 32 张 | `Asset.c:89` 用 `1UL << i` 标记，32 位掩码恰好容纳当前 32 张图片。**再加第 33 张会溢出串位** |
-| 12 | 单缓冲回退依赖块大小巧合 | `LCD.c:363,373-375` 回退时 `buf[0] == buf[1] == s_scratch`，依赖 `blk = sizeof(s_scratch)/2` 恰好填满 23040 字节而不越界 |
+| 9 | FreeRTOS 分支下对未初始化的 PB2 写 ODR | `Board.c:56` 在 `USE_FREERTOS == 1` 时未初始化 PB2 却执行 `GPIO_ResetBits(GPIOB, GPIO_Pin_2)`（无实际作用，但语义混乱） |
+| 10 | `Asset` 的图片掩码刚好只够 32 张 | `Asset.c:89` 用 `1UL << i` 标记，32 位掩码恰好容纳当前 32 张图片。**再加第 33 张会溢出串位** |
+| 11 | 单缓冲回退依赖块大小巧合 | `LCD.c:368,378-380` 回退时 `buf[0] == buf[1] == s_scratch`，依赖 `blk = sizeof(s_scratch)/2` 恰好填满 23040 字节而不越界 |
 
 ### 12.2 无超时的等待点
 
@@ -1754,9 +1838,9 @@ delay_us(10);
 | 位置 | 等待对象 |
 | --- | --- |
 | `W25Q64.c` 的 `W25Q64_RWByte()` 等 | SPI 的 TXE / RXNE，**SPI 未工作时死循环** |
-| `LCD.c:215-224` / `256-270` | DMA 完成标志（只判 TE），且是纯忙等、不让出 CPU |
+| `LCD.c:216-225` / `257-271` | DMA 完成标志（只判 TE），且是纯忙等、不让出 CPU |
 | `Light_Sensor.c:102-104` | AO 模式的 ADC EOC（仅 AO 分支编译） |
-| `Usart.c:134-135` | DMA 流进入 DISABLE 状态 |
+| `Usart.c:164-165` | DMA 流进入 DISABLE 状态 |
 
 ### 12.3 死代码与冗余
 
@@ -1764,11 +1848,12 @@ delay_us(10);
 | --- | --- | --- |
 | 1 | `DS1302_ReadReg()` 未被引用 | `External_RTC.c:151-169`。**全量重编**时会产生 `warning #177-D`；增量编译不重编该文件时看不到——它是当前唯一的编译告警来源 |
 | 2 | `OLED.c:25,37` 的空指针判断恒为假 | `if (&oled_i2c == NULL) return;`——取静态对象地址不可能是 `NULL` |
-| 3 | `AT.h:59` 与 `AT.h:64` 重复声明 `AT_WiFi_Init` | — |
-| 4 | 无调用者的 BSP 接口 | `W25Q64_IsBusy`、`W25Q64_Block32Erase`、`W25Q64_ChipErase`、`Soft_I2C_Receive_Bytes`、`Prof_Cycles`、`Prof_Us`、`Asset_MissingCount`、`Asset_CheckedCount` |
+| 3 | `AT.h:59` 与 `AT.h:65` 重复声明 `AT_WiFi_Init` | — |
+| 4 | 无调用者的 BSP 接口 | `W25Q64_IsBusy`、`W25Q64_Block32Erase`、`W25Q64_ChipErase`、`Soft_I2C_Receive_Bytes`、`Asset_MissingCount`、`Asset_CheckedCount` |
 | 5 | 未被引用的资源描述符 | `Font_12`、`Font_22`、`Font_32`、`Font_32B`（`Font_32` 只被裸机用例使用，该目标文件被链接器丢弃）；`Image_location`、`Image_no_location` 已不参与界面绘制 |
 | 6 | 未使用的宏 | `W25Q64_CMD_WRITE_DISABLE/READ_SR2/WRITE_SR/FAST_READ/BLOCK64_ERASE/POWER_DOWN`、`W25Q64_SR1_WEL/BP0~2/TB/SEC`、`W25Q64_SR2_QE`、`W25Q64_BLOCK_SIZE`；`External_RTC.h` 中除 `DS1302_REG_WP` 外的全部寄存器宏（源码里用的是裸字面量 `0xBE/0xBF/0x8E`） |
 | 7 | `FreeRTOS/include` 下同时存在 `stack_macros.h` 与 `StackMacros.h` | 仅大小写不同，Windows 文件系统不区分大小写——跨平台检出时会有问题 |
+| 8 | **`Image_Main_Page` 已烧录、已自检，但从不绘制** | 主界面底色实际由 `Main_Page_Top()` 的整屏 `ST7789_Fill_Color()` 加文字/图标构成，`Main_Page.c` 全文没有引用 `Image_Main_Page`。它仍占 **153600 B** Flash、参与 43 项开机自检，也是烧录批次 2（307200 B）的一半。**要么接到主界面上，要么从 `ImageTable.c` 与批次 2 中移除**（移除后自检项数 43 → 42，6.5/6.7 的数字要同步） |
 
 ### 12.4 工程与配置问题
 
@@ -1804,7 +1889,7 @@ delay_us(10);
 | 11 | `s_boot` / `s_lowpower` 无临界区保护 | 仅靠事件位的先后关系保证可见性；目前读写点分离，未出问题 |
 | 12 | 字库与图片完全依赖 W25Q64 | MCU 内不含任何字模与像素数据；芯片损坏或未烧录即完全无字可显，靠串口日志 + 纯色块兜底 |
 | 13 | 资源烧录需要三轮编译烧录 | 资源总量超过 512KB Flash，无法单次带入 |
-| 14 | 全屏图绘制约 58ms | 双缓冲已把 W25Q64 读取藏在 DMA 发送之后，但 SPI3 @21MHz 发送 153600 字节本身就是这个量级。**该值是按 0.381µs/字节的理论估算**，`Prof_Us()` 目前没有调用者，未经实测 |
+| 14 | 整屏底图绘制耗时（原先按带宽估算约 58ms） | 双缓冲已把 W25Q64 读取藏在 DMA 发送之后，但 SPI3 @21MHz 发送 153600 字节本身就是这个量级。**58ms 是按 0.381µs/字节的理论估算**；现由开机时的 `[PROF] full-screen image ...` 实测（见 4.11），**以实测值为准** |
 | 15 | 字模读取附加 littlefs 查找开销 | 单字模纯传输约 27µs（22 号汉字）/ 56µs（48 号 ASCII），实际还要叠加 `lfs_file_seek` 的 CTZ skip-list 遍历。若实测偏高可加 4KB 块缓存 |
 | 16 | `printf` 不含 `'\n'` 会长期持锁 | `Usart.c` 的整行互斥在遇到换行并发送完毕后才释放；同任务的后续 `printf` 可重入，其他任务会阻塞到 `portMAX_DELAY`。**写日志时必须带换行** |
 | 17 | OLED 不支持中文 | `OLED_WriteChar` 把索引限制在可见 ASCII；夜间界面因此只画数字与日期 |

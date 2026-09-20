@@ -25,8 +25,6 @@ void Boot_Page_Wait(void)
  */
 void Boot_Page_Show(bool wifi_ok, bool service_ok)
 {
-    ST7789_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect); // 重新绘制底图
-
     if (!wifi_ok)
     {
         sprintf(fail_msg, "[WiFi] Disconnect");

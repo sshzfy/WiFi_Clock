@@ -8,6 +8,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "Asset.h"
+#include "Profiling.h"
 
 /* ST7789 显示区域 */
 #define WIDTH 240
@@ -37,7 +38,9 @@
 
 /* 颜色 */
 #define COLOR(r, g, b) ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+
 #define COLOR_BLACK       COLOR(0, 0, 0)          // 纯黑
+/* 红色系 */
 #define COLOR_RED         COLOR(255, 0, 0)        // 纯红
 #define COLOR_DARKRED     COLOR(128, 0, 0)        // 深红
 #define COLOR_MAROON      COLOR(196, 30, 30)      // 暗红
@@ -48,7 +51,7 @@
 #define COLOR_PINK        COLOR(255, 192, 203)    // 粉红
 #define COLOR_ROSE        COLOR(255, 0, 127)      // 玫瑰红
 #define COLOR_PURPLERED   COLOR(128, 0, 32)       // 紫红
-//橙色系
+/* 橙色系 */
 #define COLOR_ORANGE      COLOR(255, 165, 0)      // 橙色
 #define COLOR_DARKORANGE  COLOR(255, 140, 0)      // 暗橙
 #define COLOR_GOLD        COLOR(255, 215, 0)      // 金色
@@ -58,7 +61,7 @@
 #define COLOR_SANDY       COLOR(210, 180, 140)    // 沙色
 #define COLOR_BROWN       COLOR(165, 42, 42)      // 棕色
 #define COLOR_SADDLEBROWN COLOR(139, 69, 19)      // 深棕色/赭石
-//绿色系
+/* 绿色系 */
 #define COLOR_GREEN       COLOR(0, 255, 0)        // 纯绿
 #define COLOR_DARKGREEN   COLOR(0, 128, 0)        // 深绿
 #define COLOR_FORESTGREEN COLOR(34, 139, 34)      // 森林绿
@@ -68,7 +71,7 @@
 #define COLOR_OLIVE       COLOR(128, 128, 0)      // 橄榄绿
 #define COLOR_SEAGREEN    COLOR(46, 139, 87)      // 海绿
 #define COLOR_SPRINGGREEN COLOR(0, 255, 127)      // 春绿/翠绿
-//蓝色系
+/* 蓝色系 */
 #define COLOR_BLUE        COLOR(0, 0, 255)        // 纯蓝
 #define COLOR_NAVY        COLOR(0, 0, 128)        // 海军蓝
 #define COLOR_DARKBLUE    COLOR(0, 0, 139)        // 深蓝
@@ -80,7 +83,7 @@
 #define COLOR_DARKCYAN    COLOR(0, 139, 139)      // 深青
 #define COLOR_LIGHTCYAN   COLOR(224, 255, 255)    // 浅青
 #define COLOR_AZURE       COLOR(240, 255, 255)    // 蔚蓝
-//紫色系
+/* 紫色系 */
 #define COLOR_PURPLE      COLOR(128, 0, 128)      // 紫色
 #define COLOR_VIOLET      COLOR(238, 130, 238)    // 紫罗兰
 #define COLOR_ORCHID      COLOR(218, 112, 214)    // 兰花紫
@@ -88,7 +91,7 @@
 #define COLOR_INDIGO      COLOR(75, 0, 130)       // 靛蓝
 #define COLOR_DARKVIOLET  COLOR(148, 0, 211)      // 深紫罗兰
 #define COLOR_LAVENDER    COLOR(230, 230, 250)    // 薰衣草淡紫
-//白色系
+/* 白色系 */
 #define COLOR_WHITE       COLOR(255, 255, 255)    // 纯白
 #define COLOR_SNOW        COLOR(255, 250, 250)    // 雪白
 #define COLOR_GAINSBORO   COLOR(220, 220, 220)    // 亮灰

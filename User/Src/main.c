@@ -5,6 +5,7 @@
 #include "BuildConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "Usart.h"
 
 #if (RESOURCE_PROVISION == 1)
 
@@ -32,7 +33,6 @@ int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
     Board_Peripheral_Init(); /* 外设时钟初始化 */
-
     App_Task_Init();         /* 创建网络/传感器/UI任务, 并启动FreeRTOS调度器 */
     vTaskStartScheduler();   /* 启动FreeRTOS调度器, 任务开始运行 */
 

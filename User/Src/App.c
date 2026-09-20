@@ -126,32 +126,75 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
 
 /* ================ WiFi 初始化 ================ */
 
+/* 开机阶段 AT/WiFi 初始化的最大尝试次数。
+ * 偶发失败的真实原因是"模组还没准备好": 上电或重启途中它会先吐 ready / busy p... /
+ * ERROR 而不是我们要的 OK, 隔一会儿重试一次通常就正常了。 */
+#define WIRELESS_INIT_RETRY 3U
+#define WIRELESS_INIT_GAP_MS 200U // 两次尝试之间的等待时间(ms)
+
 /**
  * @brief 初始化无线网络, 包括AT命令和WiFi
- *
  * @return true 初始化成功
  * @return false 初始化失败
  */
 bool Wireless_Init(void)
 {
+    bool at_ok = false;
+
     /* 初始化AT命令 */
-    if (!AT_Init())
+    for (uint8_t retry = 1; retry <= WIRELESS_INIT_RETRY; retry++)
     {
-        printf("[NET] AT init FAILED\r\n");
-        goto err;
+        if (AT_Init())
+        {
+            at_ok = true;
+            break;
+        }
+
+        printf("[NET] AT init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
+               (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
+               (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
+
+        /* 第一次失败后才动用 AT+RESTORE: 正常开机不会走到这里, 只有模组确实不应答
+         * (配置损坏、停在不正常状态等)时才付出这次"擦配置 + 重启"的代价。
+         * 平时开机不做恢复出厂, 也就没有那次重启带来的 busy/ready 抢跑窗口。 */
+        if (retry == 1)
+        {
+            printf("[NET] AT init failed, try factory reset (AT+RESTORE)\r\n");
+
+            if (!AT_Factory_Reset())
+                printf("[NET] factory reset FAILED, rx len=%u: %s\r\n",
+                       (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
+        }
+
+        if (retry < WIRELESS_INIT_RETRY)
+            vTaskDelay(pdMS_TO_TICKS(WIRELESS_INIT_GAP_MS));
+    }
+
+    if (!at_ok)
+    {
+        printf("[NET] AT init FAILED, max retry reached\r\n");
+        return false; /* AT 都没起来, 后面的 WiFi 命令不可能成功 */
     }
     printf("[NET] AT init OK\r\n");
 
     /* 初始化WiFi */
-    if (!AT_WiFi_Init())
+    for (uint8_t retry = 1; retry <= WIRELESS_INIT_RETRY; retry++)
     {
-        printf("[NET] WiFi init FAILED\r\n");
-        goto err;
-    }
-    printf("[NET] WiFi init OK\r\n");
+        if (AT_WiFi_Init())
+        {
+            printf("[NET] WiFi init OK\r\n");
+            return true;
+        }
 
-    return true;
-err:
+        printf("[NET] WiFi init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
+               (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
+               (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
+
+        if (retry < WIRELESS_INIT_RETRY)
+            vTaskDelay(pdMS_TO_TICKS(WIRELESS_INIT_GAP_MS));
+    }
+
+    printf("[NET] WiFi init FAILED, max retry reached\r\n");
     return false;
 }
 

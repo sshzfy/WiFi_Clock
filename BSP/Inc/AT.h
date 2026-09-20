@@ -8,9 +8,9 @@
 #include "task.h"
 #include "Usart.h"
 
-#define AT_USART1_GPIO_PORT GPIOA         // USART1_TX和USART1_RX连接在GPIOA上
-#define AT_USART1_GPIO_PIN_TX GPIO_Pin_9  // USART1_TX
-#define AT_USART1_GPIO_PIN_RX GPIO_Pin_10 // USART1_RX
+#define AT_USART1_GPIO_PORT      GPIOA       // USART1_TX和USART1_RX连接在GPIOA上
+#define AT_USART1_GPIO_PIN_TX    GPIO_Pin_9  // USART1_TX
+#define AT_USART1_GPIO_PIN_RX    GPIO_Pin_10 // USART1_RX
 
 typedef enum
 {
@@ -58,8 +58,9 @@ typedef struct
 
 bool AT_WiFi_Init(void);
 bool AT_Init(void);
+bool AT_Factory_Reset(void);
 bool AT_Wait_Ready(uint32_t timeout);
-bool AT_Write_Command(const char *command, uint32_t timeout);
+bool AT_Send_Command(const char *command, uint32_t timeout);
 const char *AT_Get_Response(void);
 bool AT_WiFi_Init(void);
 bool AT_Connect_WiFi(const char *ssid, const char *password, const char *mac);

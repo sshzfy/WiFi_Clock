@@ -4,15 +4,29 @@
  * 说明: USART1 仅1字节RDR无FIFO。任务级轮询(RXNE)在任务睡眠/被抢占期间
  * 会溢出丢字节, 故改用RXNE中断将每个字节即时收入环形缓冲, AT任务再从缓冲读取。
  * ISR优先级=5(configMAX_SYSCALL_INTERRUPT_PRIORITY), 未调用RTOS API。
- * USART1的GPIO/波特率/RXNE中断使能由AT.c的AT_USART_Init完成, 本文件只负责
- * 中断服务 + 环形缓冲存取。
  */
 
 #define USART1_RX_RING_SIZE 512
 
-static char rx_ring[USART1_RX_RING_SIZE];
-static volatile uint16_t rx_head = 0;
-static volatile uint16_t rx_tail = 0;
+static volatile char rx_ring[USART1_RX_RING_SIZE]; // RX环形缓冲区
+static volatile uint16_t rx_head = 0;              // RX头指针
+static volatile uint16_t rx_tail = 0;              // RX尾指针
+
+void USART1_Init(void)
+{
+    /* 初始化USART1 */
+    USART_InitTypeDef USART_InitStruct;
+    USART_StructInit(&USART_InitStruct);
+    USART_InitStruct.USART_BaudRate = 115200;                                    // 波特率 115200bps
+    USART_InitStruct.USART_WordLength = USART_WordLength_8b;                     // 字长 8位
+    USART_InitStruct.USART_StopBits = USART_StopBits_1;                          // 停止位 1位
+    USART_InitStruct.USART_Parity = USART_Parity_No;                             // 校验位 无校验
+    USART_InitStruct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;                 // 模式 RX/TX
+    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // 硬件流控制 无硬件流控制
+    USART_Init(USART1, &USART_InitStruct);
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE); /* RXNE中断 → Usart.c环形缓冲 */
+    USART_Cmd(USART1, ENABLE);
+}
 
 void USART1_IRQHandler(void)
 {
@@ -32,18 +46,38 @@ void USART1_IRQHandler(void)
 
 uint16_t Usart1_RX_Count(void)
 {
-    return (uint16_t)((rx_tail - rx_head + USART1_RX_RING_SIZE) % USART1_RX_RING_SIZE); /* 计算有效字节数 */
+    uint16_t tail = rx_tail;
+    uint16_t head = rx_head;
+
+    return (uint16_t)((tail - head + USART1_RX_RING_SIZE) % USART1_RX_RING_SIZE); /* 计算有效字节数 */
 }
 
-char Usart1_RX_Read(void)
+int Usart1_RX_Read(void)
 {
-    char c;
+    int c;
 
-    if (rx_head == rx_tail)
-        return '\0';
-    c = rx_ring[rx_head];
-    rx_head = (uint16_t)((rx_head + 1) % USART1_RX_RING_SIZE);
+    if (rx_head == rx_tail) /* 环形缓冲区为空 */
+        return -1;
+    c = (uint8_t)rx_ring[rx_head];                             // 读取头指针字符
+    rx_head = (uint16_t)((rx_head + 1) % USART1_RX_RING_SIZE); // 更新头指针
     return c;
+}
+
+/**
+ * @brief 丢弃USART1接收环形缓冲中尚未取走的全部字节
+ *
+ * @note  在AT命令"发送前"调用。上一次命令的尾巴、模组的启动日志或 URC(如
+ *        "WIFI CONNECTED")若留在缓冲里, 会被下一条命令当成自己的回复, 造成
+ *        "假成功"(读到旧的 OK) 或"假失败"(读到旧的 ERROR/busy)。
+ *        发送前清场不会丢掉本次回复——回复只可能在发送之后到达。
+ */
+void Usart1_RX_Flush(void)
+{
+    /* USART1 中断优先级 = 5 = configMAX_SYSCALL_INTERRUPT_PRIORITY,
+     * 可被 taskENTER_CRITICAL() 屏蔽, 临界区内不会与 ISR 争抢指针 */
+    taskENTER_CRITICAL();
+    rx_head = rx_tail;
+    taskEXIT_CRITICAL();
 }
 
 /* ==================== USART2 调试输出(printf 经 DMA) ====================
@@ -69,7 +103,7 @@ static bool dbg_dma_ready = false;         // DMA是否初始化
  * */
 static bool Dbg_Can_Block(void)
 {
-    if (xPortIsInsideInterrupt() == pdTRUE) /* 中断上下文不能阻塞 */
+    if (xPortIsInsideInterrupt() == pdTRUE) /* 检测当前代码是否在 ISR , 中断中断上下文不能阻塞 */
         return false;
     if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) /* 调度器未运行 */
         return false;
@@ -95,15 +129,13 @@ static void Dbg_Dma_Init(void)
     dbg_dma_ready = true;
 
     DMA_DeInit(DMA1_Stream6);
-
     DMA_InitTypeDef DMA_InitStruct;
     DMA_StructInit(&DMA_InitStruct);
-
     DMA_InitStruct.DMA_Channel = DMA_Channel_4;                          // 通道4对应USART2_TX
-    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(USART2->DR);     // 从USART2_TX寄存器读取
+    DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(USART2->DR);     // 从USART2_DR寄存器读取
     DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)dbg_buf;              // 从行缓冲区读取
     DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;                 // 从内存到外设
-    DMA_InitStruct.DMA_BufferSize = 0;                                   // 0表示动态计算
+    DMA_InitStruct.DMA_BufferSize = 0;                                   // 占位，动态计算缓冲区大小
     DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;        // 外设地址不增加
     DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;                 // 内存地址增加
     DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte; // 外设数据大小为字节
@@ -111,7 +143,6 @@ static void Dbg_Dma_Init(void)
     DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;                           // 正常模式
     DMA_InitStruct.DMA_Priority = DMA_Priority_Low;                      // 低优先级
     DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;                  // 禁用FIFO
-
     DMA_Init(DMA1_Stream6, &DMA_InitStruct);
     USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
 }
@@ -126,14 +157,15 @@ static void Dbg_Flush(void)
 
     if (n == 0)
         return;
+
     dbg_len = 0; // 立即重置长度（持有锁，安全），防止下次重复搬运
 
-    Dbg_Dma_Init();
-
-    DMA_Cmd(DMA1_Stream6, DISABLE);
+    Dbg_Dma_Init();                                   /* 初始化DMA */
+    DMA_Cmd(DMA1_Stream6, DISABLE);                   /* 禁用DMA1_Stream6, 允许安全修改 DMA 参数 */
     while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE) /* 等待DMA流完全进入禁用状态（硬件同步），以便安全修改NDTR/M0AR等寄存器 */
         ;
 
+    /* 设置DMA参数 */
     DMA1_Stream6->NDTR = n;                 // 设置要搬运的字节数
     DMA1_Stream6->M0AR = (uint32_t)dbg_buf; // 设置内存地址为行缓冲区
     DMA1_Stream6->CR |= DMA_SxCR_MINC;      // 确保内存地址递增（逐字节读取）
@@ -173,31 +205,32 @@ int fputc(int ch, FILE *stream)
         return ch;
     }
 
-    TaskHandle_t me = xTaskGetCurrentTaskHandle(); /* 获取当前任务句柄 */
+    TaskHandle_t me = xTaskGetCurrentTaskHandle(); /* 获取当前任务（调用printf函数的任务）句柄 */
 
     /* 懒加载创建互斥量（仅首次调用时创建） */
     if (dbg_mtx == NULL)
-        dbg_mtx = xSemaphoreCreateMutex();
+        dbg_mtx = xSemaphoreCreateMutex(); // 创建互斥量
 
     /* 整行互斥: 首个字符抢锁并记录行属主, 换行释放 */
     if (dbg_line_owner != me)
     {
         xSemaphoreTake(dbg_mtx, portMAX_DELAY); /* 抢锁, 将锁的所有权交给当前任务, 如果锁被占用, 则阻塞等待任务释放锁 */
-        dbg_line_owner = me;                    /* 登记属主，后续字符免检 */
+        dbg_line_owner = me;                    // 登记属主，后续字符免检
     }
 
     /* 缓冲满则提前刷出（但仍持有锁，行未结束） */
     if (dbg_len >= sizeof(dbg_buf))
         Dbg_Flush();
 
-    dbg_buf[dbg_len++] = c; /* 行缓冲区未满, 写入字符到行缓冲区 */
+    /* 行缓冲区未满, 写入字符到行缓冲区 */
+    dbg_buf[dbg_len++] = c;
 
     /* 遇到换行符：必须等待整行物理发送完毕，再释放锁和清空属主 */
     if (c == '\n')
     {
         Dbg_Flush();             /* 阻塞等待 DMA 和 USART 完全发完 */
         xSemaphoreGive(dbg_mtx); /* 释放锁，允许其他任务打印新行 */
-        dbg_line_owner = NULL;   /* 重置行属主为 NULL */
+        dbg_line_owner = NULL;   // 重置行属主为 NULL
     }
 
     return ch;
@@ -210,28 +243,27 @@ void Usart2_Debug_Init(void)
 
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
-
     GPIO_InitStruct.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     USART_InitTypeDef USART_InitStruct;
     USART_StructInit(&USART_InitStruct);
-
     USART_InitStruct.USART_BaudRate = 115200U;
     USART_InitStruct.USART_WordLength = USART_WordLength_8b;
     USART_InitStruct.USART_StopBits = USART_StopBits_1;
     USART_InitStruct.USART_Parity = USART_Parity_No;
     USART_InitStruct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
     USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-
     USART_Init(USART2, &USART_InitStruct);
     USART_Cmd(USART2, ENABLE);
 
+    printf("[SYS]Build Date:%s %s\r\n", __DATE__, __TIME__);
+
+    /* 初始化互斥量 */
     if (dbg_mtx == NULL)
-        dbg_mtx = xSemaphoreCreateMutex();
+        dbg_mtx = xSemaphoreCreateMutex(); // 创建互斥量
 }

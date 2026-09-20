@@ -3,8 +3,8 @@
 /* ================ W25Q64 相关信息 ================
  * 此项目中用来存储字库和图片信息
  * 大小 64 Mbit，8MB（8M 字节 = 8388608 字节）
- * SPI 接口 最大传输速率 75 MHz，支持 SPI 模式 1 和模式 3
- *   模式1: CPOL=0, CPHA=1   (空闲低电平, 第二个边沿采样)
+ * SPI 接口 最大传输速率 75 MHz，支持 SPI 模式 0 和模式 3
+ *   模式0: CPOL=0, CPHA=0   (空闲低电平, 第一个边沿采样)
  *   模式3: CPOL=1, CPHA=1   (空闲高电平, 第二个边沿采样)
  * 每页 256 字节，32768 页
  * 每扇区 4KB(4096 字节)，共 2048 个扇区
@@ -85,7 +85,6 @@ static void W25Q64_SPI_Init(void)
     SPI_InitStructure.SPI_CRCPolynomial = 7;                           // CRC多项式7
 
     SPI_Init(SPI1, &SPI_InitStructure);
-    // SPI_DMACmd(SPI1, SPI_I2S_DMAReq_Tx, ENABLE);
     SPI_Cmd(SPI1, ENABLE);
 }
 
@@ -170,7 +169,7 @@ uint16_t W25Q64_ReadId(void)
     id = W25Q64_RWByte(0xFF) << 8; // 读厂商 ID（0xEF）
     id |= W25Q64_RWByte(0xFF);     // 读器件 ID（0x16）
     W25Q64_CS_High();              /* 拉高片选 */
-    
+
     return id;
 }
 
@@ -204,9 +203,9 @@ void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 {
     W25Q64_CS_Low();
     W25Q64_RWByte(W25Q64_CMD_READ_DATA); /* 读取数据 */
-    W25Q64_RWByte((addr >> 16) & 0xFF); /* 地址高字节 */
-    W25Q64_RWByte((addr >> 8) & 0xFF);  /* 地址中字节 */
-    W25Q64_RWByte(addr & 0xFF);         /* 地址低字节 */
+    W25Q64_RWByte((addr >> 16) & 0xFF);  /* 地址高字节 */
+    W25Q64_RWByte((addr >> 8) & 0xFF);   /* 地址中字节 */
+    W25Q64_RWByte(addr & 0xFF);          /* 地址低字节 */
 
     while (len--)
     {

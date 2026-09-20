@@ -7,10 +7,10 @@
 #include "task.h"
 #include "semphr.h"
 
-void Usart2_Debug_Init(void);
-
-/* USART1 RX 环形缓冲接口(AT层使用) */
+void USART1_Init(void);
 uint16_t Usart1_RX_Count(void);
-char Usart1_RX_Read(void);
+int Usart1_RX_Read(void);
+void Usart1_RX_Flush(void);
+void Usart2_Debug_Init(void);
 
 #endif /* __USART_H__ */

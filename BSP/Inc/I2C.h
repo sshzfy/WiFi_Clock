@@ -13,12 +13,6 @@ typedef struct
     uint16_t SDA_Pin;
 } Soft_I2C_t;
 
-#define Soft_I2C_SDA_HIGH(Soft_I2C) GPIO_SetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin)
-#define Soft_I2C_SDA_LOW(Soft_I2C) GPIO_ResetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin)
-#define Soft_I2C_SCL_HIGH(Soft_I2C) GPIO_SetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin)
-#define Soft_I2C_SCL_LOW(Soft_I2C) GPIO_ResetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin)
-#define Soft_I2C_Read_SDA(Soft_I2C) GPIO_ReadInputDataBit((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin)
-
 void Soft_I2C_Init(Soft_I2C_t *Soft_I2C);
 void Soft_I2C_Send_Byte(Soft_I2C_t *Soft_I2C, uint8_t data);
 uint8_t Soft_I2c_Receive_Byte(Soft_I2C_t *Soft_I2C, uint8_t ack_flag);
