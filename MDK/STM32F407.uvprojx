@@ -526,6 +526,11 @@
               <FilePath>..\BSP\Src\AT.c</FilePath>
             </File>
             <File>
+              <FileName>ATGM336H.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\ATGM336H.c</FilePath>
+            </File>
+            <File>
               <FileName>DHT22.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\DHT22.c</FilePath>

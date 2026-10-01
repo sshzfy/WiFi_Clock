@@ -1,14 +1,26 @@
 #include "App.h"
 
 /* 初始化WiFi信息 */
-const char *ssid = "Jasmine";
+const char *ssid = "Laptop-S";
 const char *password = "Sun507109!";
 const char *mac = NULL;
 AT_WiFi_Info_t wifi_info = {0};
 AT_Date_Info_t date_info = {0};
 AT_Weather_Info_t weather_info = {0};
 const char *weekdays[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-static const char *weather_url = "https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=dalian&language=en&unit=c";
+
+/* 天气接口: location 不再写死城市, 而是填运行时解析出的公网IP(见 Weather_Update_Location)。
+ * 心知天气的 location 既支持具体IP地址, 也支持字面量 "ip"(服务端按请求来源IP定位),
+ * 因此换网络/换地方后定位会自动跟随。 */
+#define WEATHER_URL_FMT "https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=%s&language=en&unit=c" // 天气接口URL格式
+#define WEATHER_IP_LOCATION "ip"                                                                                             // 尚未解析出IP时的取位方式: 由服务端按请求来源IP定位
+#define WEATHER_URL_SIZE 192                                                                                                 // URL缓冲区: 换成15字节IP后实际约112字节
+
+static char weather_url[WEATHER_URL_SIZE] =
+    "https://api.seniverse.com/v3/weather/now.json"
+    "?key=SgM2NZE2Sghy4FOFh&location=" WEATHER_IP_LOCATION "&language=en&unit=c";
+// 中文: 把 language=en 换成 language=zh-Hans 即可(location 由公网IP动态填入, 见 Weather_Update_Location)
+static char weather_ip[16] = {0}; // 最近一次成功解析到的公网IP(仅netTask访问)
 const char *http_response = NULL;
 
 DHT22_Data_t room_info = {0};
@@ -173,7 +185,7 @@ bool Wireless_Init(void)
     if (!at_ok)
     {
         printf("[NET] AT init FAILED, max retry reached\r\n");
-        return false; /* AT 都没起来, 后面的 WiFi 命令不可能成功 */
+        return false; // AT 都没起来, 后面的 WiFi 命令不可能成功
     }
     printf("[NET] AT init OK\r\n");
 
@@ -260,8 +272,8 @@ bool Service_WiFi_Connect(void)
  * 2=Light-sleep(约130uA, 但必须先用 AT+SLEEPWKCFG 配好唤醒源;
  *   ESP32-C3只支持定时器/GPIO唤醒, 当前硬件未连唤醒GPIO, 故不使用)
  * 3=Modem-sleep, RF按 AT+CWJAP 的 listen interval 关闭 */
-#define WIFI_SLEEP_MODE_IDLE 1U /* 空闲(夜间无网络活动)档位 */
-#define WIFI_SLEEP_MODE_FULL 0U /* 全速(白天需要快速响应)档位 */
+#define WIFI_SLEEP_MODE_IDLE 1U // 空闲(夜间无网络活动)档位
+#define WIFI_SLEEP_MODE_FULL 0U // 全速(白天需要快速响应)档位
 
 /**
  * @brief 切换ESP32-C3的Wi-Fi省电档位
@@ -310,7 +322,8 @@ int Service_WiFi_Update(void)
         return -1;
     }
 
-    if (tmp.connected) /* 查询成功且已连接 */
+    /* 查询成功且已连接 */
+    if (tmp.connected)
     {
         WiFi_Info_Store(&tmp);
         printf("[NET] WiFi check OK: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
@@ -319,7 +332,7 @@ int Service_WiFi_Update(void)
 
     /* 查询成功但确实未连接: 重连 */
     printf("[NET] WiFi lost, reconnecting...\r\n");
-    if (!AT_Connect_WiFi(ssid, password, mac)) /* 连接WiFi */
+    if (!AT_Connect_WiFi(ssid, password, mac))
     {
         WiFi_Info_Store(&tmp); /* connected=0, 让UI同步切到离线图标 */
         printf("[NET] WiFi reconnect FAILED\r\n");
@@ -371,6 +384,38 @@ bool Service_Time_Sync(void)
 }
 
 /**
+ * @brief 按公网IP刷新天气URL中的location参数
+ * @note  公网IP会随宽带重拨/换网变化, 所以每次天气更新前重新解析一次;
+ *        解析失败时保留现有URL(从未成功过就是字面量 ip), 不影响天气请求本身
+ * @return None
+ */
+static void Weather_Update_Location(void)
+{
+    char ip[16] = {0};
+
+    /* 取IP失败不阻塞天气: 已有IP就继续用, 否则URL里的 location=ip 由服务端识别来源IP */
+    if (!AT_Get_IP(ip))
+    {
+        if (weather_ip[0] != '\0')
+            printf("[NET] public IP FAILED, keep location=%s\r\n", weather_ip);
+        else
+            printf("[NET] public IP FAILED, use location=%s\r\n", WEATHER_IP_LOCATION);
+        return;
+    }
+
+    /* 出口IP没变, 现有URL仍然有效, 不必重建 */
+    if (strcmp(ip, weather_ip) == 0)
+        return;
+
+    /* 出口IP有变化, 重建URL */
+    strncpy(weather_ip, ip, sizeof(weather_ip) - 1);                         /* 复制IP到缓存, 确保以null结尾 */
+    weather_ip[sizeof(weather_ip) - 1] = '\0';                               // 确保以null结尾
+    snprintf(weather_url, sizeof(weather_url), WEATHER_URL_FMT, weather_ip); /* 构建URL */
+
+    printf("[NET] public IP = %s, weather location updated\r\n", weather_ip);
+}
+
+/**
  * @brief 周期任务: 天气更新(每1h)
  * @return true 成功
  */
@@ -378,19 +423,21 @@ bool Service_Weather_Update(void)
 {
     AT_Weather_Info_t tmp;
 
+    Weather_Update_Location(); /* 先按公网IP刷新location(失败则沿用上次的IP/字面量ip) */
+
     http_response = AT_Get_HTTP(weather_url);
     if (http_response == NULL)
     {
         printf("[NET] Weather HTTP FAILED\r\n");
         return false;
     }
-    if (!Parse_Weather_Response(http_response, &tmp))
+    if (!Parse_Http_Response(http_response, &tmp))
     {
         printf("[NET] Weather parse FAILED\r\n");
         return false;
     }
     taskENTER_CRITICAL();
-    weather_info = tmp; /* 一次性整体替换, 避免ui读到半写状态 */
+    weather_info = tmp; // 一次性整体替换, 避免ui读到半写状态
     taskEXIT_CRITICAL();
     printf("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
            weather_info.weather, weather_info.weather_code, weather_info.temperature);

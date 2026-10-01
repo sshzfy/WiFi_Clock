@@ -1,14 +1,14 @@
 #include "AT.h"
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) /* 数组元素个数 */
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // 数组元素个数
 
 static char rx_buf[1024]; // 接收缓冲区
 
 static const AT_ACK_Match_t AT_ACK_Match[] =
     {
-        {AT_ACK_OK,    "OK\r\n"},
+        {AT_ACK_OK, "OK\r\n"},
         {AT_ACK_ERROR, "ERROR\r\n"},
-        {AT_ACK_BUSY,  "busy p...\r\n"},
+        {AT_ACK_BUSY, "busy p...\r\n"},
         {AT_ACK_READY, "ready\r\n"},
 };
 
@@ -68,7 +68,7 @@ bool AT_Init(void)
      * 需要恢复出厂时, 由上层在异常路径上调用 AT_Factory_Reset()。 */
     if (!AT_Wait_Boot(3000))
         return false;
-        
+
     return true;
 }
 
@@ -85,7 +85,7 @@ bool AT_Factory_Reset(void)
     if (!AT_Send_Command("AT+RESTORE", 2000))
         return false;
 
-    return AT_Wait_Ready(5000); /* 重启完成前不能发别的命令 */
+    return AT_Wait_Ready(5000); // 重启完成前不能发别的命令
 }
 
 /**
@@ -96,10 +96,10 @@ static void AT_Usart_Send(const char *data)
 {
     while (data && *data)
     {
-        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET) /* 等待发送缓冲区为空 */
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET) // 等待发送缓冲区为空
             ;
-        USART_SendData(USART1, *data++);                            /* 发送字符 */
-        while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) /* 等待发送完成 */
+        USART_SendData(USART1, *data++);                            // 发送字符
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // 等待发送完成
             ;
     }
 
@@ -107,12 +107,12 @@ static void AT_Usart_Send(const char *data)
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
         ;
     USART_SendData(USART1, '\r');
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) /* 等待发送完成 */
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // 等待发送完成
         ;
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
         ;
     USART_SendData(USART1, '\n');
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) /* 等待发送完成 */
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // 等待发送完成
         ;
 }
 
@@ -154,7 +154,7 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
             if (TIM5_Get_ms() - start >= timeout)
                 return AT_ACK_NONE;
             if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
-                vTaskDelay(1); /* 让出CPU, 字节由中断环形缓冲缓存, 不会丢失 */
+                vTaskDelay(1); // 让出CPU, 字节由中断环形缓冲缓存, 不会丢失
         }
 
         /* 读取接收数据 */
@@ -192,7 +192,7 @@ static bool AT_Wait_Boot(uint32_t timeout)
         if (AT_Send_Command("AT", 100))
             return true;
     }
-    
+
     return false;
 }
 
@@ -213,7 +213,7 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
 
     for (;;)
     {
-        Usart1_RX_Flush(); /* 清场: 丢弃上一条命令的尾巴/启动日志/URC */
+        Usart1_RX_Flush(); // 清场: 丢弃上一条命令的尾巴/启动日志/URC
 
         /* 发送AT指令 */
         AT_Usart_Send(command);
@@ -232,7 +232,7 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
             return false;
 
         if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
-            vTaskDelay(pdMS_TO_TICKS(100)); /* 忙时不急着重发, 等模组退出忙状态 */
+            vTaskDelay(pdMS_TO_TICKS(100)); // 忙时不急着重发, 等模组退出忙状态
     }
 }
 
@@ -259,7 +259,7 @@ bool AT_Wait_Ready(uint32_t timeout)
         if (ack == AT_ACK_READY)
             return true;
         if (ack == AT_ACK_NONE)
-            return false; /* 剩余时间已耗尽 */
+            return false; // 剩余时间已耗尽
     }
 
     return false;
@@ -292,7 +292,7 @@ bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info)
     if (info == NULL)
         return false;
 
-    memset(info, 0, sizeof(*info)); /* 清零, 失败时不残留未初始化/旧值 */
+    memset(info, 0, sizeof(*info)); // 清零, 失败时不残留未初始化/旧值
 
     /* CWSTATE 提供 connected + ssid, 为必需项 */
     if (!AT_Send_Command("AT+CWSTATE?", 2000))
@@ -508,7 +508,7 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
     return true;
 }
 
-/* ==================== HTTP相关底层函数 ==================== */
+/* ==================== HTTP 天气相关底层函数 ==================== */
 
 /**
  * @brief 发送HTTP请求
@@ -538,13 +538,15 @@ const char *AT_Get_HTTP(const char *url)
  * @param info 天气信息结构体指针
  * @return true 成功,false 失败
  */
-bool Parse_Weather_Response(const char *response, AT_Weather_Info_t *info)
+bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
 {
     // 命令和命令回复内容：
-    //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=dalian&language=en&unit=c\",,,2\r\n"
-    //     "+HTTPCLIENT:267,{\"results\":[{\"location\":{\"id\":\"WWYMRT0VRMUG\",\"name\":\"Dalian\",\"country\":\"CN\",\"path\":\"Dalian,Dalian,Liaoning,China\",\"timezone\":\"Asia/Shanghai\",\"timezone_offset\":\"+08:00\"},\"now\":{\"text\":\"Cloudy\",\"code\":\"4\",\"temperature\":\"29\"},\"last_update\":\"2026-08-16T16:45:45+08:00\"}]}\r\n"
+    //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=101.30.184.223&language=en&unit=c\",,,2\r\n"
+    //     "+HTTPCLIENT:267,{\"results\":[{\"location\":{\"id\":\"WWYMRT0VRMUG\",\"name\":\"Dalian\",\"country\":\"CN\",\"path\":\"Dalian,Dalian,Liaoning,China\",\"timezone\":\"Asia/Shanghai\",\"timezone_offset\":\"+08:00\"},\"now\":
+    //                      {\"text\":\"Cloudy\",\"code\":\"4\",\"temperature\":\"29\"},\"last_update\":\"2026-08-16T16:45:45+08:00\"}]}\r\n"
     //     "\r\n"
     //     "OK\r\n";
+    // 注: location 由上层按公网IP动态填入(见 User/Src/App.c 的 Weather_Update_Location), 上例给的是IP形式
     response = strstr(response, "\"results\":");
 
     if (response == NULL)
@@ -570,7 +572,7 @@ bool Parse_Weather_Response(const char *response, AT_Weather_Info_t *info)
     /* 1. 解析天气描述 */
     const char *response_now_text = strstr(response_now, "\"text\":");
     if (response_now_text)
-        sscanf(response_now_text, "\"text\":\"%15[^\"]\"", info->weather);
+        sscanf(response_now_text, "\"text\":\"%31[^\"]\"", info->weather);
     /* 2. 解析天气代码 */
     const char *response_now_code = strstr(response_now, "\"code\":");
     if (response_now_code)
@@ -588,6 +590,61 @@ bool Parse_Weather_Response(const char *response, AT_Weather_Info_t *info)
         if (sscanf(response_now_temperature, "\"temperature\":\"%15[^\"]\"", temperature_str) == 1)
             info->temperature = atof(temperature_str);
     }
-    
+
+    return true;
+}
+
+/* ==================== HTTP ip 相关底层函数 ==================== */
+
+#define AT_IP_URL "https://ipv4.icanhazip.com" // 公网IP查询接口, 直接返回纯文本IP, 不需要key
+
+/**
+ * @brief 查询本机公网IP
+ * @param ip 输出缓冲区(至少16字节), 成功时写入点分十进制IP字符串
+ * @return true 成功,false 失败
+ * @note  content-type 用 0(纯文本), 与 Parse_Http_IP_Response 的示例命令保持一致;
+ *        命令回复形如 "+HTTPCLIENT:15,101.30.184.223", 由解析函数负责取出IP
+ */
+bool AT_Get_IP(char *ip)
+{
+    static char tx_buf[128];
+
+    if (ip == NULL)
+        return false;
+
+    ip[0] = '\0';
+    snprintf(tx_buf, sizeof(tx_buf), "AT+HTTPCLIENT=2,0,\"%s\",,,2", AT_IP_URL);
+
+    if (!AT_Send_Command(tx_buf, 10000))
+        return false;
+
+    return Parse_Http_IP_Response(AT_Get_Response(), ip);
+}
+
+/**
+ * @brief 解析ip回复
+ * @param response ip回复字符串
+ * @param ip ip字符串指针(至少16字节)
+ * @return true 成功,false 失败
+ */
+bool Parse_Http_IP_Response(const char *response, char *ip)
+{
+    // 命令和命令回复内容：
+    //     "AT+HTTPCLIENT=2,0,"https://ipv4.icanhazip.com",,,2"
+    //     "+HTTPCLIENT:15,101.30.184.223\r\n"
+    //     "\r\n"
+    //     "OK\r\n";
+    response = strstr(response, "+HTTPCLIENT:");
+    if (response == NULL)
+        return false;
+
+    /* 解析ip */
+    const char *response_ip = strchr(response, ','); // 找到逗号
+    if (response_ip == NULL)
+        return false;
+    response_ip++; // 跳过逗号
+    if (sscanf(response_ip, "%15s", ip) != 1)
+        return false;
+
     return true;
 }
