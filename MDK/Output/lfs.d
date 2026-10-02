@@ -1,0 +1,10 @@
+.\output\lfs.o: ..\Third_Lib\LittleFS\Src\lfs.c
+.\output\lfs.o: ..\Third_Lib\LittleFS\Inc\lfs.h
+.\output\lfs.o: ..\Third_Lib\LittleFS\Inc\lfs_util.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\string.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\inttypes.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\assert.h
+.\output\lfs.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdio.h

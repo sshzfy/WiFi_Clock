@@ -1,0 +1,11 @@
+.\output\imagetable.o: ..\Resource\Src\Image\ImageTable.c
+.\output\imagetable.o: ..\Resource\Inc\Image.h
+.\output\imagetable.o: ..\User\Inc\main.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stddef.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\string.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\output\imagetable.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
+.\output\imagetable.o: ..\User\Inc\BuildConfig.h

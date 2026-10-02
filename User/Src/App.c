@@ -1,14 +1,15 @@
 #include "App.h"
+#include "Secrets.h" /* WiFi 凭据与第三方 key 集中在这里(不入库) */
 
 /* 初始化WiFi信息 */
-const char *ssid = "Jasmine";
-const char *password = "Sun507109!";
-const char *mac = NULL;
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASSWORD;
+const char *mac = WIFI_MAC;
 AT_WiFi_Info_t wifi_info = {0};
 AT_Date_Info_t date_info = {0};
 AT_Weather_Info_t weather_info = {0};
 const char *weekdays[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-static const char *weather_url = "https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=dalian&language=en&unit=c";
+static const char *weather_url = "https://api.seniverse.com/v3/weather/now.json?key=WEATHER_KEY&location=dalian&language=en&unit=c";
 const char *http_response = NULL;
 
 DHT22_Data_t room_info = {0};

@@ -1,0 +1,10 @@
+.\output\utf8_gb2312.o: ..\BSP\Src\Utf8_Gb2312.c
+.\output\utf8_gb2312.o: ..\BSP\Inc\Utf8_Gb2312.h
+.\output\utf8_gb2312.o: ..\User\Inc\main.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stddef.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\string.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\output\utf8_gb2312.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
