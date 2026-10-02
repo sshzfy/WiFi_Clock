@@ -53,6 +53,8 @@ typedef struct
 #define EV_WAKEUP                   (1UL << 6) // 从低功耗模式唤醒
 #define EV_NET_UPDATE_NOW           (1UL << 7) // 立即更新网络状态, 包括WiFi连接状态、SNTP时间、天气
 #define EV_DHT22_UPDATE_NOW         (1UL << 8) // 立即更新DHT22传感器状态
+/* 注: GPS + 高德逆地理编码的省市显示暂未接入(接口保留, 见 4.13) */
+/* (1UL << 9) 预留给将来的 EV_LOCATION */
 
 /* 创建UI任务(UI任务内部再创建 netTask/sensorTask), 由 main 调用 */
 void App_Task_Init(void);

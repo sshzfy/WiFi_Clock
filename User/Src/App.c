@@ -7,18 +7,19 @@ const char *mac = NULL;
 AT_WiFi_Info_t wifi_info = {0};
 AT_Date_Info_t date_info = {0};
 AT_Weather_Info_t weather_info = {0};
+AT_Location_Info_t location_info = {0}; // 逆地理编码省/市; 当前应用未接入(见 Service_Location_Update)
 const char *weekdays[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
 /* 天气接口: location 不再写死城市, 而是填运行时解析出的公网IP(见 Weather_Update_Location)。
  * 心知天气的 location 既支持具体IP地址, 也支持字面量 "ip"(服务端按请求来源IP定位),
  * 因此换网络/换地方后定位会自动跟随。 */
 #define WEATHER_URL_FMT "https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=%s&language=en&unit=c" // 天气接口URL格式
-#define WEATHER_IP_LOCATION "ip"                                                                                             // 尚未解析出IP时的取位方式: 由服务端按请求来源IP定位
+#define WEATHER_DEFAULT_LOCATION "beijing"                                                                                   // 尚未解析出IP时的取位方式: 由服务端按请求来源IP定位默认北京
 #define WEATHER_URL_SIZE 192                                                                                                 // URL缓冲区: 换成15字节IP后实际约112字节
 
 static char weather_url[WEATHER_URL_SIZE] =
     "https://api.seniverse.com/v3/weather/now.json"
-    "?key=SgM2NZE2Sghy4FOFh&location=" WEATHER_IP_LOCATION "&language=en&unit=c";
+    "?key=SgM2NZE2Sghy4FOFh&location=" WEATHER_DEFAULT_LOCATION "&language=en&unit=c";
 // 中文: 把 language=en 换成 language=zh-Hans 即可(location 由公网IP动态填入, 见 Weather_Update_Location)
 static char weather_ip[16] = {0}; // 最近一次成功解析到的公网IP(仅netTask访问)
 const char *http_response = NULL;
@@ -396,10 +397,12 @@ static void Weather_Update_Location(void)
     /* 取IP失败不阻塞天气: 已有IP就继续用, 否则URL里的 location=ip 由服务端识别来源IP */
     if (!AT_Get_IP(ip))
     {
+        /* 解析失败时, 用上次的IP位置 */
         if (weather_ip[0] != '\0')
             printf("[NET] public IP FAILED, keep location=%s\r\n", weather_ip);
+        /* 未成功过, 用默认位置 */
         else
-            printf("[NET] public IP FAILED, use location=%s\r\n", WEATHER_IP_LOCATION);
+            printf("[NET] public IP FAILED, use default location=%s\r\n", WEATHER_DEFAULT_LOCATION);
         return;
     }
 
@@ -441,6 +444,36 @@ bool Service_Weather_Update(void)
     taskEXIT_CRITICAL();
     printf("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
            weather_info.weather, weather_info.weather_code, weather_info.temperature);
+    return true;
+}
+
+/**
+ * @brief 按GPS经纬度反查省/市(高德逆地理编码)
+ * @param latitude  纬度(十进制度, 南纬为负)
+ * @param longitude 经度(十进制度, 西经为负)
+ * @return true 成功
+ * @note  **当前应用未接入** —— 界面上的城市名改由天气接口按公网IP定位提供
+ *        (weather_info.city), 所以这里没有任何调用者。接口与实现保留, 将来
+ *        要做"按实际位置显示省市"时, 在 netTask 里调它即可(见 4.13)。
+ *        调用方约定: 失败时本函数**不清空** location_info, 界面可继续显示上一次
+ *        的结果, 避免信号短暂丢失就把顶部条闪成空白。
+ */
+bool Service_Location_Update(float latitude, float longitude)
+{
+    AT_Location_Info_t tmp;
+
+    if (!AT_Get_Location(latitude, longitude, &tmp))
+    {
+        printf("[NET] Location FAILED\r\n");
+        return false;
+    }
+
+    taskENTER_CRITICAL();
+    location_info = tmp; // 一次性整体替换, 避免ui读到半写状态
+    taskEXIT_CRITICAL();
+
+    /* 打印的是接口返回的UTF-8原文, 调试终端需按UTF-8显示 */
+    printf("[NET] Location OK: %s%s\r\n", location_info.province, location_info.city);
     return true;
 }
 

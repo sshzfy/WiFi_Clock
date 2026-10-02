@@ -471,6 +471,13 @@ void Main_Page_Display(void)
     Main_Page_Weather();
     Main_Page_Room();
 }
+/**
+ * @brief 刷新顶部状态条(WiFi图标 + SSID)
+ * @param None
+ * @return None
+ * @note  不显示定位/城市信息: 天气接口仍会把城市名解析进 weather_info.city,
+ *        只是不再参与绘制(见 4.13)。
+ */
 void Main_Page_Net_Update(void)
 {
     uint16_t back_color = MAIN_TOP_BACK_COLOR;
@@ -484,7 +491,7 @@ void Main_Page_Net_Update(void)
                       text_y + modle_wifi.height - 1, back_color);
 
     ssid_len = strlen(wifi_info.ssid);
-    
+
     if (ssid_len + 2 <= 10)
     {
         sprintf(ssid_str, "[%s]", wifi_info.ssid);

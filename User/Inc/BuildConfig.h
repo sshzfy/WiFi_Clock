@@ -14,6 +14,7 @@
  *   BM_TEST_MODULE_DS1302 = DS1302 外部RTC (PE7=RST/PE8=IO/PE9=CLK)
  *   BM_TEST_MODULE_W25Q64 = W25Q64 SPI Flash 裸驱动 (CS=PA4/CLK=PA5/MISO=PA6/MOSI=PA7)
  *   BM_TEST_MODULE_LFS    = littlefs 文件系统 (依赖 W25Q64)
+ *   BM_TEST_MODULE_GNSS   = ATGM336H 北斗+GPS定位 (USART3 @9600, PB10=TX/PB11=RX)
  * ------------------------------------------------------------
  * 建议测试顺序: W25Q64 -> LFS。底层驱动不通时文件系统必然失败,
  * 先跑 W25Q64 可以把"硬件/SPI/时序问题"与"文件系统问题"分开定位。

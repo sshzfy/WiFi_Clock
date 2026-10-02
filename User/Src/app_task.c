@@ -670,11 +670,11 @@ static void UI_Task(void *pvParameters)
         if (s_lcd_on)
         {
             if (bits & EV_WIFI)
-                Main_Page_Net_Update(); /* WiFi连接状态变化: 刷顶部WiFi/定位条 */
+                Main_Page_Net_Update(); /* WiFi连接状态变化: 刷顶部状态条 */
             if (bits & EV_WEATHER)
             {
                 Main_Page_Weather_Update();
-                Main_Page_Net_Update(); /* 天气到位后同步城市/定位图标 */
+                Main_Page_Net_Update(); /* 天气到位后同步城市名(按公网IP定位) */
             }
             if (bits & EV_DHT22)
                 Main_Page_Room_Update(); /* 房间温度更新 */

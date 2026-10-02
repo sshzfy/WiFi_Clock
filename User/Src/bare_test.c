@@ -711,13 +711,21 @@ static void LFS_BareMetal_Test(void)
     /*  T8: 卸载后重新挂载, 数据仍在(真实持久化)  */
     LFS_CHECK("T8 remount persist", LFS_RemountAndVerify(), "unmount + mount + read back");
 
-    /*  T9: 字体存取(MDM 上真实点阵表)  */
-    err = SaveFont("/font/f12.bin", Font_12_Table, 1024U);
+    /*  T9: 字体存取。
+     * 不能用 Font_xx_Table 当基准: 那是烧录固件(RESOURCE_DATA_IN_ROM=1)才编进
+     * MCU Flash 的表, 正式固件里字模全在 W25Q64 的 littlefs 文件里, 源码中
+     * 没有可直接 memcmp 的点阵。这里改用可复现的测试图案。
+     * 与 T10 的区别: SaveFont/LoadFont 不带 4 字节宽高头, 所以文件大小应正好
+     * 等于数据长度 —— 这一点由 lfs_stat 单独核对。 */
+    Test_FillPattern(s_test_buf, 1024, 0xCC);
+    err = SaveFont("/font/f12.bin", s_test_buf, 1024U);
     memset(s_test_rd, 0, 1024);
-    err2 = LoadFont("/font/f12.bin", s_test_rd, 1024U);
+    n = LoadFont("/font/f12.bin", s_test_rd, 1024U);
+    err2 = lfs_stat(&g_lfs, "/font/f12.bin", &s_lfs_info);
     LFS_CHECK("T9 SaveFont/LoadFont",
-              (err == 0) && (err2 == 1024) && (memcmp(Font_12_Table, s_test_rd, 1024) == 0),
-              "save = %d, load = %d", err, err2);
+              (err == 0) && (n == 1024) && (err2 == 0) && (s_lfs_info.size == 1024U) &&
+                  (memcmp(s_test_buf, s_test_rd, 1024) == 0),
+              "save = %d, load = %d, size = %lu", err, n, (unsigned long)s_lfs_info.size);
 
     /*  T10: 图片存取(40x40 RGB565 = 3200 字节, 用测试图案)  */
     Test_FillPattern(s_test_rd, LFS_TEST_IMG_SIZE, 0x5A);
@@ -768,6 +776,103 @@ static void LFS_BareMetal_Test(void)
     }
 }
 
+/* ================ ATGM336H 定位模块测试 ================
+ * 目标: 只验证"接线 + 波特率 + NMEA 收帧 + 校验和 + 解析"这一条链路,
+ *       既不接界面(除 OLED 显示), 也不接系统时钟 —— 跑通之后再并入 FreeRTOS。
+ * 接线: 模块 TXD -> PB11(USART3_RX), 模块 VCC/GND 与主控共地;
+ *       模块 RXD(PB10) 可悬空, 只有需要下发配置命令时才要接。
+ * ==================================================== */
+
+/* 连续多少秒一个RMC帧都没收到就提示接线/波特率 */
+#define ATGM_TEST_NO_DATA_SEC 5U
+
+static void ATGM336H_BareMetal_Test(void)
+{
+    char buf[24];
+    ATGM_Info_t info;
+    uint8_t ev;
+    bool last_valid = false;
+    bool got_frame = false;
+    uint32_t tick = 0;
+    uint32_t no_frame_sec = 0;
+
+    OLED_Init();
+    OLED_Clear();
+    OLED_Write_String(0, 0, "LAT ---         ", &Font_16); /* 先摆上"还没有定位" */
+    OLED_Write_String(0, 16, "LON ---         ", &Font_16);
+
+    ATGM336H_Init();
+    printf("[GNSS] ATGM336H init: USART3 @ %u-8N1, PB10=TX PB11=RX\r\n",
+           (unsigned)USART3_BAUD);
+    printf("[GNSS] waiting for $xxRMC; report on position change\r\n");
+
+    for (;;)
+    {
+        ev = ATGM336H_Poll(); /* 非阻塞; 每100ms读一次, 保证环形缓冲不溢出 */
+
+        if (ev & ATGM_EV_RMC)
+            got_frame = true;
+
+        /* ---- 位置有变化或定位状态翻转: 刷界面并打一行 ---- */
+        if (ev & ATGM_EV_UPDATE)
+        {
+            ATGM336H_GetInfo(&info);
+
+            if (info.valid)
+            {
+                float la = (info.latitude >= 0.0f) ? info.latitude : -info.latitude;
+                float lo = (info.longitude >= 0.0f) ? info.longitude : -info.longitude;
+
+                snprintf(buf, sizeof(buf), "LAT %c%.5f", (info.latitude >= 0.0f) ? 'N' : 'S', (double)la);
+                OLED_Write_String(0, 0, buf, &Font_16);
+
+                snprintf(buf, sizeof(buf), "LON %c%.5f", (info.longitude >= 0.0f) ? 'E' : 'W', (double)lo);
+                OLED_Write_String(0, 16, buf, &Font_16);
+
+                printf("[GNSS] LAT=%.5f LON=%.5f\r\n",
+                       (double)info.latitude, (double)info.longitude);
+            }
+            else
+            {
+                /* 定长字符串, 避免上一次的内容留下残影 */
+                OLED_Write_String(0, 0, "LAT ---         ", &Font_16);
+                OLED_Write_String(0, 16, "LON ---         ", &Font_16);
+            }
+
+            /* 定位有无的变化单独报一行 */
+            if (info.valid != last_valid)
+            {
+                last_valid = info.valid;
+                printf("[GNSS] %s\r\n", info.valid ? "fix acquired" : "fix lost");
+            }
+        }
+
+        delay_ms(100);
+
+        if ((++tick % 10U) != 0U) /* 每秒结算一次"有没有收到帧" */
+            continue;
+
+        /* ---- 一个RMC帧都没收到: 提示接线/波特率(第5秒一次, 之后每30秒一次) ---- */
+        if (got_frame)
+        {
+            got_frame = false;
+            no_frame_sec = 0;
+        }
+        else
+        {
+            no_frame_sec++;
+
+            if (no_frame_sec == ATGM_TEST_NO_DATA_SEC ||
+                (no_frame_sec > ATGM_TEST_NO_DATA_SEC && (no_frame_sec % 30U) == 0U))
+            {
+                printf("[GNSS] no $xxRMC for %us -- check module TXD -> PB11, common GND, "
+                       "baud=%u, and antenna placement\r\n",
+                       (unsigned)no_frame_sec, (unsigned)USART3_BAUD);
+            }
+        }
+    }
+}
+
 void BareMetal_Module_Test(void)
 {
     /* 裸机分支的 main() 不会调用 Board_Init(), USART2 需要在这里初始化,
@@ -791,6 +896,9 @@ void BareMetal_Module_Test(void)
         break;
     case BM_TEST_MODULE_LFS:
         LFS_BareMetal_Test();
+        break;
+    case BM_TEST_MODULE_GNSS:
+        ATGM336H_BareMetal_Test();
         break;
     default:
         while (1)

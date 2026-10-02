@@ -8,6 +8,7 @@ void Board_Peripheral_Init(void)
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);  /* 使能GPIOE时钟,LCD,DHT22 */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE); /* 使能USART1时钟,传输AT命令 */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); /* 使能USART2时钟,用于调试输出 */
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE); /* 使能USART3时钟,用于ATGM336H定位模块 */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);   /* 使能SPI3时钟,用于与ST7789通信 */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);   /* 使能SPI1时钟,用于与W25Q64通信 */
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);   /* 使能DMA1时钟,用于SPI3/USART2 DMA传输 */

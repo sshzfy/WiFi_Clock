@@ -12,7 +12,7 @@
 | 联网 | ESP32-C3-MINI-1，AT 固件 v4.1.1.0，USART1 @115200 |
 | 显示 | ST7789V 240×320 彩屏（SPI3 + DMA）/ SSD1306 128×64 OLED（软件 I2C） |
 | 工具链 | Keil MDK-ARM Plus 5.24.1 / ARMCC V5.06 update 5（AC5）/ C99 |
-| 固件规模 | Code 52324 B · RO-data 3748 B · RW-data 412 B · ZI-data 126740 B（Flash ≈54.8KB，SRAM ≈124.2KB） |
+| 固件规模 | Code 54004 B · RO-data 3744 B · RW-data 608 B · ZI-data 127648 B（Flash ≈56.4KB，SRAM ≈125.3KB） |
 
 > 本文档以**源码为唯一依据**重新梳理，与源码不一致时以源码为准。
 > 涉及具体数值处均标注了来源文件与行号，便于改动后回溯核对。
@@ -105,19 +105,21 @@ Project4/
 │             App.c（联网/传感器服务 + 软件时钟）· app_task.c（5 个任务）·
 │             Provision.c（资源烧录）· bare_test.c（裸机测试用例）·
 │             stm32f4xx_it.c（中断桩）· Boot_Page.c · Main_Page.c（界面绘制）
-├── BSP/                             # 板级驱动（Inc 与 Src 各 13 个文件）
+├── BSP/                             # 板级驱动（Inc 与 Src 各 14 个文件）
 │   ├── Inc/ · Src/
 │   │   ├── Asset.c         资源层：挂载 littlefs、开机自检、O(1) 字模读取
 │   │   ├── LCD.c           ST7789：SPI3 + DMA、字模渲染、图片乒乓双缓冲
 │   │   ├── OLED.c          SSD1306：命令/数据、取字模、OLED_ShowClock
-│   │   ├── AT.c            ESP32-C3 AT 指令、WiFi/SNTP/HTTP、JSON 解析
+│   │   ├── AT.c            ESP32-C3 AT 指令、WiFi/SNTP/HTTP、JSON 解析（含预留的高德逆地理编码）
+│   │   ├── ATGM336H.c      北斗+GPS 定位：NMEA 装配、校验和与 RMC 解析（预留，当前无调用者）
+│   │   ├── Utf8_Gb2312.c   UTF-8 → GB2312 一级汉字转码（预留：当前无调用者，见 4.13）
 │   │   ├── I2C.c           通用软件 I2C
 │   │   ├── DHT22.c         单总线时序、校验和、错误码
 │   │   ├── External_RTC.c  DS1302（裸机测试项 + 夜间时间源）
 │   │   ├── Light_Sensor.c  光敏 DO(EXTI1) / AO(ADC1+AWD) 两种模式
 │   │   ├── Key.c           PA0 按键：EXTI0 双边沿上报
 │   │   ├── Timer.c         TIM5 1ms 基准 + delay_us/delay_ms
-│   │   ├── Usart.c         USART1 RX 环形缓冲 + USART2 printf(DMA)
+│   │   ├── Usart.c         USART1/USART3 RX 环形缓冲 + USART2 printf(DMA)
 │   │   ├── W25Q64.c        SPI Flash：读 / 页编程 / 扇区擦除 / 忙等待超时
 │   │   └── Profiling.c     基于 DWT->CYCCNT 的微秒级计时
 ├── Resource/                        # 资源数据（Inc 2 个 / Src 12 个）
@@ -140,7 +142,7 @@ Project4/
 │   ├── STM32F407.uvprojx / .uvoptx   # 工程与调试器配置（已跟踪）
 │   ├── DebugConfig/ · .vscode/       # 调试器与编辑器配置
 │   └── Output/                       # 构建产物（已被 .gitignore 忽略）
-└── Documents/                       # 器件资料与本说明文档
+└── Documents/                       # 器件资料与本说明文档（`Tools/` 为转码表生成与校验脚本，见 4.13）
 ```
 
 > `Resource/Src` 下的字库与图片数据**仍完整保留**，只是被
@@ -199,6 +201,7 @@ Project4/
 | --- | --- | --- | --- |
 | USART1 | APB2 84MHz | 115200-8N1，RXNE 中断 + 512 字节环形缓冲，NVIC 抢占 5 | `BSP/Src/AT.c:50` |
 | USART2 | APB1 42MHz | 115200-8N1，TX 走 DMA1_Stream6 / Channel4，**无中断、轮询 TCIF** | `BSP/Src/Usart.c:255,124` |
+| USART3 | APB1 42MHz | **9600-8N1**，RXNE 中断 + 512 字节环形缓冲，NVIC 抢占 5；接 ATGM336H-5N 定位模块 | `BSP/Inc/Usart.h:17-26` |
 | SPI1 | APB2 84MHz | 主机、8 位、`CPOL=0 / CPHA=0`（**SPI Mode 0**）、预分频 4 → **21MHz** | `BSP/Src/W25Q64.c:79-82` |
 | SPI3 | APB1 42MHz | 主机、8/16 位可切、`CPOL=0 / CPHA=0`（**Mode 0**）、预分频 2 → **21MHz**，TX 走 DMA1_Stream5 / Channel0 | `BSP/Src/LCD.c:556-559` |
 | TIM5 | APB1 42MHz ×2 = 84MHz | PSC = 83（1MHz 计数）、ARR = 999（1ms 更新中断），NVIC 抢占 2 | `BSP/Src/Timer.c:21-37` |
@@ -334,6 +337,7 @@ NVIC 分组为 `NVIC_PriorityGroup_4`，因此**所有 `SubPriority` 写入值�
 | PendSV / SysTick | 15 | — | 内核上下文切换 |
 | **TIM5**（1ms 时基） | **2** | ❌ **禁止** | 仅 `TIM5_ms++`（`BSP/Src/Timer.c:48-55`） |
 | USART1（AT 接收） | 5 | ✅ 允许 | 逐字节入环形缓冲，**未调用任何 API** |
+| USART3（ATGM336H 定位） | 5 | ✅ 允许 | 逐字节入环形缓冲，**未调用任何 API** |
 | EXTI0（按键 PA0） | 5 | ✅ 允许 | `vTaskNotifyGiveFromISR` + `portYIELD_FROM_ISR` |
 | EXTI1（光敏 DO，PC1） | 5 | ✅ 允许 | 同上 |
 | ADC1 AWD（光敏 AO） | 5 | ✅ 允许 | 同上（当前 `AO_DO_SWITCH = 0`，不参与编译） |
@@ -353,7 +357,8 @@ ESP32-C3 ──USART1──▶ AT.c ──▶ wifi_info ──▶ 顶部状态�
                        │
                        ├─▶ AT_SNTP_Get_Time ─▶ Clock_Sync ─▶ 软件时钟（TIM5 推算）
                        │                                      └─▶ 主界面时钟 / OLED 时钟
-                       └─▶ AT_Get_HTTP ─▶ Parse_Weather_Response ─▶ weather_info ─▶ 天气卡片
+                       ├─▶ AT_Get_IP ─▶ 公网IP ─▶ weather_url 的 location=<IP>
+                       └─▶ AT_Get_HTTP ─▶ Parse_Http_Response ─▶ weather_info ─▶ 天气卡片
 
 DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡片
 
@@ -421,7 +426,9 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | `AT_Set_Sleep(mode)` | 下发 `AT+SLEEP=<mode>` |
 | `AT_SNTP_Init()` / `AT_SNTP_Get_Time(out)` | SNTP 使能与取时（把 `1970` 等无效值判为失败） |
 | `AT_Get_HTTP(url)` | 返回 HTTP 响应体文本 |
-| `Parse_Weather_Response(resp, info)` | 解析心知天气 JSON |
+| `AT_Get_IP(ip)` | 请求 `ipv4.icanhazip.com` 取本机公网IP（供天气接口的 `location` 使用） |
+| `Parse_Http_IP_Response(resp, ip)` | 从 `+HTTPCLIENT:<len>,<ip>` 回复中取出 IP 文本 |
+| `Parse_Http_Response(resp, info)` | 解析心知天气 JSON |
 
 **要点与坑**
 
@@ -430,6 +437,9 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 - `rx_buf` 是**多行累积**的，每条命令只在进入时把首字节置 `'\0'`；超过 1023 字节直接返回
   `AT_ACK_NONE`，没有"已截断"的显式标志。
 - 解析统一用 `strstr` + `sscanf`，没有引入 JSON 库（见 5.4）。
+- `AT_Get_IP()` 与 `AT_Get_HTTP()` 都返回**同一个内部 `rx_buf` 的指针**：上一条的响应必须在
+  下一条 AT 请求发出前取走（`Weather_Update_Location()` 就是先把 IP 拷进自己的缓冲区，
+  再发天气请求）。
 - `USART1` 的 GPIO/波特率/NVIC 初始化在 `AT.c`，而 `USART1_IRQHandler` 在 `Usart.c`，
   两者分居不同文件，改动时注意别漏。
 
@@ -705,6 +715,172 @@ while ((int64_t)(TIM5_Get_us() - start) < (int64_t)us) ;
 > 测量跨越等待区间的时间（例如等网络响应）；`Prof_Us()` 内部做的是
 > `SystemCoreClock / 1000000` 整数除法，改主频时要求它是 1MHz 的整数倍。
 
+### 4.12 ATGM336H — 北斗+GPS 定位
+
+| 项 | 内容 |
+| --- | --- |
+| 模块 | **ATGM336H-5N**（中科微，北斗+GPS 双模），NMEA 0183 文本帧 |
+| 接口 | **USART3**：`PB10 = TX`（→ 模块 RXD）、`PB11 = RX`（← 模块 TXD） |
+| 参数 | **9600-8N1**（`USART3_BAUD`，定义在 `BSP/Inc/Usart.h`）、RXNE 中断 + 512 字节环形缓冲、NVIC 抢占 5 |
+| 数据 | **固定 1Hz**（模块侧不可改）。实测每秒 12 条语句、约 **615 字节**，占 9600bps 的 **64%**；每帧以 `\r\n` 结束 |
+
+**分层**：串口部分（引脚、波特率、NVIC、环形缓冲、`USART3_IRQHandler`）全部在 `Usart.c`，
+与 USART1 同一套路；`ATGM336H.c` 只做 NMEA 装配、校验和与解析，**不碰任何寄存器**。
+`ATGM336H_Init()` 内部只是调 `Usart3_Init()` 再清一次解析状态。
+
+**读取与解析的频率**：模块固定 1Hz 发送 12 条语句，改不了；但其中 `$xxRMC` **每秒只有 1 条**，
+所以"每帧都解析"实际就是"每秒解析 1 次"，字段切分与 `atof` 只有十几微秒，**不必再设节流**。
+
+| | 频率 | 原因 |
+| --- | --- | --- |
+| **收字节**（调 `ATGM336H_Poll()`） | **至少每 300ms 一次** | 每秒约 615 字节，512 字节环形缓冲约 0.83 秒就满，不读就丢。**调得勤不代表解析得勤** |
+| **解析 RMC 字段** | 每秒 **1** 次（每条 RMC 都解析） | 每秒只有 1 条 RMC，开销十几微秒，可忽略 |
+| **置 `ATGM_EV_UPDATE`** | **位置变化或状态翻转时** | 位移超过 `ATGM_MOVE_EPS`（约 0.1 米）才通知，静止时不打扰上层 |
+
+判定用的是"**变化才通知**"，而不是"隔多久通知一次"：
+
+1. 位移 ≥ `ATGM_MOVE_EPS`（`1e-6` 度 ≈ **0.11 米**）——小于模块自身精度，真实位移不会漏报，
+   静止时末位的抖动又不会反复触发；
+2. **定位状态翻转**（`A` ↔ `V`）——定位丢失/恢复立刻上报，`valid` 不会停留在旧值；
+3. 未定位时经纬度字段是空的，此时保留上一次的值，也不会反复通知。
+
+`Poll()` 返回事件位，调用方用它区分"模块在不在发数据"和"结果有没有更新"：
+
+| 位 | 含义 |
+| --- | --- |
+| `ATGM_EV_RMC` | 收到一个**校验通过**的 RMC 帧（每秒都有） |
+| `ATGM_EV_UPDATE` | 位置有变化或定位状态翻转，可以读 `ATGM336H_GetInfo()` 刷界面了 |
+
+> ⚠️ **别在每个 `ATGM_EV_UPDATE` 里都 printf**：`Dbg_Flush()` 会阻塞等整行发完，115200bps 下
+> 一行 RMC 原文约 **6.3ms**、一行经纬度约 **3.2ms**。刷屏与上报的周期由调用方自己掌握。
+
+**只要经纬度**：整包只解析 `$xxRMC`，而且只取其中 5 个字段——`2=定位状态(A/V)`、`3=纬度`、
+`4=N/S`、`5=经度`、`6=E/W`。其余语句（VTG / GGA / GLL / GSA / GSV / ZDA / TXT）与 RMC 里的
+时间、速度、航向、日期**一概不解析**；经纬度用 `atof` 取出后按"度 + 分/60"换算成十进制度。
+
+对外只有一个三字段结构体：
+
+| 字段 | 含义 |
+| --- | --- |
+| `valid` | 定位是否有效（RMC 的 `status == 'A'`）；冷启动期间为 `false` |
+| `latitude` / `longitude` | 十进制度，南纬 / 西经为负 |
+
+> `valid` 必须留着：未定位时 RMC 的经纬度字段是**空的**，没有这个标志就无法区分"真实的 0°"
+> 和"还没有定位"。
+
+**中断里只入队**：9600bps 下一个字节约 1ms，但模块每秒连发 12 条语句；中断里做 `memcpy`/`memset`
+会拉长中断时间、破坏 TIM5 与 DHT22 的微秒级时序。这里中断只写一个字节，**装配成行、校验，
+以及解析全部放在 `ATGM336H_Poll()`**。
+
+**校验和必须验**：NMEA 每帧以 `*hh` 结尾，是 `$` 与 `*` 之间所有字符的逐字节异或。不校验的话，
+串口噪声与半截帧会被当成有效定位，输出假经纬度。校验失败的帧直接丢弃。
+
+**语句名不写死**：只按 `line[3..5]` 匹配 `RMC`，因此 `$GNRMC`、`$GPRMC`、`$BDRMC` 都能认，
+不依赖具体的 talker 前缀。
+
+**用法**（非阻塞，裸机与 FreeRTOS 通用）：
+
+```c
+ATGM336H_Init();
+for (;;) {
+    uint8_t ev = ATGM336H_Poll();   /* 必须至少每 300ms 调一次 */
+    if (ev & ATGM_EV_UPDATE) {      /* 位置变化或定位状态翻转时才置 */
+        ATGM336H_GetInfo(&info);    /* valid / latitude / longitude */
+        ...                         /* 刷界面、打日志 */
+    }
+    delay_ms(100);
+}
+```
+
+> 线程安全：中断只写环形缓冲，`gps_info` 只由 `ATGM336H_Poll()` 写。因此只要**只有一个任务
+> 调用 Poll**，读结构体就不需要临界区。
+>
+> ⚠️ **当前固件里没有任何任务调用 `ATGM336H_Init()` / `ATGM336H_Poll()`**：USART3 不会初始化，
+> 环形缓冲也不会被读取（GPS 那一路"按设备实际位置显示省市"暂未接入，见 4.13）。将来接入时
+> 记得把 netTask 的心跳压到 ≤300ms。
+
+**联调开关**：`ATGM_DEBUG_ECHO = 1`（`ATGM336H.h`）时，**位置有变化的那条** RMC 原文会打到
+调试串口（静止时不打，移动时每秒一行）；校验错误的帧最多回显 5 次，避免噪声刷屏。
+置 `0` 则完全不回显原文。
+
+> ⚠️ **模块侧只需要接一根信号线**：TXD → PB11。RXD（PB10）可以悬空——只有要下发配置命令
+> （改波特率、只开 RMC+GGA 等）时才需要接。模块 TX 与 STM32 都是 3.3V，**不需要电平转换**。
+
+### 4.13 定位与中文转码（均为预留，界面当前不显示定位信息）
+
+顶部状态条**只画 WiFi 图标与 SSID**，不显示城市、也不显示省市。下面两组代码都已写好并验证过，
+但**应用层没有接入**，链接器会把未引用段全部丢掉——本次构建里 `utf8_gb2312.o` 的 15020 字节转码表、
+`at.o` 的 396 字节（`AT_Get_Location` + `Parse_Http_Location_Response`）、`app.o` 的
+`Service_Location_Update` 以及整个 `atgm336h.o` 都被移除，所以**留着接口并不占 Flash**。
+
+**预留一：中文城市名 / 省市的转码**（`BSP/Src/Utf8_Gb2312.c`）
+
+要显示的城市信息本可以来自两处（都还在解析，只是不上屏）：
+
+```
+天气接口(按公网IP)  results.location.name ──▶ weather_info.city ─┐
+                                                                ├─ UTF-8 ─▶ Utf8_To_Gb2312() ─▶ cn16.bin
+GPS + 高德 regeo    addressComponent      ──▶ location_info ────┘
+```
+
+**中文为什么必须转码**
+
+LCD 的汉字字模按 **GB2312 区位码**索引（`index = (区码-0xB0)*94 + (位码-0xA1)`），而 W25Q64 里只有
+**一级汉字 3755 字**；接口返回的却是 UTF-8。直接把 UTF-8 丢给 `ST7789_Write_String()`，
+一个汉字会被当成两个字节去查表，结果是空白或错字。
+
+`BSP/Src/Utf8_Gb2312.c`（由 `Documents/Tools/gen_gb2312_table.py` 生成）的做法：
+
+| 项 | 说明 |
+| --- | --- |
+| 表 | `Uni_Table[3755]`（Unicode 升序）+ `Gb_Table[3755]` 一一对应，共 **15020 字节 RO-data**，不占 RAM |
+| 查找 | 对 Unicode 码点二分查找，单字约 12 次比较。**下标必须用有符号 `int`**：`mid-1` 在 `mid=0` 时若用无符号会回绕成 65535 并越界读整张表 |
+| 二级汉字 | 字库本来就没有字模，转换时**整字丢弃**（不占宽度，不会破坏后面的排版） |
+| ASCII | 原样拷贝（ASCII 字模宽度正好是汉字的一半） |
+| 截断 | `Gb2312_Truncate_Px()` 按像素宽度在**字符边界**截断，不会留下半个汉字 |
+
+**顶部状态条布局**（`Main_Page_Net_Update()`，`User/Src/Main_Page.c`）
+
+```
+x=5  [WiFi图标 20x20]                                          x=155  [SSID]
+```
+
+| 情况 | 显示 |
+| --- | --- |
+| WiFi 已连接 | 图标 + `[SSID]`（超过 10 字符时截成 `[前5位...]`） |
+| WiFi 未连接 | 只画离线图标 |
+
+> 想把城市名加回来：在 `Main_Page_Net_Update()` 里把 `weather_info.city`（或 `location_info` 的省市）
+> 经 `Utf8_To_Gb2312()` 转换后画在 `x=30` 附近即可。本次改动删掉的 `LOC_TEXT_X` / `LOC_TEXT_WIDTH`
+> 两个布局常量就是为它准备的（`LOC_TEXT_WIDTH` 取 120 时最多 7 个汉字，超出用
+> `Gb2312_Truncate_Px()` 在字符边界截断）。
+
+> `Main_Page.c` 是 **GBK 编码**（中文要直接送进 GB2312 字库），改动时不能用只认 UTF-8 的编辑器保存。
+>
+> 校验脚本：`python Documents/Tools/verify_utf8_gb2312.py` —— 解析生成的 C 表，按 C 的算法复现转码，
+> 再与 Python 自带的 GB2312 编解码逐字对照（覆盖二级字丢弃、ASCII 混合、二分查找上下边界）。
+
+**预留二：GPS + 高德逆地理编码（"按设备实际位置显示省市"）**
+
+`AT_Get_Location()` / `Parse_Http_Location_Response()`（`BSP/Src/AT.c`）、`Service_Location_Update()` 与
+`location_info`（`User/Src/App.c`）都在，只是没有调用者；`ATGM336H_Init()` / `ATGM336H_Poll()` 也没有被
+任何任务调用，**USART3 因此不会初始化**。将来要启用时，在 netTask 里接上即可，下面是编写时验证过的
+参数与注意事项：
+
+| 项 | 说明 |
+| --- | --- |
+| 调用 | `AT_Get_Location(latitude, longitude, &info)`，内部组 URL 并发 HTTPS |
+| URL | `https://restapi.amap.com/v3/geocode/regeo?key=<AMAP_KEY>&location=经度,纬度&extensions=base` |
+| `location` | 高德**经度在前**，与入参顺序相反，函数内部已对调 |
+| `extensions` | 必须 `base`：`all` 会带上 `roads`/`roadinters`/`pois`/`aois`，响应可达数十 KB，而 AT 的 `rx_buf` 只有 1KB，必然中途截断 |
+| 坐标校验 | `±90` / `±180`，并排除 `(0,0)`（几内亚湾，是"还没有定位"最常见的初值） |
+| 解析 | 直接找 `"addressComponent":`；直辖市 `"city":[]` 匹配不到，`city` 保持空串，只显示 `province`；失败时返回 `false` 且**不清空** `location_info` |
+| 采样节拍 | 模块每秒约 615 字节，512 字节环形缓冲约 0.83s 就满，`ATGM336H_Poll()` **必须 ≤300ms 一次**（见 4.12）。接上后 netTask 心跳要从 1s 收紧到 100ms，WiFi / SNTP / 天气计数器再按"每 10 拍 = 1s"递减 |
+| 请求节流 | 位置事件（位移 ≥0.05° 或 A/V 翻转）时限流 60s；"已定位但省市仍为空"时每 5min 兜底重试——否则首次请求失败（开机时 GPS 先定好位、WiFi 还没连上）就得等下一次位置变化 |
+| 夜间 | 只取字节不发请求（省电设计里夜间不做网络活动） |
+| 刷新 | 成功后置一个事件位通知 uiTask 刷顶部条（本次已删掉的 `EV_LOCATION`，`1UL << 9` 预留给它） |
+| `AMAP_KEY` | 高德"Web服务"类型 key，写在 `BSP/Src/AT.c` 顶部 |
+
 ## 5. 关键流程
 
 ### 5.1 上电与开机流程
@@ -740,6 +916,7 @@ UI_Task
 `Net_Task` 在开机阶段依次执行：`AT_Init()` → `AT_WiFi_Init()` → `Service_WiFi_Connect()` →
 `AT_SNTP_Init()` → `Service_Time_Sync()` → `Service_Weather_Update()`，无论成败最后都置
 `EV_NET_READY`，并把结果写进 `NetBoot_t{wifi_ok, service_ok}` 供结果页读取。
+之后进入 1s 心跳的主循环，按周期做 WiFi 保活 / SNTP / 天气更新。
 
 ### 5.2 联网时序与自恢复
 
@@ -770,7 +947,8 @@ Service_WiFi_Update()                  周期 60s，失败后缩短为 10s
 Service_WiFi_Sleep(enable)             AT+SLEEP=1（Modem-sleep）/ AT+SLEEP=0（全速）
 
 Service_Time_Sync()                    AT+CIPSNTPTIME? 轮询最多 15 次，每次间隔 1s
-Service_Weather_Update()               AT+HTTPCLIENT=2,1,"<url>",,,2 → Parse_Weather_Response()
+Service_Weather_Update()               Weather_Update_Location() → AT_Get_IP() → location=<公网IP>
+                                       AT+HTTPCLIENT=2,1,"<url>",,,2 → Parse_Http_Response()
 ```
 
 **核心设计：区分「查询失败」与「掉线」**
@@ -809,7 +987,7 @@ Service_Weather_Update()               AT+HTTPCLIENT=2,1,"<url>",,,2 → Parse_W
 
 ### 5.4 天气 JSON 解析
 
-`Parse_Weather_Response()`（`BSP/Src/AT.c:525-577`）不引入 JSON 库，直接用 `strstr` 定位字段：
+`Parse_Http_Response()`（`BSP/Src/AT.c:541-594`）不引入 JSON 库，直接用 `strstr` 定位字段：
 
 | JSON 字段 | 目标成员 | 用途 |
 | --- | --- | --- |
@@ -822,12 +1000,15 @@ Service_Weather_Update()               AT+HTTPCLIENT=2,1,"<url>",,,2 → Parse_W
 `weather_map[]` 定义在 `User/Src/Main_Page.c`，把 26 个天气码映射到 **22 张图标**，
 未知码回落为晴天。映射表本身占 312 字节（`main_page.o(.constdata)`）。
 
-> ⚠️ `Parse_Weather_Response()` **不清零** `info`（对比 `AT_Get_WiFi_Info()` 里有 `memset`）。
+> ⚠️ `Parse_Http_Response()` **不清零** `info`（对比 `AT_Get_WiFi_Info()` 里有 `memset`）。
 > 若响应中缺少某个字段，该字段会保留调用方的旧值而不是变成空——排查"天气显示陈旧值"时注意。
 
-> 定位显示已移除：`Main_Page_Net_Update()` 只绘制 WiFi 图标与 SSID，`weather_info.city`
-> 仍在解析但不再参与绘制；`Image_location` / `Image_no_location` 两张图标也不再被引用
-> （资源文件仍留在 W25Q64 上，仍参与开机自检）。
+> 定位/城市信息**界面不显示**：`weather_info.city`（心知按公网 IP 定位到的城市名）照常解析但不参与绘制；
+> 中文转码模块与 GPS + 高德逆地理编码两套代码都保留为预留（见 4.13）。`Image_location` /
+> `Image_no_location` 两张图标同样没有被引用（资源文件仍留在 W25Q64 上，仍参与开机自检）。
+>
+> 请求用的 `location` 不再是写死的城市：`Service_Weather_Update()` 先调
+> `Weather_Update_Location()` 用公网IP重建 URL，取值规则见 9 章。
 
 ### 5.5 昼夜切换与低功耗握手
 
@@ -950,9 +1131,12 @@ clicks >  0 时：等按下，窗口 KEY_MULTI_GAP_MS = 300ms
 
 | 指标 | 迁移前 | 迁移后 | 变化 |
 | --- | --- | --- | --- |
-| RO-data | 323604 | **3748** | −319856（−98.8%） |
-| 总 ROM | 355556 | **56484** | −299072（**−84.1%**） |
+| RO-data | 323604 | **3744** | −319860（−98.8%） |
+| 总 ROM | 355556 | **58356** | −297200（**−83.6%**） |
 | MCU 内的点阵/像素数据 | 全部 | **0 字节** | 只剩描述表与指针表 |
+
+> 「迁移后」两行的数字按**当前固件**实测。之前为显示中文城市名引入的 15020 字节 UTF-8→GB2312 转码表，
+> 因为当前没有任何调用者，已被链接器作为未引用段移除（见 4.13）；它加进来时 RO-data 是 18764。
 
 ### 6.2 littlefs 移植参数
 
@@ -1219,22 +1403,22 @@ LR_IROM1 0x08000000 0x00080000 {          ; 512KB Flash
 
 ### 7.6 资源占用
 
-**当前构建**（`MDK/build.log`，0 Error 0 Warning）：
+**当前构建**（`MDK/build.log`，全量重编 0 Error / 1 Warning——唯一告警是 `DS1302_ReadReg` 未引用，见 12.3）：
 
 ```text
-Program Size: Code=52324  RO-data=3748  RW-data=412  ZI-data=126740
-Total RO  Size (Code + RO Data)              56072
-Total RW  Size (RW Data + ZI Data)          127152
-Total ROM Size (Code + RO Data + RW Data)   56184
+Program Size: Code=54004  RO-data=3744  RW-data=608  ZI-data=127648
+Total RO  Size (Code + RO Data)              57748
+Total RW  Size (RW Data + ZI Data)          128256
+Total ROM Size (Code + RO Data + RW Data)   57964
 ```
 
 | 项 | 数值 | 占比 |
 | --- | --- | --- |
-| Flash（`Total RO Size`） | **56072 B（54.8KB）** | 512KB 的 10.7% |
-| SRAM（`Total RW Size`） | **127152 B（124.2KB）** | 128KB 的 **97.0%**，静态余量仅 **3920 B** |
+| Flash（`Total RO Size`） | **57748 B（56.4KB）** | 512KB 的 11.0% |
+| SRAM（`Total RW Size`） | **128256 B（125.3KB）** | 128KB 的 **97.9%**，静态余量仅 **2816 B** |
 
-> `Total ROM Size` 56184 是 map 的口径（RW-data 按压缩后 112 字节计入）；
-> 未压缩口径为 `Code + RO-data + RW-data = 56484`。
+> `Total ROM Size` 57964 是 map 的口径（RW-data 按压缩后 216 字节计入）；
+> 未压缩口径为 `Code + RO-data + RW-data = 58356`。
 
 **SRAM 的主要占用**（取自 map 的符号表）
 
@@ -1247,12 +1431,14 @@ Total ROM Size (Code + RO Data + RW Data)   56184
 | `s_file` | 924 | Asset 的 11 个常开文件句柄 |
 | `rx_ring` | 512 | USART1 接收环形缓冲 |
 | `HEAP` / `STACK`（启动文件） | 4096 + 4096 | microlib 的堆与栈 |
-| `dbg_buf` / `tx_buf` | 256 + 256 | 调试行缓冲 / HTTP 指令缓冲 |
+| `dbg_buf` / `tx_buf`（AT.c HTTP） | 256 + 256 | 调试行缓冲 / HTTP 指令缓冲 |
+| `tx_buf`（AT.c 逆地理编码） | 192 | 高德 regeo 的 URL 缓冲（见 4.13） |
 
-**代码占用前列**（按目标文件）：`lfs.o` 15988 > `tasks.o` 3422 > `lcd.o` 2832 >
-`app_task.o` 2660 > `main_page.o` 2446 > `app.o` 2288 > `at.o` 1688 > `asset.o` 1344。
+**代码占用前列**（按目标文件，map 的 `Code (inc. data)` 列）：`lfs.o` 15988 > `tasks.o` 3422 >
+`lcd.o` 3004 > `app_task.o` 2960 > `app.o` 2932 > `main_page.o` 2504 > `printfa.o` 2378 >
+`at.o` 1974 > `asset.o` 1344。
 
-> ⚠️ **SRAM 只剩约 3.8KB 静态余量**（堆内另有约 56KB，但 15KB 已被图片乒乓缓冲占用）。
+> ⚠️ **SRAM 只剩约 2.8KB 静态余量**（堆内另有约 56KB，但 15KB 已被图片乒乓缓冲占用）。
 > 新增较大静态缓冲前务必重新确认 `ZI-data`。
 
 ### 7.7 下载与调试
@@ -1300,6 +1486,7 @@ Keil 中间文件（`*.o` `*.crf` `*.d` `*.axf` `*.map` `*.sct` `*.dep` `*.iex` 
 | 3 | `BM_TEST_MODULE_DS1302` | 每秒读一次外部 RTC，OLED 显示日期 / `HH:MM:SS` / 读取计数，USART2 输出同样内容；含首次写入与回读校验 |
 | 4 | `BM_TEST_MODULE_W25Q64` | SPI Flash 裸驱动用例（见下） |
 | 5（默认） | `BM_TEST_MODULE_LFS` | littlefs 文件系统用例（依赖 W25Q64） |
+| 6 | `BM_TEST_MODULE_GNSS` | ATGM336H 北斗+GPS 定位模块联调（见 8.4） |
 
 > `BuildConfig.h` 中建议的测试顺序是 **W25Q64 → LFS**：底层驱动不通时文件系统必然失败，
 > 先跑 W25Q64 可以把"硬件/SPI/时序问题"与"文件系统问题"分开定位。
@@ -1362,35 +1549,106 @@ Keil 中间文件（`*.o` `*.crf` `*.d` `*.axf` `*.map` `*.sct` `*.dep` `*.iex` 
 半周期只要被压缩到 250ns 以下，DS1302 就来不及在下降沿输出新位而被主机采到旧值，
 表现为**随机单一位错误**（见 11.3）。
 
+### 8.4 ATGM336H 定位模块裸机联调
+
+**接线**（模块侧只需一根信号线）：
+
+| STM32 | ATGM336H-5N |
+| --- | --- |
+| PB11（USART3_RX） | TXD |
+| 3V3 / GND | VCC / GND（**必须共地**） |
+| PB10（USART3_TX） | RXD，**可悬空**（只有要下发配置命令时才接） |
+
+模块出厂默认 **9600-8N1**；已被改过配置时只需改 `BSP/Inc/Usart.h` 的 `USART3_BAUD`。
+
+**宏**
+
+| 宏 | 位置 | 默认 | 作用 |
+| --- | --- | --- | --- |
+| `ATGM_MOVE_EPS` | `ATGM336H.h` | `0.000001f`（约 0.11 米） | 经纬度变化超过这个量（度）才置 `ATGM_EV_UPDATE` |
+| `ATGM_TEST_NO_DATA_SEC` | `bare_test.c` 顶部 | `5` | 连续多少秒一个 RMC 帧都没收到就提示接线/波特率（之后每 30 秒重复一次） |
+
+**行为**
+
+- OLED 只显示两行经纬度：`LAT ±dd.ddddd` / `LON ±ddd.ddddd`；未定位时显示 `LAT ---` / `LON ---`。
+- **界面和日志都跟着 `ATGM_EV_UPDATE` 走**，也就是只在位置真的变化（或定位状态翻转）时才动一次：
+  - 冷启动拿到首次定位时立刻更新，能看到坐标出现；
+  - 设备静止时**完全安静**（末位抖动小于 `ATGM_MOVE_EPS`），移动时每秒刷新——**这是预期行为，不是卡死**。
+- 定位有无的变化单独报一行 `fix acquired` / `fix lost`。
+- 一个 RMC 帧都收不到时才打 `no $xxRMC for Ns -- check module TXD -> PB11, ...`（第 5 秒一次，
+  之后每 30 秒一次）。
+- `ATGM_DEBUG_ECHO = 1` 时，**位置有变化的那条** RMC 原文也会打印，可直接对照校验和。
+
+**怎么判读**
+
+| 现象 | 结论 |
+| --- | --- |
+| 完全没有 `[GNSS] $...` 行，且出现 `no $xxRMC for Ns` | 模块没在输出：查 TXD→PB11、共地、模块供电，再核对波特率 |
+| 出现 `[GNSS] BAD: $...` | 收到了字节但校验不过：多为波特率不匹配或接线/电平问题 |
+| 有完整 RMC 原文、但没有 `fix acquired`、界面停在 `---` | **正常**：冷启动要 30s~几分钟，室内基本定不到 |
+| 出现 `fix acquired` 之后就没了动静 | **正常**：设备静止，位置没变化就不刷新。挪动模块或重新上电即可看到新坐标 |
+| 出现 `fix acquired` 且经纬度落点合理 | 链路全通，可以进入"并入 FreeRTOS"那一步 |
+
+> **冷启动慢是正常的**：室内窗边通常 30s~几分钟拿到首次定位，室内深处可能一直 `status = 'V'`。
+> 天线朝上、尽量靠窗；若长时间没有 `fix acquired`，先怀疑天线与供电，而不是解析代码。
+>
+> **并入 FreeRTOS 时注意**：驱动要求 `ATGM336H_Poll()` 至少每 300ms 调一次（否则环形缓冲溢出），
+> 所以 GNSS 任务的唤醒周期要 ≤300ms。驱动已按"变化才通知"过滤，静止时不会产生 `ATGM_EV_UPDATE`；
+> 若要周期性上报（比如每 5 分钟一次），由应用层自己计时，**不要**指望驱动按周期给事件。
+
 ---
 
 ## 9. 需要自行配置的参数
 
-以下值硬编码在 `User/Src/App.c` 顶部，**仓库中是明文真实凭据**，本文档按脱敏形式给出：
+以下值硬编码在 `User/Src/App.c` 顶部（高德 key 在 `BSP/Src/AT.c`），**仓库中是明文真实凭据**，
+本文档按脱敏形式给出：
 
 ```c
-const char *ssid     = "<YOUR_WIFI_SSID>";       /* 2.4GHz，ESP32-C3 不支持 5GHz */
+const char *ssid     = "<YOUR_WIFI_SSID>";       // 2.4GHz，ESP32-C3 不支持 5GHz
 const char *password = "<YOUR_WIFI_PASSWORD>";
-const char *mac      = NULL;                      /* 非 NULL 时作为 AT+CWJAP 的 MAC 参数 */
+const char *mac      = NULL;                     // 非 NULL 时作为 AT+CWJAP 的 MAC 参数
 
-static const char *weather_url =
+/* 天气接口: location 按公网IP定位, WEATHER_URL_FMT 的 %s 由公网IP填入 */
+#define WEATHER_URL_FMT "https://api.seniverse.com/v3/weather/now.json?key=<YOUR_API_KEY>&location=%s&language=en&unit=c"
+#define WEATHER_IP_LOCATION "ip" // 未解析出IP时的取值: 由服务端按请求来源IP定位
+#define WEATHER_URL_SIZE 192     // URL缓冲区
+
+static char weather_url[WEATHER_URL_SIZE] =
     "https://api.seniverse.com/v3/weather/now.json"
-    "?key=<YOUR_API_KEY>&location=<YOUR_CITY>&language=en&unit=c";
+    "?key=<YOUR_API_KEY>&location=" WEATHER_IP_LOCATION "&language=en&unit=c";
+
+/* BSP/Src/AT.c: 逆地理编码(经纬度 → 省/市), 见 4.13 */
+#define AMAP_KEY "..." // 高德"Web服务"类型 key
 ```
 
 | 参数 | 说明 |
 | --- | --- |
 | `ssid` / `password` | 2.4GHz WiFi 名称与密码 |
 | `mac` | 留 `NULL` 表示按 SSID 连接；填 BSSID 可指定 AP |
-| `weather_url` | 心知天气（Seniverse）实况接口，`key` 需自行申请；`location` 支持城市拼音或经纬度 |
+| `weather_url` | 心知天气（Seniverse）实况接口，`key` 需自行申请；`location` 由 `Weather_Update_Location()` 在每次取数前替换为解析到的公网IP |
+| `AMAP_KEY`（`BSP/Src/AT.c`） | 高德**"Web服务"类型** key，逆地理编码用（[高德开放平台](https://lbs.amap.com/) 申请）。key 无效/配额用尽时省市恒为 `--`，天气与时钟不受影响（见 4.13） |
 | `language` | 当前 `en`；改为 `zh-Hans` 可让 `text` 字段返回中文（界面用本地映射表，不受影响） |
 | `unit` | `c` 表示摄氏度 |
+
+**location 如何确定（实现见 `User/Src/App.c` 的 `Weather_Update_Location()`）**
+
+| 情况 | 填入的 `location` | 说明 |
+| --- | --- | --- |
+| 正常 | `<公网IP>`，如 `220.181.111.86` | `AT_Get_IP()` 请求 `ipv4.icanhazip.com` 得到，心知天气按该 IP 定位城市 |
+| IP 未变 | 沿用上一次的 URL | `strcmp` 命中即跳过重建，不产生额外请求 |
+| 取 IP 失败（且从未成功过） | `ip` | 字面量 `ip`，由心知天气**服务端按请求来源 IP** 定位；因此换网络后仍能跟随 |
+| 取 IP 失败（此前成功过） | 上一次的 `<公网IP>` | 沿用旧值，天气更新不被 IP 查询失败阻塞 |
 
 > ⚠️ **对外发布前请先替换为占位符**（或抽到被 `.gitignore` 忽略的独立配置文件中）——
 > 当前仓库里是真实可用的凭据。
 >
-> `location` 只影响返回的天气数据本身（城市名会填入 `weather_info.city`），
-> **界面不显示城市名**——顶部状态条只有 WiFi 图标与 SSID。
+> `location` 只影响返回的天气数据本身（城市名会填入 `weather_info.city`）；
+> **界面不显示定位信息**——顶部状态条只有 WiFi 图标与 SSID（见 4.13）。
+>
+> IP 定位依赖第三方 IP 库，文档明确说明**某些 IP 可能无法定位到城市**（此时接口会返回错误，
+> 天气保持上一次的值并按 `RETRY_WEATHER_S = 60s` 重试）；若只想要"跟随出口 IP"而
+> 不想多一次 IP 查询请求，可把 `Weather_Update_Location()` 的调用去掉、让 `location`
+> 恒为字面量 `ip`（心知天气原生支持，见 [通用参数](https://docs.seniverse.com/api/start/common.html)）。
 
 ## 10. 调试与排障
 
@@ -1417,6 +1675,7 @@ static const char *weather_url =
 [NET] WiFi connecting to <ssid> ...
 [NET] WiFi connected: ssid=... bssid=... channel=1 rssi=-72
 [NET] SNTP sync OK: 2026-09-18 00:23:10
+[NET] public IP = 101.30.184.223, weather location updated
 [NET] Weather OK: Cloudy, code=4, temp=22.0
 [UI] Boot net stage done: wifi=1 service=1
 [UI] Enter main page
@@ -1425,6 +1684,8 @@ static const char *weather_url =
 [SENSOR] DHT22 OK: T=26.4 H=59.2
 [LIGHT] auto: level=bright, mode=day
 ```
+
+> GPS 相关的 `[GNSS]` 日志当前不会有——那一路暂未接入；天气响应里的城市名也不再上屏（见 4.13）。
 
 > **开头 4 行为什么在 `[SYS]` 之前**：`[LCD ]` 与 `[ASSET]` 是 `Board_Init()` **内部**打印的
 > （`ST7789_Init()` 与 `Asset_Init()`），而 `[SYS]Build Date` 在 `Board_Init()` **返回之后**。
@@ -1450,6 +1711,8 @@ static const char *weather_url =
 | | `[NET] WiFi sleep set FAILED` | `AT+SLEEP` 下发失败（下个周期自动重试） |
 | | `[NET] LowPower exit, reset update` | 退出夜间后收到补更请求 |
 | | `[NET] SNTP sync OK: ...` / `SNTP sync FAILED` | 校时结果 |
+| | `[NET] public IP = ..., weather location updated` | 公网IP解析成功且与上次不同，天气 URL 的 `location` 已重建 |
+| | `[NET] public IP FAILED, keep location=<IP>` / `use location=ip` | 取 IP 失败：沿用上一次的 IP，或（从未成功过）改用服务端识别的字面量 `ip` |
 | | `[NET] Weather OK: ... , code=..., temp=...` | 天气更新成功 |
 | | `[NET] Weather HTTP FAILED` / `Weather parse FAILED` | 取数失败 / 解析失败 |
 | | `[NET] AT init OK` / `[NET] WiFi init OK` | 初始化成功（**只有真的成功才会打印**，见 11.11） |
@@ -1465,6 +1728,7 @@ static const char *weather_url =
 | | `[UI] Enter day: OLED off, LCD on` | 退出夜间 |
 | 性能 | `[PROF] full-screen image 240x320, 153600 bytes, ping-pong, N us` | 整屏底图绘制耗时（`Prof_Us` 实测）。`single` 表示乒乓缓冲分配失败、退化为单缓冲，见 4.11 |
 | | `[PROF] main page render: N us` | `Main_Page_Display()` 整页重绘耗时 |
+| 定位 | `[GNSS] ...` / `[NET] Location ...` | **当前固件不会打印**：GPS + 高德逆地理编码暂未接入（`ATGM336H_Poll()` 与 `Service_Location_Update()` 都没有调用者），只有裸机联调用例（8.4）会产生 `[GNSS]` 日志。接入后这里会出现 `[GNSS] fix acquired: lat=... lon=...` / `fix lost` 与 `[NET] Location OK: <省市>`（UTF-8 原文，调试终端要按 UTF-8 显示）/ `Location FAILED`，见 4.13 |
 | 按键 | `[KEY] task ready: pressed=0` | 按键任务启动 |
 | 系统 | `[SYS]Build Date:...` | 固件编译时间 |
 | | `[UI] Board init done, boot page` | 板级初始化完成 |
@@ -1848,12 +2112,11 @@ delay_us(10);
 | --- | --- | --- |
 | 1 | `DS1302_ReadReg()` 未被引用 | `External_RTC.c:151-169`。**全量重编**时会产生 `warning #177-D`；增量编译不重编该文件时看不到——它是当前唯一的编译告警来源 |
 | 2 | `OLED.c:25,37` 的空指针判断恒为假 | `if (&oled_i2c == NULL) return;`——取静态对象地址不可能是 `NULL` |
-| 3 | `AT.h:59` 与 `AT.h:65` 重复声明 `AT_WiFi_Init` | — |
-| 4 | 无调用者的 BSP 接口 | `W25Q64_IsBusy`、`W25Q64_Block32Erase`、`W25Q64_ChipErase`、`Soft_I2C_Receive_Bytes`、`Asset_MissingCount`、`Asset_CheckedCount` |
-| 5 | 未被引用的资源描述符 | `Font_12`、`Font_22`、`Font_32`、`Font_32B`（`Font_32` 只被裸机用例使用，该目标文件被链接器丢弃）；`Image_location`、`Image_no_location` 已不参与界面绘制 |
-| 6 | 未使用的宏 | `W25Q64_CMD_WRITE_DISABLE/READ_SR2/WRITE_SR/FAST_READ/BLOCK64_ERASE/POWER_DOWN`、`W25Q64_SR1_WEL/BP0~2/TB/SEC`、`W25Q64_SR2_QE`、`W25Q64_BLOCK_SIZE`；`External_RTC.h` 中除 `DS1302_REG_WP` 外的全部寄存器宏（源码里用的是裸字面量 `0xBE/0xBF/0x8E`） |
-| 7 | `FreeRTOS/include` 下同时存在 `stack_macros.h` 与 `StackMacros.h` | 仅大小写不同，Windows 文件系统不区分大小写——跨平台检出时会有问题 |
-| 8 | **`Image_Main_Page` 已烧录、已自检，但从不绘制** | 主界面底色实际由 `Main_Page_Top()` 的整屏 `ST7789_Fill_Color()` 加文字/图标构成，`Main_Page.c` 全文没有引用 `Image_Main_Page`。它仍占 **153600 B** Flash、参与 43 项开机自检，也是烧录批次 2（307200 B）的一半。**要么接到主界面上，要么从 `ImageTable.c` 与批次 2 中移除**（移除后自检项数 43 → 42，6.5/6.7 的数字要同步） |
+| 3 | 无调用者的 BSP 接口 | `W25Q64_IsBusy`、`W25Q64_Block32Erase`、`W25Q64_ChipErase`、`Soft_I2C_Receive_Bytes`、`Asset_MissingCount`、`Asset_CheckedCount`。另有**有意保留的预留接口**（`Utf8_Gb2312.c` 与 GPS + 高德逆地理编码那一路）同样没有调用者，链接器会从镜像里移除，见 12.5 第 21 项 |
+| 4 | 未被引用的资源描述符 | `Font_12`、`Font_22`、`Font_32`、`Font_32B`（`Font_32` 只被裸机用例使用，该目标文件被链接器丢弃）；`Image_location`、`Image_no_location` 已不参与界面绘制 |
+| 5 | 未使用的宏 | `W25Q64_CMD_WRITE_DISABLE/READ_SR2/WRITE_SR/FAST_READ/BLOCK64_ERASE/POWER_DOWN`、`W25Q64_SR1_WEL/BP0~2/TB/SEC`、`W25Q64_SR2_QE`、`W25Q64_BLOCK_SIZE`；`External_RTC.h` 中除 `DS1302_REG_WP` 外的全部寄存器宏（源码里用的是裸字面量 `0xBE/0xBF/0x8E`） |
+| 6 | `FreeRTOS/include` 下同时存在 `stack_macros.h` 与 `StackMacros.h` | 仅大小写不同，Windows 文件系统不区分大小写——跨平台检出时会有问题 |
+| 7 | **`Image_Main_Page` 已烧录、已自检，但从不绘制** | 主界面底色实际由 `Main_Page_Top()` 的整屏 `ST7789_Fill_Color()` 加文字/图标构成，`Main_Page.c` 全文没有引用 `Image_Main_Page`。它仍占 **153600 B** Flash、参与 43 项开机自检，也是烧录批次 2（307200 B）的一半。**要么接到主界面上，要么从 `ImageTable.c` 与批次 2 中移除**（移除后自检项数 43 → 42，6.5/6.7 的数字要同步） |
 
 ### 12.4 工程与配置问题
 
@@ -1893,6 +2156,10 @@ delay_us(10);
 | 15 | 字模读取附加 littlefs 查找开销 | 单字模纯传输约 27µs（22 号汉字）/ 56µs（48 号 ASCII），实际还要叠加 `lfs_file_seek` 的 CTZ skip-list 遍历。若实测偏高可加 4KB 块缓存 |
 | 16 | `printf` 不含 `'\n'` 会长期持锁 | `Usart.c` 的整行互斥在遇到换行并发送完毕后才释放；同任务的后续 `printf` 可重入，其他任务会阻塞到 `portMAX_DELAY`。**写日志时必须带换行** |
 | 17 | OLED 不支持中文 | `OLED_WriteChar` 把索引限制在可见 ASCII；夜间界面因此只画数字与日期 |
+| 18 | 天气定位依赖公网IP | 每次取天气前多一次 `ipv4.icanhazip.com` 请求（HTTPS 握手，秒级，仅 netTask 承担）；该接口不可达时退回 `location=ip` 由心知服务端按来源 IP 定位，功能不中断。IP 库对部分 IP 无法定到城市 |
+| 19 | 界面不显示定位信息 | 顶部状态条只有 WiFi 图标与 SSID。`weather_info.city`（IP 定位到的城市）与省市两套数据都还在解析/接口里，只是不参与绘制，需要时按 4.13 的说明一行即可加回 |
+| 20 | 转码表只覆盖 GB2312 一级汉字 | 为"显示中文城市名"准备的：字库本来就只有一级 3755 字，二级字（亳、涪…）转出来也是空白，所以转换时整字丢弃。**当前无调用者，15KB 表已被链接器移除**；启用后含二级字的城市名会缺字，要根治必须重做字库（见 6.1） |
+| 21 | GPS + 高德逆地理编码 + 中文转码都暂未接入 | 代码已写好并验证过（`AT_Get_Location()` / `Service_Location_Update()` / `location_info` / `Utf8_To_Gb2312()`），但应用层不调用，链接器把未引用段全部丢掉（`utf8_gb2312.o` 的 constdata、`atgm336h.o` 整体、`at.o` 两个函数…）。**留着接口不占 Flash**，将来接上即可，注意事项见 4.13 |
 
 ### 12.6 代码注释与事实不符之处
 
@@ -1912,15 +2179,15 @@ delay_us(10);
 ### 13.1 源码编码现状
 
 检测范围：`User/`、`BSP/`、`Resource/`、`Core/`、`Third_Lib/` 下的全部 `.c` / `.h` / `.s`，
-共 **104 个文件**。
+共 **106 个文件**。
 
 | 分类 | 数量 | 说明 |
 | --- | --- | --- |
 | 纯 ASCII | 55 | 不含中文，与编码无关 |
-| UTF-8 | 42 | — |
+| UTF-8 | 44 | — |
 | **含非 UTF-8 字节** | **7** | 见下表 |
 | 带 BOM | **0** | 全部无 BOM |
-| 行尾混用 | **0** | 每个文件内部都是单一 EOL（CRLF **71** 个 / LF **33** 个） |
+| 行尾混用 | **0** | 每个文件内部都是单一 EOL（CRLF **73** 个 / LF **33** 个） |
 
 **7 个含非 UTF-8 字节的文件**
 
@@ -2030,11 +2297,13 @@ UTF-8（无 BOM）、LF 行尾，可安全用任意 Markdown 工具渲染。
 | `屏幕/` | ST7789V 规格书 V1.3、中景园 0.96" OLED 驱动芯片手册与使用文档 |
 | `温湿度计/` | DHT22 数据手册、AM2302 产品规格书（中文） |
 | `中文字库/` | 汉字点阵源文件 `Chinese_16.txt` / `Chinese_22.txt`（PCtoLCD2002 输出）与 `GB2312一级字库3755个汉字.txt` |
+| `Tools/` | `gen_gb2312_table.py`（由 GB2312 一级字生成 `BSP/Src/Utf8_Gb2312.c`）、`verify_utf8_gb2312.py`（校验生成的转码表，见 4.13） |
 
 根目录另有 `项目简历-STM32F407桌面天气时钟.md`（面向求职的项目材料，数据取自源码与本文档）。
 
 ---
 
 *本文档基于仓库当前源码重新梳理生成；`MDK/build.log`、`MDK/Output/STM32F407.map` 中的数据为
-最近一次构建（`Code=52324 RO-data=3748 RW-data=412 ZI-data=126740`，0 Error 0 Warning）。
+最近一次构建（`Code=54004 RO-data=3744 RW-data=608 ZI-data=127648`，0 Error 1 Warning——
+唯一告警是 `External_RTC.c` 的 `DS1302_ReadReg` 未引用，见 12.3）。
 项目持续演进时，请以 `User/`、`BSP/` 源码与 `MDK/STM32F407.uvprojx` 为准。*

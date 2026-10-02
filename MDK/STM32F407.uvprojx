@@ -581,6 +581,11 @@
               <FilePath>..\BSP\Src\Usart.c</FilePath>
             </File>
             <File>
+              <FileName>Utf8_Gb2312.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\Utf8_Gb2312.c</FilePath>
+            </File>
+            <File>
               <FileName>W25Q64.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\W25Q64.c</FilePath>

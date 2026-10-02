@@ -594,7 +594,7 @@ bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
     return true;
 }
 
-/* ==================== HTTP ip 相关底层函数 ==================== */
+/* ==================== HTTP 获取公网IP相关底层函数 ==================== */
 
 #define AT_IP_URL "https://ipv4.icanhazip.com" // 公网IP查询接口, 直接返回纯文本IP, 不需要key
 
@@ -647,4 +647,83 @@ bool Parse_Http_IP_Response(const char *response, char *ip)
         return false;
 
     return true;
+}
+
+/* ==================== HTTP 逆地理编码(经纬度 → 省/市) ==================== */
+
+#define AMAP_KEY "23ca4864d87b04bab193347fb5f3f089" // 高德"Web服务"类型key, 逆地理编码用
+
+/* 只用 base 档: 需要的 formatted_address 与 addressComponent(省/市)都在里面。
+ * all 档会额外带上 roads / roadinters / pois / aois, 响应可达数十KB, 而 AT 的
+ * 接收缓冲(rx_buf)只有1KB, 必然在中途被截断 —— 不要图省事改成 all。 */
+#define AMAP_REGEO_URL_FMT "https://restapi.amap.com/v3/geocode/regeo?key=%s&location=%.6f,%.6f&extensions=base"
+
+/**
+ * @brief 用经纬度反查省/市(高德逆地理编码)
+ * @param latitude  纬度(十进制度, 南纬为负)
+ * @param longitude 经度(十进制度, 西经为负)
+ * @param info      输出: province / city, 均为UTF-8原文
+ * @return true 成功(至少取到省或市)
+ * @note  高德的 location 参数是"经度,纬度", 与入参顺序相反, 别写反;
+ *        失败(坐标无效/网络错误/key无效)时 info 被清零, 界面据此显示占位符。
+ */
+bool AT_Get_Location(float latitude, float longitude, AT_Location_Info_t *info)
+{
+    static char tx_buf[192];
+    const char *response;
+
+    if (info == NULL)
+        return false;
+
+    memset(info, 0, sizeof(*info));
+
+    /* 坐标非法或尚未定位: (0,0) 在几内亚湾, 是"还没有定位"最常见的初值 */
+    if (latitude < -90.0f || latitude > 90.0f ||
+        longitude < -180.0f || longitude > 180.0f ||
+        (latitude == 0.0f && longitude == 0.0f))
+        return false;
+
+    snprintf(tx_buf, sizeof(tx_buf), AMAP_REGEO_URL_FMT, AMAP_KEY, (double)longitude, (double)latitude);
+
+    response = AT_Get_HTTP(tx_buf);
+    if (response == NULL)
+        return false;
+
+    return Parse_Http_Location_Response(response, info);
+}
+
+bool Parse_Http_Location_Response(const char *response, AT_Location_Info_t *info)
+{
+    // 命令和命令回复内容(节选, extensions=base):
+    //     "AT+HTTPCLIENT=2,1,\"https://restapi.amap.com/v3/geocode/regeo?key=<key>&location=115.556428,37.339625&extensions=base\",,,2\r\n"
+    //     "+HTTPCLIENT:486,{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\",\"regeocode\":{\"formatted_address\":\"河北省衡水市冀州区南午村镇155乡道\","
+    //                      "\"addressComponent\":{\"city\":\"衡水市\",\"province\":\"河北省\",\"adcode\":\"131103\",\"district\":\"冀州区\","
+    //                                          \"towncode\":\"131103103000\",\"streetNumber\":{...},\"businessAreas\":[]}}}\r\n"
+    //     "\r\n"
+    //     "OK\r\n";
+    // 失败时服务端只回错误码, 形如:
+    //     {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}   —— 没有 addressComponent
+    if (response == NULL || info == NULL)
+        return false;
+
+    memset(info, 0, sizeof(*info));
+
+    /* 直接找 addressComponent: 不依赖 formatted_address 是否存在, 也不会被
+     * regeocode 里的其它同名字段带偏 */
+    const char *response_address = strstr(response, "\"addressComponent\":");
+    if (response_address == NULL)
+        return false;
+
+    /* 1. 省份 */
+    const char *response_province = strstr(response_address, "\"province\":");
+    if (response_province != NULL)
+        (void)sscanf(response_province, "\"province\":\"%31[^\"]\"", info->province);
+
+    /* 2. 城市: 直辖市在这里是空数组 "city":[], 上面的格式匹配不上, 于是保持空串,
+     *    界面便只显示省份。注意 "\"city\":" 不会匹配到 "citycode"。 */
+    const char *response_city = strstr(response_address, "\"city\":");
+    if (response_city != NULL)
+        (void)sscanf(response_city, "\"city\":\"%31[^\"]\"", info->city);
+
+    return (info->province[0] != '\0') || (info->city[0] != '\0');
 }
