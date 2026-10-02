@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\User\Inc;..\Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Third_Lib\FreeRTOS\include;..\Third_Lib\FreeRTOS\portable;..\Third_Lib\LittleFS\Inc</IncludePath>
+              <IncludePath>..\User\Inc;..\Task\Inc;..\Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Third_Lib\FreeRTOS\include;..\Third_Lib\FreeRTOS\portable;..\Third_Lib\LittleFS\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -444,6 +444,41 @@
               <FileName>Main_Page.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\Src\Main_Page.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>USER/Task</GroupName>
+          <Files>
+            <File>
+              <FileName>DHT22_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\Src\DHT22_Task.c</FilePath>
+            </File>
+            <File>
+              <FileName>Key_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\Src\Key_Task.c</FilePath>
+            </File>
+            <File>
+              <FileName>LightSensor_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\Src\LightSensor_Task.c</FilePath>
+            </File>
+            <File>
+              <FileName>Net_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\Src\Net_Task.c</FilePath>
+            </File>
+            <File>
+              <FileName>Task_Common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\Src\Task_Common.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\Src\UI_Task.c</FilePath>
             </File>
           </Files>
         </Group>

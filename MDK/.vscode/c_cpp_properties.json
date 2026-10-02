@@ -4,6 +4,7 @@
             "name": "STM32F407",
             "includePath": [
                 "d:\\Code\\Keil\\Project4\\User\\Inc",
+                "d:\\Code\\Keil\\Project4\\Task\\Inc",
                 "d:\\Code\\Keil\\Project4\\Resource\\Inc",
                 "d:\\Code\\Keil\\Project4\\BSP\\Inc",
                 "d:\\Code\\Keil\\Project4\\Core",
@@ -16,6 +17,7 @@
                 "D:\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Keil5\\ARM\\ARMCC\\include\\rw",
                 "d:\\Code\\Keil\\Project4\\User\\Src",
+                "d:\\Code\\Keil\\Project4\\Task\\Src",
                 "d:\\Code\\Keil\\Project4\\Resource\\Src\\Font",
                 "d:\\Code\\Keil\\Project4\\Resource\\Src\\Image",
                 "d:\\Code\\Keil\\Project4\\BSP\\Src",
