@@ -1,0 +1,11 @@
+.\output\provision.o: ..\User\Src\Provision.c
+.\output\provision.o: ..\User\Inc\Provision.h
+.\output\provision.o: ..\User\Inc\main.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stddef.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\string.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\output\provision.o: D:\Keil5\ARM\ARMCC\Bin\..\include\time.h
+.\output\provision.o: ..\User\Inc\BuildConfig.h
