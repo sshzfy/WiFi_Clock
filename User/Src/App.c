@@ -1,9 +1,10 @@
 #include "App.h"
+#include "Secrets.h" /* WiFi 凭据与第三方 key 集中在这里(不入库) */
 
 /* 初始化WiFi信息 */
-const char *ssid = "Laptop-S";
-const char *password = "Sun507109!";
-const char *mac = NULL;
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASSWORD;
+const char *mac = WIFI_MAC;
 AT_WiFi_Info_t wifi_info = {0};
 AT_Date_Info_t date_info = {0};
 AT_Weather_Info_t weather_info = {0};
@@ -13,13 +14,14 @@ const char *weekdays[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
 /* 天气接口: location 不再写死城市, 而是填运行时解析出的公网IP(见 Weather_Update_Location)。
  * 心知天气的 location 既支持具体IP地址, 也支持字面量 "ip"(服务端按请求来源IP定位),
  * 因此换网络/换地方后定位会自动跟随。 */
-#define WEATHER_URL_FMT "https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=%s&language=en&unit=c" // 天气接口URL格式
+/* 心知天气私钥 WEATHER_KEY 在 User/Inc/Secrets.h(不入库), 下面 URL 与初值都由它拼出 */
+#define WEATHER_URL_FMT "https://api.seniverse.com/v3/weather/now.json?key=" WEATHER_KEY "&location=%s&language=en&unit=c" // 天气接口URL格式
 #define WEATHER_DEFAULT_LOCATION "beijing"                                                                                   // 尚未解析出IP时的取位方式: 由服务端按请求来源IP定位默认北京
 #define WEATHER_URL_SIZE 192                                                                                                 // URL缓冲区: 换成15字节IP后实际约112字节
 
 static char weather_url[WEATHER_URL_SIZE] =
     "https://api.seniverse.com/v3/weather/now.json"
-    "?key=SgM2NZE2Sghy4FOFh&location=" WEATHER_DEFAULT_LOCATION "&language=en&unit=c";
+    "?key=" WEATHER_KEY "&location=" WEATHER_DEFAULT_LOCATION "&language=en&unit=c";
 // 中文: 把 language=en 换成 language=zh-Hans 即可(location 由公网IP动态填入, 见 Weather_Update_Location)
 static char weather_ip[16] = {0}; // 最近一次成功解析到的公网IP(仅netTask访问)
 const char *http_response = NULL;

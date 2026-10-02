@@ -364,10 +364,19 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 
 | 参数 | 位置 | 说明 |
 | --- | --- | --- |
-| WiFi 凭据 | `User/Src/App.c` 顶部的 `ssid` / `password` / `mac` | 要连接的 2.4GHz WiFi；`mac = NULL` 表示不绑定 BSSID |
-| 心知天气 key | `User/Src/App.c` 的 `WEATHER_URL_FMT` 与 `weather_url` 初值 | **两处都有，要一起改** |
-| `AMAP_KEY` | `BSP/Src/AT.c` | 高德"Web服务"key（逆地理编码预留用） |
+| WiFi 凭据 | `User/Inc/Secrets.h` 的 `WIFI_SSID` / `WIFI_PASSWORD` / `WIFI_MAC` | 要连接的 2.4GHz WiFi；`WIFI_MAC` 填 `NULL` 表示不绑定 BSSID |
+| 心知天气 key | `User/Inc/Secrets.h` 的 `WEATHER_KEY` | `App.c` 里的天气 URL 与初值都由它拼出 |
+| `AMAP_KEY` | `User/Inc/Secrets.h` | 高德"Web服务"key（逆地理编码预留用） |
 | `HSE_VALUE` | `Core/stm32f4xx.h` | 必须与实际晶振一致 |
+
+上表前三项都集中在 `User/Inc/Secrets.h`，该文件已被根目录 `.gitignore` 忽略，仓库里只有模板
+`User/Inc/Secrets.example.h`。新克隆的工程先复制一份再填写：
+
+```bat
+copy User\Inc\Secrets.example.h User\Inc\Secrets.h
+```
+
+源码（`App.c` / `AT.c`）里只引用宏定义，不要再写回明文凭据。
 
 ---
 

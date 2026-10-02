@@ -1,4 +1,5 @@
 #include "AT.h"
+#include "Secrets.h" /* AMAP_KEY 等凭据集中在这里(不入库) */
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // 数组元素个数
 
@@ -541,7 +542,7 @@ const char *AT_Get_HTTP(const char *url)
 bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
 {
     // 命令和命令回复内容：
-    //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=SgM2NZE2Sghy4FOFh&location=101.30.184.223&language=en&unit=c\",,,2\r\n"
+    //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=KEY&location=101.30.184.223&language=en&unit=c\",,,2\r\n"
     //     "+HTTPCLIENT:267,{\"results\":[{\"location\":{\"id\":\"WWYMRT0VRMUG\",\"name\":\"Dalian\",\"country\":\"CN\",\"path\":\"Dalian,Dalian,Liaoning,China\",\"timezone\":\"Asia/Shanghai\",\"timezone_offset\":\"+08:00\"},\"now\":
     //                      {\"text\":\"Cloudy\",\"code\":\"4\",\"temperature\":\"29\"},\"last_update\":\"2026-08-16T16:45:45+08:00\"}]}\r\n"
     //     "\r\n"
@@ -651,7 +652,7 @@ bool Parse_Http_IP_Response(const char *response, char *ip)
 
 /* ==================== HTTP 逆地理编码(经纬度 → 省/市) ==================== */
 
-#define AMAP_KEY "23ca4864d87b04bab193347fb5f3f089" // 高德"Web服务"类型key, 逆地理编码用
+/* AMAP_KEY(高德"Web服务"类型key, 逆地理编码用)在 User/Inc/Secrets.h(不入库) */
 
 /* 只用 base 档: 需要的 formatted_address 与 addressComponent(省/市)都在里面。
  * all 档会额外带上 roads / roadinters / pois / aois, 响应可达数十KB, 而 AT 的
