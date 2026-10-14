@@ -8,10 +8,10 @@ static uint8_t s_oled_glyph[ASSET_GLYPH_BYTES_MAX];
 static uint8_t s_oled_zeros[OLED_WIDTH];
 
 Soft_I2C_t oled_i2c = {
-    .SCL_Port = GPIOB,
-    .SDA_Port = GPIOB,
-    .SCL_Pin = GPIO_Pin_6,
-    .SDA_Pin = GPIO_Pin_7,
+    .SCL_Port = OLED_GPIO_PORT,
+    .SDA_Port = OLED_GPIO_PORT,
+    .SCL_Pin = OLED_GPIO_SCL_PIN,
+    .SDA_Pin = OLED_GPIO_SDA_PIN,
 };
 /* ================ 硬件底层函数 ================ */
 

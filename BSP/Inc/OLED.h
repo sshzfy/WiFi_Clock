@@ -8,6 +8,10 @@
 #include "App.h"
 #include "AT.h"
 
+#define OLED_GPIO_PORT           GPIOB
+#define OLED_GPIO_SCL_PIN        GPIO_Pin_6
+#define OLED_GPIO_SDA_PIN        GPIO_Pin_7
+
 #define OLED_ADDR               0x3C
 #define OLED_CMD_BYTE           0x00
 #define OLED_DATA_BYTE          0x40

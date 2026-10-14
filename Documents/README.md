@@ -13,7 +13,7 @@
 | 联网 | ESP32-C3-MINI-1（AT 固件 v4.1.1.0），USART1 @115200 |
 | 显示 | ST7789V 240×320 彩屏（SPI3 + DMA）/ SSD1306 128×64 OLED（软件 I2C） |
 | 工具链 | Keil MDK 5.24.1 / ARMCC V5.06 update 5（AC5）/ C99 |
-| 固件规模 | `Code 54004 · RO-data 3744 · RW-data 608 · ZI-data 127648`（最近一次构建） |
+| 固件规模 | `Code 137276 · RO-data 20068 · RW-data 1004 · ZI-data 128532`（最近一次构建，含 LVGL） |
 | 外置资源 | 11 个字库 + 32 张图片 = 858778 B（≈839KB），全部在 W25Q64；MCU 内点阵/像素数据 **0 字节** |
 
 本文档聚焦**代码架构与主要机制**；具体数值以源码为准。
@@ -77,7 +77,7 @@
                            stm32f4xx_it / Boot_Page / Main_Page
 任务层      Task/          任务装配与各任务独立实现（UI_Task / Net_Task / DHT22_Task /
                            LightSensor_Task / Key_Task + Task_Common / Task_Config）
-资源层      BSP/Asset.c   littlefs 挂载、开机自检、O(1) 字模与图片读取
+资源层      BSP/Asset.c   littlefs 挂载与自检、字库/图片只读通道、运行数据(/data)键值存取
 板级驱动    BSP/           LCD · OLED · AT · ATGM336H · Utf8_Gb2312 · I2C · DHT22 ·
                            External_RTC · Light_Sensor · Key · Timer · Usart · W25Q64 · Profiling
 操作系统    Third_Lib/     FreeRTOS（portable/FreeRTOSConfig.h）
@@ -103,7 +103,7 @@ Project4/
 │   │         Provision.h · bare_test.h · Page.h · stm32f4xx_conf.h · stm32f4xx_it.h
 │   └── Src/  main.c · Board.c · App.c · app_task.c（任务装配层）· Provision.c ·
 │             bare_test.c · stm32f4xx_it.c · Boot_Page.c · Main_Page.c
-├── BSP/                        板级驱动（Inc 与 Src 各 15 个文件，见 2.3）
+├── BSP/                        板级驱动（Inc 16 个头 / Src 16 个源，见 2.3）
 ├── Resource/                   资源数据（正式固件不编译）
 │   ├── Inc/  Font.h（字库描述与文件 ID）· Image.h（图片描述）
 │   └── Src/  Font/  Font_12/16/22/32/48.c + Chinese_Font16/22.c
@@ -129,7 +129,7 @@ Project4/
 | 文件 | 职责 |
 | --- | --- |
 | `main.c` | 三种构建模式的唯一入口；`configASSERT` 与栈溢出钩子的实现 |
-| `Board.c` | 板级初始化：时钟、GPIO、各外设时钟使能、测试 LED |
+| `Board.c` | 板级初始化：时钟、GPIO、各外设时钟使能、测试 LED、资源层（`Asset_Init`） |
 | `App.c` | 服务层：WiFi / SNTP / 天气 / 温湿度 / 软件时钟；共享数据的整块赋值 |
 | `app_task.c` | 任务装配层：只负责创建 `ui` 任务；任务实现见下行 |
 | `Page.h` + `Boot_Page.c` / `Main_Page.c` | 界面绘制与页面布局常量（`Page.h` 是界面的公共头） |
@@ -153,7 +153,7 @@ Project4/
 
 | 文件 | 职责 |
 | --- | --- |
-| `Asset.c` | 资源层：挂载 littlefs、开机自检、按 ID 直接定位字模与图片 |
+| `Asset.c` | 资源层：挂载 littlefs、开机自检、字库/图片只读通道（O(1) 字模 + 图片分块流式读）、运行数据键值存取 |
 | `LCD.c` | ST7789：SPI3 + DMA、字模渲染、图片流式读取与乒乓双缓冲 |
 | `OLED.c` | SSD1306：命令/数据、取字模、夜间时钟显示 |
 | `AT.c` | ESP32-C3 AT 指令、WiFi/SNTP/HTTP、天气/IP 响应解析 |
@@ -169,6 +169,16 @@ Project4/
 | `W25Q64.c` | SPI Flash：读 / 页编程 / 扇区擦除 / 忙等待超时统计 |
 | `Profiling.c` | 基于 DWT->CYCCNT 的微秒级计时，用于测量渲染耗时 |
 
+**图形库（`Middlewares/Lvgl`，LVGL v8.3.11）**
+
+只用于 WiFi 键盘界面（见 4.3），主页面不受影响。
+
+| 文件 | 职责 |
+| --- | --- |
+| `lv_conf.h` | 配置：16 位色、24KB 内存池（放在 CCM）、只开键盘/文本框/默认主题用到的组件 |
+| `porting/lv_port_disp.c` | 显示端口：把 LVGL 渲染好的 RGB565 区域交给 `LCD_Draw_Pixels()`；绘制缓冲借用 LCD 的整行缓冲 |
+| `porting/lv_port_indev.c` | 输入端口：`Touch_GetPoint()` 的坐标 → LVGL 指针设备 |
+
 ### 2.4 关键约定
 
 1. **LCD 只由 `UI_Task` 写**。其他任务只更新数据并置事件位，避免多任务同时操作 SPI3 造成撕裂。
@@ -179,6 +189,9 @@ Project4/
 5. **头文件的类型定义归它所属的模块**：AT 解析出的结构体在 `AT.h`，界面布局类型在 `Page.h`。
 6. **任务之间只通过接口通信**：跨任务请求走各任务头文件里的函数（如
    `LightSensor_Task_RequestToggleNight()`），除 `Task_Common` 外不共享全局变量。
+7. **外部 Flash 只由 `Asset.c` 一个模块访问**。字库与图片烧录后**只读**（常开字库句柄 +
+   O(1) 定位），运行数据只能写到 `/data/<name>.bin`（名字由该层拼接，越不出 `/data`）；
+   所有访问共用同一次挂载与同一把 `LittleFS_Lock()`。
 
 ---
 
@@ -188,15 +201,17 @@ Project4/
 
 | 任务 | 优先级 | 栈 | 职责 | 循环节拍 |
 | --- | --- | --- | --- | --- |
-| `UI_Task` / `"ui"` | 3 | 4KB | `Task_Common_Init()` 建事件组、`Board_Init()`、开机流程、**LCD 唯一写者**、昼夜切换执行者 | 白天 500ms / 夜间 2000ms |
+| `UI_Task` / `"ui"` | 3 | 6KB | `Task_Common_Init()` 建事件组、`Board_Init()`、开机流程、**LCD 唯一写者**、昼夜切换执行者、**LVGL 键盘界面的宿主**（LVGL 的 `lv_timer_handler()` 与触摸读取都在这个任务里） | 白天 50ms（触摸轮询）/ 夜间 2000ms / 键盘界面 10ms |
 | `DHT22_Task` / `"dht22"` | 4 | 2KB | 单总线温湿度采集，成功后置 `EV_DHT22` | 5min |
 | `Net_Task` / `"net"` | 2 | 4KB | **独占 USART1/AT**：联网、SNTP、天气；1s 心跳推进三个周期计数器 | 1s |
 | `LightSensor_Task` / `"light_sensor"` | 2 | 2KB | 光照判定、2s 去抖、发起昼夜切换并等 ACK | 事件驱动 + 1s 兜底 |
 | `Key_Task` / `"key"` | 2 | 4KB | PA0 手势状态机（单击/双击/三击/长按） | 事件驱动 |
 
 **创建时机本身构成依赖关系**：`main()` 只创建 `ui`；`UI_Task` 里先建 `dht22` 与 `net`，
-等 `EV_NET_READY`（≤30s）并显示结果页后，才创建 `light_sensor` 与 `key`——
-这样**昼夜切换只可能发生在开机流程之后**。
+等 `EV_NET_READY`（≤60s）并显示结果页后，才创建 `light_sensor` 与 `key`——
+这样**昼夜切换只可能发生在开机流程之后**。这个上限给得宽是有原因的：AT 初始化重试 +
+`CWJAP`（最长 10s）+ SNTP（最长 15s）+ 天气 HTTP，没配置凭据时还要等模组自己重连（最多 8s），
+30s 在慢网下会提前放弃，于是拿一份空结果去画结果页——显示成 Disconnect 而模组其实已连上。
 
 **优先级不是随手定的**：`DHT22` 高于 `UI`，因为单总线对微秒级时序敏感，被刷屏抢占会直接
 读到校验和错误；`net` 降到 2，因为一次 AT 事务最长 10s，优先级过高会把显示饿死。
@@ -218,6 +233,9 @@ Project4/
 | bit6 | `EV_WAKEUP` | `LightSensor_Task` → `UI_Task` | 请求回到白天 |
 | bit7 | `EV_NET_UPDATE_NOW` | `UI_Task` → `Net_Task` | 退出夜间后立即补网络更新 |
 | bit8 | `EV_DHT22_UPDATE_NOW` | `UI_Task` → `DHT22_Task` | 退出夜间后立即补温湿度采集 |
+| bit9 | `EV_KEYBOARD` | `UI_Task`（触摸判定） → `UI_Task` | 点了 WiFi 图标，调出键盘界面 |
+| bit10 | `EV_MAIN_SCREEN` | 键盘界面回调 → `UI_Task` | 键盘确认/取消，退回主界面 |
+| bit11 | `EV_WIFI_CRED` | `UI_Task`（键盘回调） → `Net_Task` | 提交了新的 WiFi 凭据，请重连 |
 
 > **bit7 与 bit8 必须分开**。`xEventGroupWaitBits` 是清除式等待，两个任务共用一个位时，
 > 先被唤醒的会把位清掉，另一个永远收不到通知。
@@ -226,7 +244,7 @@ Project4/
 
 | 机制 | 用途 |
 | --- | --- |
-| 事件组 `Task_Events()` | 上表 9 个事件位，任务间主要通信方式（`Task_Common.c` 持有句柄，不暴露变量） |
+| 事件组 `Task_Events()` | 上表 12 个事件位，任务间主要通信方式（`Task_Common.c` 持有句柄，不暴露变量） |
 | 任务通知（计数语义） | ISR → 任务的光敏/按键边沿；按键的"切换昼夜"请求（`LightSensor_Task_RequestToggleNight()`） |
 | 临界区 `taskENTER_CRITICAL()` | 软件时钟与三个共享结构体的整块赋值（全部在 `App.c` 内） |
 | 互斥量 | 仅调试串口的整行原子输出（配合"行属主"记录） |
@@ -285,6 +303,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 资源（字库/图片，全部来自 W25Q64）：
   W25Q64 ──SPI1 21MHz──▶ Asset 层 ──┬─▶ 字模：区位码直接算偏移，O(1)
                                     └─▶ 图片：分块流式读取 + DMA1_Stream5 乒乓 ──SPI3──▶ ST7789
+  Asset 层 ──▶ littlefs ──▶ W25Q64（运行数据 /data/<name>.bin 的键值式存取；字库与图片只读）
 ```
 
 ---
@@ -312,6 +331,50 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 按键手势也走同一入口——`Key_Task` 只调用 `LightSensor_Task_RequestToggleNight()` 发出请求，
 最终由 `LightSensor_Task` 统一裁决（单击/三击尚未分配）。
 
+### 4.3 WiFi 配网：LVGL 键盘界面
+
+主页面（时钟/日期/天气/室内温湿度）仍是**裸绘**的，LVGL 只接管"点了左上角 WiFi 图标之后"
+的键盘界面。两者共用同一块 SPI 屏，因此必须严格错开：
+
+1. 白天主循环按 `UI_TOUCH_POLL_MS`（50ms）轮询 `Detect_TouchRange()`，判定触摸点是否落在
+   WiFi 图标上（图标是 `(5,5)` 起 20×20，判定区域与它一致），命中就置 `EV_KEYBOARD`；
+   轮询节拍必须明显小于一次点击的持续时间（约 100~200ms），否则整段点击会落在两次采样
+   之间，表现成"点了没反应"；
+2. `UI_Task` 收到后调 `UI_WiFi_Keyboard_Open()`：首次进入时 `lv_init()` →
+   `lv_port_disp_init()` → `lv_port_indev_init()` → `ui_init()`，之后每次只是
+   `lv_disp_load_scr(ui_keyboard)` + 复位输入状态 + 强制整屏重绘；
+3. 键盘界面激活期间主循环改成 **10ms** 心跳，每拍喂一次 `lv_tick_inc()` 并调
+   `lv_timer_handler()`（LVGL 的触摸读取与刷屏都发生在这一句里），主页面的局部刷新全部跳过；
+4. 键盘上的"确认"把两个输入框的内容交给 `WiFi_Config_Set()`（只改 RAM，临界区内整体替换）
+   并置 `EV_WIFI_CRED`；`Net_Task` 收到后立即用新凭据 `AT_Connect_WiFi()` 重连，无需等
+   10min 的周期检查。SSID 为空时**不提交也不退出**，把 `SSID` 标签改成红色 `SSID required`
+   留在原地（静默退回主页会让人以为确认键坏了）。键盘的"✓"把 `READY` 发给键盘对象、
+   "回车"发给输入框，所以两处都接了同一个提交函数；
+5. `UI_Task` 处理 `EV_MAIN_SCREEN` 时关闭键盘界面、把凭据落盘
+   （`/data/wifi_cfg.bin`）、再整屏重画主页面。**退出键盘不触发任何网络补更**：
+   提交过凭据的场景已由 `EV_WIFI_CRED` 覆盖（重连 + 补 SNTP/天气），按 X 取消则本来
+   就不该有网络动作；`EV_NET_UPDATE_NOW` 专指"退出夜间立即补更"，借来当"回主界面
+   顺便刷一下"会让 netTask 打出 LowPower 相关日志、语义对不上。主界面右上角那一块
+   也不再单独判触摸——那是键盘界面上 X 的位置，主界面跟着判会让误点触发一次无谓的
+   整屏重绘和网络补更。
+
+**几个必须守住的点**（改动时容易踩）：
+
+| 点 | 原因 |
+| --- | --- |
+| LVGL 只在 `uiTask` 里初始化与驱动 | 刷屏走 LCD 的 SPI3 通路，LCD 的"唯一写者"约定不能破 |
+| LVGL 的绘制缓冲借用 LCD 的整行缓冲（240×48） | 主 SRAM 只剩约 1.5KB，另开 10 行缓冲（4800B）直接爆内存；缓冲必须在 SRAM，CCM 里的内存 DMA 访问不到 |
+| LVGL 的 24KB 内存池放在 CCM（`LV_MEM_ADR = 0x10000000`） | 不占主 SRAM；`Board.c` 里显式使能了 CCM 时钟 |
+| 输入框必须带 `LV_OBJ_FLAG_CLICK_FOCUSABLE` | 否则点击不产生 `LV_EVENT_FOCUSED`，键盘永远不会显示 |
+| 每次进入键盘前 `lv_indev_reset(NULL, NULL)` | 上一轮残留的按下/焦点状态会让这次的 `LV_EVENT_FOCUSED` 不再发出 |
+| 键盘屏幕只建一次、反复复用 | 每次 `ui_init()` 都会再分配一个主题与整套控件，24KB 堆会被逐步吃光 |
+| 凭据落盘放在 `UI_Task` 里而不是 LVGL 事件回调里 | littlefs 写入要几十 ms，放在回调里会卡住界面交互 |
+
+**没有配置过凭据时**，开机阶段不去发 `AT+CWJAP`（空 SSID 必然失败，结果页就会一路显示
+Disconnect，而模组其实可能已经用它自己 NVS 里记着的 AP 连上了）。这里改成只查询、最多等
+8 秒，让结果页显示模组的**真实**状态；没配置过且没连上时显示 `[WiFi] Not set, tap icon`，
+提示点左上角图标去配网。
+
 ---
 
 ## 5. 资源存储：W25Q64 + littlefs
@@ -330,6 +393,53 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 
 **字模定位是 O(1) 的**，不查表：ASCII 用 `(ch - 0x20) * ob * size`，汉字用区位码
 `((区码-0xB0)*94 + (位码-0xA1)) * cn_bytes`。点阵为横向取模、行优先，每字节 bit0 对应最左像素。
+
+### 5.1 资源层的读写接口（`Asset.c`）
+
+资源层只有 `Asset.c` 一个模块，管两类数据，共用同一次挂载与同一把递归互斥量
+`LittleFS_Lock()`——W25Q64 挂在 SPI1 上，一个任务擦 4KB 扇区要几十毫秒，
+不串行化必然读写交错、数据出错。
+
+**一、只读资源：字库与图片（烧录后只读）**
+
+| 接口 | 用途 |
+| --- | --- |
+| `Asset_ReadFont(fid, off, buf, len)` | 取字模：句柄常开、位置记忆，偏移由区位码/ASCII 码直接算出，O(1) |
+| `Asset_ImageOk(img)` | 该图片是否通过开机自检（存在且大小相符） |
+| `Asset_ImageOpen` / `Asset_ImageRead` / `Asset_ImageClose` | 图片分块流式读取，配 LCD 的乒乓 DMA |
+| `Asset_ImageInfo(path, &w, &h)` | 只读 4 字节文件头取宽高，不读像素 |
+
+正式固件**没有**运行期写字库/图片的接口：资源写坏屏上就是花屏或白屏，要换资源请重新
+烧录 Provision 固件（见 6.2）。
+
+**二、运行数据：`/data/<name>.bin`**
+
+| 接口 | 用途 |
+| --- | --- |
+| `Asset_SaveData(name, buf, len)` | 覆盖写（不存在则创建）；写时复制，中途掉电保留旧值 |
+| `Asset_LoadData(name, buf, buf_size)` | 整块读出，返回实际字节数；放不下报 `ASSET_ERR_SPACE`，不会只读一半 |
+| `Asset_DataSize` / `Asset_HasData` / `Asset_DeleteData` | 查大小 / 判存在 / 删除 |
+
+名字只允许字母、数字、`_`、`-`（最长 32），路径由资源层拼成 `/data/<name>.bin`——
+调用者**无法**越出 `/data` 写到字库或图片上，这是这层"安全"的关键一环：
+
+```c
+Asset_Init();                                         // 上电一次（Board_Init 已调用）
+Asset_SaveData("calib", &cfg, sizeof(cfg));           // 存
+int n = Asset_LoadData("calib", &cfg, sizeof(cfg));   // 取，返回实际字节数
+```
+
+**三、约定**
+
+- 返回值统一为 `Asset_Err_t`：`0` 成功，负数为错误码（`ASSET_ERR_PARAM` / `ASSET_ERR_STATE` /
+  `ASSET_ERR_RANGE` / `ASSET_ERR_NOENT` / `ASSET_ERR_SPACE` / `ASSET_ERR_IO` / `ASSET_ERR_FORMAT`），
+  失败必打一行 `[ASSET]` 日志；`Asset_Init()` 另有一个 `ASSET_ERR_MISSING`——文件系统可用但
+  字库/图片不全（此时运行数据仍能正常读写）；
+- 挂载失败**绝不自动格式化**（那会清空全部已烧录资源），只提示重新烧录；`Asset_Init()` 可重复调用；
+- 资源不可用时读接口安全返回失败，渲染层退化为填背景色，不会死机也不会重启；
+- 每次读/写都持锁，SPI1 不会交错；一张全屏图是分多次读出来的（两次读之间会放锁），
+  但资源烧录后只读，不存在"读到一半被改写"的窗口；
+- 裸机测试 `BM_TEST_MODULE_LFS` 里的 T12~T18 覆盖运行数据存取、数据名校验与图片读取。
 
 ---
 
@@ -359,6 +469,9 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | 3 | 9 张 ASCII 表 + 图标 | 183460 |
 
 每批把 `PROVISION_BATCH` 改成对应值、`RESOURCE_PROVISION = 1` 后编译烧录。
+
+> 批量烧录走 Provision；正式固件**不提供运行期写字库/图片的接口**（写坏屏上就是花屏），
+> 只有运行数据（配置、缓存、校准值）能在运行期用 `Asset_SaveData()` 存进 `/data/`（见 5.1）。
 
 ### 6.3 需要自行配置的参数
 
@@ -402,11 +515,12 @@ copy User\Inc\Secrets.example.h User\Inc\Secrets.h
 | 正确性 | 光敏 AO 模式用了 `ADC_Channel_0`（应为 `ADC_Channel_10`）；切到 AO 模式前必须先改 |
 | 正确性 | `Test_LED_GPIO_init()` 裸机分支只赋值了 `GPIO_Pin` / `GPIO_Mode`，其余字段是栈上垃圾值 |
 | 正确性 | `Parse_Http_Response()` 不清零输出结构体，缺失字段会保留调用方的旧值 |
-| 正确性 | `Asset` 的图片掩码用 `1UL << i`，恰好只够 32 张，再加一张会溢出串位 |
+| 正确性 | `Asset` 的图片掩码只有 32 位：超过 32 张的图片仍参与自检，但 `Asset_ImageOk()` 对它们恒返回 false（代码里已挡住 `1UL << i` 的溢出） |
 | 健壮性 | `W25Q64_RWByte()` 等 SPI 等待、`LCD.c` 的 DMA 完成等待都是**无超时忙等**，硬件异常会卡死 |
 | 健壮性 | `TIM5_ms` 是 64 位 `volatile`，ISR 与任务间读写非原子（当前靠重读 + UIF 补偿规避） |
 | 冗余 | `Image_Main_Page`（153600 B）已烧录、参与开机自检，但界面从未绘制它 |
-| 冗余 | `DS1302_ReadReg()` 未被引用，是当前全量重编下唯一的编译告警 |
+| 冗余 | `DS1302_ReadReg()` 未被引用；全量重编共 17 条告警，其余 16 条都来自 LVGL 自身源码（枚举混用、符号转换等），本项目代码零告警 |
+| 容量 | 主 SRAM 已用到 `RW-data + ZI-data = 129536 / 131072` 字节，**只剩约 1.5KB**。LVGL 的绘制缓冲因此借用 LCD 的整行缓冲、24KB 内存池放进独立的 64KB CCM；再随手加静态缓冲会直接链接失败 |
 | 预留 | GPS + 高德逆地理编码 + 中文转码三套代码已写好但**应用层未接入**，链接器会把未引用段丢弃，因此**不占 Flash**。要接入时注意 `ATGM336H_Poll()` **必须至少每 300ms 调用一次**（模块每秒约 615 字节，512B 环形缓冲约 0.83s 就满） |
 
 ---

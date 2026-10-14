@@ -7,34 +7,26 @@
 #include "Image.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 #include "Asset.h"
 #include "Profiling.h"
+#include "Timer.h"
 
-/* ST7789 显示区域 */
+/* LCD 显示区域 */
 #define WIDTH 240
 #define HEIGHT 320
 
-/* ST7789 端口定义 */
-#define ST7789_SCLK_PORT GPIOC
-#define ST7789_SCLK_PIN GPIO_Pin_10
+/* LCD 端口定义 */
+#define LCD_SPI_PORT GPIOC
+#define LCD_SCLK_PIN GPIO_Pin_10
+#define LCD_MISO_PIN GPIO_Pin_11
+#define LCD_MOSI_PIN GPIO_Pin_12
 
-#define ST7789_MOSI_PORT GPIOC
-#define ST7789_MOSI_PIN GPIO_Pin_12
-
-#define ST7789_MISO_PORT GPIOC
-#define ST7789_MISO_PIN GPIO_Pin_11
-
-#define ST7789_CS_PORT GPIOE
-#define ST7789_CS_PIN GPIO_Pin_2
-
-#define ST7789_RESET_PORT GPIOE
-#define ST7789_RESET_PIN GPIO_Pin_3
-
-#define ST7789_DC_PORT GPIOE
-#define ST7789_DC_PIN GPIO_Pin_4
-
-#define ST7789_BACKLIGHT_PORT GPIOE
-#define ST7789_BACKLIGHT_PIN GPIO_Pin_5
+#define LCD_PORT GPIOE
+#define LCD_CS_PIN GPIO_Pin_2
+#define LCD_RESET_PIN GPIO_Pin_3
+#define LCD_DC_PIN GPIO_Pin_4
+#define LCD_BACKLIGHT_PIN GPIO_Pin_5
 
 /* 颜色 */
 #define COLOR(r, g, b) ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
@@ -103,12 +95,28 @@
 #define COLOR_WARMSKIN    COLOR(255, 225, 200)    // 暖肤色
 #define COLOR_BEIGE       COLOR(245, 245, 220)    // 米色/沙色
 
-/* ST7789 函数声明 */
-void ST7789_Init(void);
-void ST7789_Display_Power(bool on);
-void ST7789_Fill_Color(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color);
-void ST7789_Write_String(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uint16_t color_back, const Font_t *font);
-void ST7789_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image);
-void ST7789_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_back);
+/* LCD 函数声明 */
+void LCD_Init(void);
+void LCD_Display_Power(bool on);
+void LCD_Fill_Color(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color);
+void LCD_Write_String(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uint16_t color_back, const Font_t *font);
+void LCD_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image);
+void LCD_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_back);
+
+/* 整块像素写入: 把一段 RGB565 数据(按行连续, 左上到右下)刷到矩形区域。
+ * 供图形库(LVGL)的 flush 回调使用, 与 LCD_Fill_Color 走同一条窗口+DMA 通路,
+ * 因此字节序(高字节先发)与屏幕上的裸绘内容完全一致。 */
+void LCD_Draw_Pixels(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, const uint16_t *pixels);
+
+/* 借用模块内部的整行渲染缓冲(240 x 48 像素, 位于 SRAM、4 字节对齐)。
+ * 图形库可以直接拿它当绘制缓冲, 省下一块同等大小的静态内存 ——
+ * 本工程主 SRAM 只剩约 2KB, 另开缓冲会直接爆掉。
+ * 约定: 调用方只在刷屏期间使用它, 不能与 LCD_Write_String() 并发。 */
+uint16_t *LCD_RenderBuffer(uint32_t *capacity_px);
+
+/* SPI3 总线仲裁: 与 LCD 共用 SPI3 的器件(触摸屏 XPT2046)在访问前后各调一次。
+ * Acquire: 等 LCD 的 DMA 发完 + 切成 8 位 + 降速; Release: 恢复 21MHz */
+void LCD_Bus_Acquire(void);
+void LCD_Bus_Release(void);
 
 #endif /* __LCD_H__ */
