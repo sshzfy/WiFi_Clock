@@ -2,6 +2,7 @@
 #define __APP_H__
 
 #include "main.h"
+#include "BuildConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "AT.h"

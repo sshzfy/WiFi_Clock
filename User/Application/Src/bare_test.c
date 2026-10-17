@@ -95,7 +95,7 @@ static bool DS1302_BareMetal_SetDefault(const DS1302_Time_t *base)
 
     if (!DS1302_ReadTime(&chk))
     {
-        printf("[RTC] SET VERIFY FAIL: read back failed\r\n");
+        DBG_PRINTF("[RTC] SET VERIFY FAIL: read back failed\r\n");
         return false;
     }
 
@@ -107,7 +107,7 @@ static bool DS1302_BareMetal_SetDefault(const DS1302_Time_t *base)
     bool ok = (chk.year == base->year) && (chk.month == base->month) &&
               (chk.day == base->day) && (dm >= 0) && (dm <= 1);
 
-    printf("[RTC] SET VERIFY %s: %04u-%02u-%02u %02u:%02u:%02u W%u\r\n",
+    DBG_PRINTF("[RTC] SET VERIFY %s: %04u-%02u-%02u %02u:%02u:%02u W%u\r\n",
            ok ? "OK" : "FAIL",
            (unsigned)chk.year, (unsigned)chk.month, (unsigned)chk.day,
            (unsigned)chk.hour, (unsigned)chk.min, (unsigned)chk.sec, (unsigned)chk.week);
@@ -141,7 +141,7 @@ static void DS1302_BareMetal_Test(void)
     OLED_Clear();
 
     DS1302_Init();
-    printf("[RTC] DS1302 init done (pins: PE7=RST PE8=IO PE9=CLK)\r\n");
+    DBG_PRINTF("[RTC] DS1302 init done (pins: PE7=RST PE8=IO PE9=CLK)\r\n");
 
     /* 首次读取, 必要时写入基准时间 */
     bool first_ok = DS1302_ReadTime(&t);
@@ -149,7 +149,7 @@ static void DS1302_BareMetal_Test(void)
 
     if ((DS1302_TEST_FORCE_SET != 0) || uninit)
     {
-        printf("[RTC] %s, write default time %04u-%02u-%02u %02u:%02u:%02u W%u\r\n",
+        DBG_PRINTF("[RTC] %s, write default time %04u-%02u-%02u %02u:%02u:%02u W%u\r\n",
                (DS1302_TEST_FORCE_SET != 0) ? "force set" : (first_ok ? "year too old" : "read failed"),
                (unsigned)base.year, (unsigned)base.month, (unsigned)base.day,
                (unsigned)base.hour, (unsigned)base.min, (unsigned)base.sec, (unsigned)base.week);
@@ -157,12 +157,12 @@ static void DS1302_BareMetal_Test(void)
         if (DS1302_SetTime(&base))
             have_valid = DS1302_BareMetal_SetDefault(&base);
         else
-            printf("[RTC] set time FAILED\r\n");
+            DBG_PRINTF("[RTC] set time FAILED\r\n");
     }
     else
     {
         have_valid = true;
-        printf("[RTC] RTC already running, keep existing time: %04u-%02u-%02u %02u:%02u:%02u W%u\r\n",
+        DBG_PRINTF("[RTC] RTC already running, keep existing time: %04u-%02u-%02u %02u:%02u:%02u W%u\r\n",
                (unsigned)t.year, (unsigned)t.month, (unsigned)t.day,
                (unsigned)t.hour, (unsigned)t.min, (unsigned)t.sec, (unsigned)t.week);
     }
@@ -200,7 +200,7 @@ static void DS1302_BareMetal_Test(void)
             if (!halt_reported)
             {
                 halt_reported = true;
-                printf("[RTC] WARN: second not advancing (%lu reads), clock may be halted\r\n",
+                DBG_PRINTF("[RTC] WARN: second not advancing (%lu reads), clock may be halted\r\n",
                        (unsigned long)halt_cnt);
             }
         }
@@ -215,7 +215,7 @@ static void DS1302_BareMetal_Test(void)
         {
             if (ok)
             {
-                printf("[RTC] read OK: %04u-%02u-%02u %02u:%02u:%02u W%u (RD=%lu ER=%lu)\r\n",
+                DBG_PRINTF("[RTC] read OK: %04u-%02u-%02u %02u:%02u:%02u W%u (RD=%lu ER=%lu)\r\n",
                        (unsigned)t.year, (unsigned)t.month, (unsigned)t.day,
                        (unsigned)t.hour, (unsigned)t.min, (unsigned)t.sec, (unsigned)t.week,
                        (unsigned long)rd_ok, (unsigned long)rd_err);
@@ -340,16 +340,16 @@ static void W25Q64_Test_RunRound(uint32_t round, uint32_t *out_pass, uint32_t *o
         if (cond)                                             \
         {                                                     \
             pass++;                                           \
-            printf("[W25Q] %-26s OK   %s\r\n", name, detail); \
+            DBG_PRINTF("[W25Q] %-26s OK   %s\r\n", name, detail); \
         }                                                     \
         else                                                  \
         {                                                     \
             fail++;                                           \
-            printf("[W25Q] %-26s FAIL %s\r\n", name, detail); \
+            DBG_PRINTF("[W25Q] %-26s FAIL %s\r\n", name, detail); \
         }                                                     \
     } while (0)
 
-    printf("\r\n[W25Q] ===== round %lu, test base = 0x%06lX =====\r\n",
+    DBG_PRINTF("\r\n[W25Q] ===== round %lu, test base = 0x%06lX =====\r\n",
            (unsigned long)round, (unsigned long)W25Q64_TEST_BASE);
 
     /*  T1: JEDEC ID (9Fh), W25Q64 = EF 40 17  */
@@ -416,7 +416,7 @@ static void W25Q64_Test_RunRound(uint32_t round, uint32_t *out_pass, uint32_t *o
     W25Q_CHECK("T9 full sector (4096B)", wr && (sum_w == sum_r),
                "sum_w = 0x%08lX, sum_r = 0x%08lX", (unsigned long)sum_w, (unsigned long)sum_r);
 
-    printf("[W25Q] - round %lu: PASS %lu, FAIL %lu, busy-timeout %lu -\r\n",
+    DBG_PRINTF("[W25Q] - round %lu: PASS %lu, FAIL %lu, busy-timeout %lu -\r\n",
            (unsigned long)round, (unsigned long)pass, (unsigned long)fail,
            (unsigned long)W25Q64_GetBusyTimeoutCount());
 
@@ -436,9 +436,9 @@ static void W25Q64_BareMetal_Test(void)
     OLED_Init();
     OLED_Clear();
 
-    printf("[W25Q] W25Q64_Init() (CS=PA4, CLK=PA5, MISO=PA6, MOSI=PA7)\r\n");
+    DBG_PRINTF("[W25Q] W25Q64_Init() (CS=PA4, CLK=PA5, MISO=PA6, MOSI=PA7)\r\n");
     W25Q64_Init();
-    printf("[W25Q] test region: last 4 sectors, base = 0x%06lX, chip = %lu KB\r\n",
+    DBG_PRINTF("[W25Q] test region: last 4 sectors, base = 0x%06lX, chip = %lu KB\r\n",
            (unsigned long)W25Q64_TEST_BASE, (unsigned long)(W25Q64_FLASH_SIZE / 1024U));
 
     for (;;)
@@ -526,7 +526,7 @@ static bool LFS_RoundTripBig(void)
     err = lfs_file_open(&g_lfs, &file, "/big.bin", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
     if (err != LFS_ERR_OK)
     {
-        printf("[LFS ] big: open(w) err = %d\r\n", err);
+        DBG_PRINTF("[LFS ] big: open(w) err = %d\r\n", err);
         return false;
     }
     for (uint32_t off = 0; off < LFS_TEST_BIG_SIZE; off += LFS_TEST_CHUNK)
@@ -536,7 +536,7 @@ static bool LFS_RoundTripBig(void)
         if (lfs_file_write(&g_lfs, &file, s_test_buf, LFS_TEST_CHUNK) != (lfs_ssize_t)LFS_TEST_CHUNK)
         {
             lfs_file_close(&g_lfs, &file);
-            printf("[LFS ] big: write failed at %lu\r\n", (unsigned long)off);
+            DBG_PRINTF("[LFS ] big: write failed at %lu\r\n", (unsigned long)off);
             return false;
         }
     }
@@ -546,7 +546,7 @@ static bool LFS_RoundTripBig(void)
     err = lfs_file_open(&g_lfs, &file, "/big.bin", LFS_O_RDONLY);
     if (err != LFS_ERR_OK)
     {
-        printf("[LFS ] big: open(r) err = %d\r\n", err);
+        DBG_PRINTF("[LFS ] big: open(r) err = %d\r\n", err);
         return false;
     }
     for (uint32_t off = 0; off < LFS_TEST_BIG_SIZE; off += LFS_TEST_CHUNK)
@@ -554,7 +554,7 @@ static bool LFS_RoundTripBig(void)
         if (lfs_file_read(&g_lfs, &file, s_test_rd, LFS_TEST_CHUNK) != (lfs_ssize_t)LFS_TEST_CHUNK)
         {
             lfs_file_close(&g_lfs, &file);
-            printf("[LFS ] big: read failed at %lu\r\n", (unsigned long)off);
+            DBG_PRINTF("[LFS ] big: read failed at %lu\r\n", (unsigned long)off);
             return false;
         }
         sum_r ^= Test_Checksum(s_test_rd, LFS_TEST_CHUNK);
@@ -562,7 +562,7 @@ static bool LFS_RoundTripBig(void)
     lfs_file_close(&g_lfs, &file);
 
     if (sum_w != sum_r)
-        printf("[LFS ] big: sum mismatch 0x%08lX vs 0x%08lX\r\n",
+        DBG_PRINTF("[LFS ] big: sum mismatch 0x%08lX vs 0x%08lX\r\n",
                (unsigned long)sum_w, (unsigned long)sum_r);
 
     return (sum_w == sum_r);
@@ -578,14 +578,14 @@ static bool LFS_RemountAndVerify(void)
     err = LittleFS_Unmount();
     if (err != LFS_ERR_OK)
     {
-        printf("[LFS ] remount: unmount err = %d\r\n", err);
+        DBG_PRINTF("[LFS ] remount: unmount err = %d\r\n", err);
         return false;
     }
 
     err = LittleFS_Mount();
     if (err != LFS_ERR_OK)
     {
-        printf("[LFS ] remount: mount err = %d\r\n", err);
+        DBG_PRINTF("[LFS ] remount: mount err = %d\r\n", err);
         return false;
     }
 
@@ -619,28 +619,28 @@ static void LFS_BareMetal_Test(void)
         if (cond)                                             \
         {                                                     \
             pass++;                                           \
-            printf("[LFS ] %-28s OK   %s\r\n", name, detail); \
+            DBG_PRINTF("[LFS ] %-28s OK   %s\r\n", name, detail); \
         }                                                     \
         else                                                  \
         {                                                     \
             fail++;                                           \
-            printf("[LFS ] %-28s FAIL %s\r\n", name, detail); \
+            DBG_PRINTF("[LFS ] %-28s FAIL %s\r\n", name, detail); \
         }                                                     \
     } while (0)
 
-    printf("\r\n[LFS ] W25Q64_Init()...\r\n");
+    DBG_PRINTF("\r\n[LFS ] W25Q64_Init()...\r\n");
     W25Q64_Init();
 
     err = LittleFS_Init();
     if (err != 0)
     {
-        printf("[LFS ] init failed, err = %d, stop here\r\n", err);
+        DBG_PRINTF("[LFS ] init failed, err = %d, stop here\r\n", err);
         OLED_Write_String(0, 16, "INIT FAIL", &Font_16);
         for (;;)
             ;
     }
 
-    printf("[LFS ] geometry: block = %lu B x %lu, total = %lu KB\r\n",
+    DBG_PRINTF("[LFS ] geometry: block = %lu B x %lu, total = %lu KB\r\n",
            (unsigned long)g_lfs_config.block_size, (unsigned long)g_lfs_config.block_count,
            (unsigned long)(g_lfs_config.block_size / 1024U * g_lfs_config.block_count));
 
@@ -648,7 +648,7 @@ static void LFS_BareMetal_Test(void)
      * 没烧录过资源时, 这里会逐项打印 MISSING(最多 11+32 行), 属正常现象:
      * 自检缺失只影响字库/图片的读取, 运行数据(/data)照样能读写。 */
     err = Asset_Init();
-    printf("[LFS ] asset init: %s (err = %d), checked = %lu, missing = %lu\r\n",
+    DBG_PRINTF("[LFS ] asset init: %s (err = %d), checked = %lu, missing = %lu\r\n",
            (err == ASSET_OK) ? "OK" : ((err == ASSET_ERR_MISSING) ? "NO RES" : "FAIL"),
            err, (unsigned long)Asset_CheckedCount(), (unsigned long)Asset_MissingCount());
 
@@ -835,11 +835,11 @@ static void LFS_BareMetal_Test(void)
 
     /*  空间使用情况  */
     used = lfs_fs_size(&g_lfs);
-    printf("[LFS ] - used blocks = %ld / %lu (%.1f%%), busy-timeout = %lu -\r\n",
+    DBG_PRINTF("[LFS ] - used blocks = %ld / %lu (%.1f%%), busy-timeout = %lu -\r\n",
            (long)used, (unsigned long)g_lfs_config.block_count,
            ((double)used * 100.0) / (double)g_lfs_config.block_count,
            (unsigned long)W25Q64_GetBusyTimeoutCount());
-    printf("[LFS ] - result: PASS %lu, FAIL %lu -\r\n",
+    DBG_PRINTF("[LFS ] - result: PASS %lu, FAIL %lu -\r\n",
            (unsigned long)pass, (unsigned long)fail);
 
 #undef LFS_CHECK
@@ -860,7 +860,7 @@ static void LFS_BareMetal_Test(void)
         OLED_Write_String(0, 32, line, &Font_16);
 
         if (n != 512)
-            printf("[LFS ] periodic re-read /t1.bin returned %d\r\n", n);
+            DBG_PRINTF("[LFS ] periodic re-read /t1.bin returned %d\r\n", n);
 
         delay_ms(5000);
     }
@@ -892,9 +892,9 @@ static void LFS_BareMetal_Test(void)
 //     OLED_Write_String(0, 16, "LON ---         ", &Font_16);
 
 //     ATGM336H_Init();
-//     printf("[GNSS] ATGM336H init: USART3 @ %u-8N1, PB10=TX PB11=RX\r\n",
+//     DBG_PRINTF("[GNSS] ATGM336H init: USART3 @ %u-8N1, PB10=TX PB11=RX\r\n",
 //            (unsigned)USART3_BAUD);
-//     printf("[GNSS] waiting for $xxRMC; report on position change\r\n");
+//     DBG_PRINTF("[GNSS] waiting for $xxRMC; report on position change\r\n");
 
 //     for (;;)
 //     {
@@ -919,7 +919,7 @@ static void LFS_BareMetal_Test(void)
 //                 snprintf(buf, sizeof(buf), "LON %c%.5f", (info.longitude >= 0.0f) ? 'E' : 'W', (double)lo);
 //                 OLED_Write_String(0, 16, buf, &Font_16);
 
-//                 printf("[GNSS] LAT=%.5f LON=%.5f\r\n",
+//                 DBG_PRINTF("[GNSS] LAT=%.5f LON=%.5f\r\n",
 //                        (double)info.latitude, (double)info.longitude);
 //             }
 //             else
@@ -933,7 +933,7 @@ static void LFS_BareMetal_Test(void)
 //             if (info.valid != last_valid)
 //             {
 //                 last_valid = info.valid;
-//                 printf("[GNSS] %s\r\n", info.valid ? "fix acquired" : "fix lost");
+//                 DBG_PRINTF("[GNSS] %s\r\n", info.valid ? "fix acquired" : "fix lost");
 //             }
 //         }
 
@@ -955,7 +955,7 @@ static void LFS_BareMetal_Test(void)
 //             if (no_frame_sec == ATGM_TEST_NO_DATA_SEC ||
 //                 (no_frame_sec > ATGM_TEST_NO_DATA_SEC && (no_frame_sec % 30U) == 0U))
 //             {
-//                 printf("[GNSS] no $xxRMC for %us -- check module TXD -> PB11, common GND, "
+//                 DBG_PRINTF("[GNSS] no $xxRMC for %us -- check module TXD -> PB11, common GND, "
 //                        "baud=%u, and antenna placement\r\n",
 //                        (unsigned)no_frame_sec, (unsigned)USART3_BAUD);
 //             }
@@ -1011,30 +1011,30 @@ static void LCD_Touch_BareMetal_Test(void)
     uint32_t points = 0;
     int err;
 
-    printf("\r\n[TP  ] LCD + touch test start\r\n");
+    DBG_PRINTF("\r\n[TP  ] LCD + touch test start\r\n");
 
     /* ---- 1. 初始化: LCD(SPI3 + 背光) -> 资源层(校准参数的存放处) -> 触摸 ---- */
     LCD_Init();
     LCD_Fill_Color(0U, 0U, WIDTH - 1U, HEIGHT - 1U, COLOR_BLACK);
 
     err = Asset_Init(); /* 内部会初始化 W25Q64 并挂载 littlefs */
-    printf("[TP  ] asset init: %s (err = %d), checked = %lu, missing = %lu\r\n",
+    DBG_PRINTF("[TP  ] asset init: %s (err = %d), checked = %lu, missing = %lu\r\n",
            (err == ASSET_OK) ? "OK" : ((err == ASSET_ERR_MISSING) ? "NO RES" : "FAIL"),
            err, (unsigned long)Asset_CheckedCount(), (unsigned long)Asset_MissingCount());
 
     if (!Touch_Init())
     {
-        printf("[TP  ] FAIL: touch init failed (SPI3 not ready?)\r\n");
+        DBG_PRINTF("[TP  ] FAIL: touch init failed (SPI3 not ready?)\r\n");
         for (;;)
             ;
     }
 
     /* ---- 2. 自检信息 ---- */
-    printf("[TP  ] PENIRQ idle = %s\r\n",
+    DBG_PRINTF("[TP  ] PENIRQ idle = %s\r\n",
            Touch_IsPressed() ? "LOW  (kept pressed? check PENIRQ wiring / pull-up)" : "HIGH (ok)");
 
     if (!Asset_Ready())
-        printf("[TP  ] WARN: littlefs not ready -> calibration can NOT be saved "
+        DBG_PRINTF("[TP  ] WARN: littlefs not ready -> calibration can NOT be saved "
                "(run BM_TEST_MODULE_LFS once to mount/format W25Q64)\r\n");
 
     Touch_SetPoints_RegisterCallback(LCD_Touch_DrawTarget);
@@ -1044,16 +1044,16 @@ static void LCD_Touch_BareMetal_Test(void)
 
     if (calibration_params.calibrated)
     {
-        printf("[TP  ] calibration loaded: kx=%.4f ky=%.4f bx=%d by=%d\r\n",
+        DBG_PRINTF("[TP  ] calibration loaded: kx=%.4f ky=%.4f bx=%d by=%d\r\n",
                calibration_params.kx, calibration_params.ky,
                (int)calibration_params.bx, (int)calibration_params.by);
     }
     else
     {
         /* 首次上电(或没烧录资源, 参数存不进去): 先依次点屏幕上出现的 5 个十字 */
-        printf("[TP  ] no calibration data, click the 5 crosses on the panel\r\n");
+        DBG_PRINTF("[TP  ] no calibration data, click the 5 crosses on the panel\r\n");
         if (!Touch_Calibrate())
-            printf("[TP  ] calibration NOT saved (littlefs ready?) -- valid in RAM only\r\n");
+            DBG_PRINTF("[TP  ] calibration NOT saved (littlefs ready?) -- valid in RAM only\r\n");
     }
 
     /* ---- 3. 触摸测试: 手指点到哪里, 就在哪里留下一个红点 ---- */
@@ -1065,7 +1065,7 @@ static void LCD_Touch_BareMetal_Test(void)
         LCD_Write_String(60U, (uint16_t)(HEIGHT - 22U), "TOUCH THE PANEL", COLOR_GRAY, COLOR_BLACK, &Font_16B);
     }
 
-    printf("[TP  ] touch the panel: a red dot is drawn where you press\r\n");
+    DBG_PRINTF("[TP  ] touch the panel: a red dot is drawn where you press\r\n");
 
     for (;;)
     {
@@ -1102,7 +1102,7 @@ static void LCD_Touch_BareMetal_Test(void)
         points++;
         LCD_Touch_Mark(sx, sy, COLOR_RED);
 
-        printf("[TP  ] %lu: raw(%4u,%4u) -> (%3u,%3u)%s\r\n",
+        DBG_PRINTF("[TP  ] %lu: raw(%4u,%4u) -> (%3u,%3u)%s\r\n",
                (unsigned long)points, (unsigned)tp.x, (unsigned)tp.y,
                (unsigned)sx, (unsigned)sy,
                calibration_params.calibrated ? "" : " (raw, uncalibrated)");
@@ -1114,7 +1114,7 @@ void BareMetal_Module_Test(void)
     /* 裸机分支的 main() 不会调用 Board_Init(), USART2 需要在这里初始化,
      * 否则 printf 没有任何输出(调度器未运行时 fputc 自动退化为轮询发送) */
     Usart2_Debug_Init();
-    printf("\r\n[BARE] bare-metal module test start, build %s %s\r\n", __DATE__, __TIME__);
+    DBG_PRINTF("\r\n[BARE] bare-metal module test start, build %s %s\r\n", __DATE__, __TIME__);
 
     switch (BM_TEST_MODULE)
     {

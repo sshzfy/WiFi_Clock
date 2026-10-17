@@ -2,6 +2,7 @@
 #define __KEY_TASK_H__
 
 #include "main.h"
+#include "BuildConfig.h"
 #include "Key.h"
 #include "Task_Common.h"
 #include "Task_Config.h"

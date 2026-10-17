@@ -240,7 +240,7 @@ static void LCD_DMA_Transmit(const uint8_t *src, uint32_t halfwords, bool inc)
             if (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TEIF5) != RESET)
             {
                 DMA_Cmd(DMA1_Stream5, DISABLE);
-                printf("[ERR]LCD_DMA_Transmit: DMA transfer error\r\n");
+                DBG_PRINTF("[ERR]LCD_DMA_Transmit: DMA transfer error\r\n");
                 return; // 传输错误
             }
         }
@@ -285,7 +285,7 @@ static bool LCD_DMA_WaitDone(void)
         if (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TEIF5) != RESET)
         {
             DMA_Cmd(DMA1_Stream5, DISABLE);
-            printf("[ERR]DMA transfer error\r\n");
+            DBG_PRINTF("[ERR]DMA transfer error\r\n");
             return false;
         }
     }
@@ -320,11 +320,11 @@ static bool LCD_PicBuf_Init(void)
             vPortFree(s_picbuf[1]);
             s_picbuf[1] = NULL;
         }
-        printf("[LCD ] ping-pong buffer alloc failed, fallback to single buffer\r\n");
+        DBG_PRINTF("[LCD ] ping-pong buffer alloc failed, fallback to single buffer\r\n");
         return false;
     }
 
-    printf("[LCD ] ping-pong buffer ready: %u x 2 = %u bytes\r\n",
+    DBG_PRINTF("[LCD ] ping-pong buffer ready: %u x 2 = %u bytes\r\n",
            (unsigned)((uint32_t)PIC_BLOCK_PIXEL * 2U), (unsigned)((uint32_t)PIC_BLOCK_PIXEL * 4U));
 
     return true;
@@ -669,7 +669,7 @@ static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
 
     if (prof_full)
     {
-        printf("[PROF] full-screen image %ux%u, %u bytes, %s, %u us\r\n",
+        DBG_PRINTF("[PROF] full-screen image %ux%u, %u bytes, %s, %u us\r\n",
                (unsigned)w, (unsigned)h, (unsigned)(total_px * 2U),
                double_buf ? "ping-pong" : "single", (unsigned)Prof_Us(prof_t0));
     }
@@ -837,7 +837,7 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, ui
         return;
 
     if (s_renderbuf_busy)
-        printf("[LCD] WARN: render buffer busy (graphics flush in progress)\r\n");
+        DBG_PRINTF("[LCD] WARN: render buffer busy (graphics flush in progress)\r\n");
 
     uint16_t size = font->size;
     const char *p = str;

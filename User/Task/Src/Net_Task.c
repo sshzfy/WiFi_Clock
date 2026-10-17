@@ -9,13 +9,13 @@ static void Net_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    printf("[NET] Net_Task start\r\n");
+    DBG_PRINTF("[NET] Net_Task start\r\n");
 
     uint32_t sntp_cnt, wifi_cnt, weathercnt; // 三个周期计数器, 1s心跳时递减, 0时触发对应服务
     bool wifi_up;                            // 是否连接成功
     bool wifi_sleeping = false;              // 模组当前是否处于省电档位(仅本任务访问)
 
-    printf("[NET] Init Start\r\n");
+    DBG_PRINTF("[NET] Init Start\r\n");
 
     /* 注: WiFi 凭据由 uiTask 在开机时用 WiFi_Config_Load() 取回(Asset 层只有 uiTask 访问),
      * 这里直接使用 App 层已就绪的 g_ssid/g_password */
@@ -64,7 +64,7 @@ static void Net_Task(void *pvParameters)
             sntp_cnt = 1U;
             weathercnt = 1U;
 
-            printf("[NET] LowPower exit, reset update\r\n");
+            DBG_PRINTF("[NET] LowPower exit, reset update\r\n");
         }
 
         /* 低功耗期间: 冻结周期计数器, 不执行任何 update */
@@ -74,14 +74,14 @@ static void Net_Task(void *pvParameters)
         /* 键盘刚提交了新定位: 不必等满天气周期, 立即按新定位取一次天气 */
         if (bits & EV_LOCATION_CRED)
         {
-            printf("[NET] location updated, refresh weather now\r\n");
+            DBG_PRINTF("[NET] location updated, refresh weather now\r\n");
             weathercnt = 1U;
         }
 
         /* 键盘刚提交了新凭据: 用新凭据强制重连一次(落盘由 uiTask 负责) */
         if (bits & EV_WIFI_CRED)
         {
-            printf("[NET] WiFi credentials updated, reconnect now\r\n");
+            DBG_PRINTF("[NET] WiFi credentials updated, reconnect now\r\n");
 
             bool ok = Service_WiFi_Connect();
             wifi_up = ok;

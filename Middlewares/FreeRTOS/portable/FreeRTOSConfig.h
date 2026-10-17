@@ -23,7 +23,7 @@
 #define configUSE_MUTEXES                                           1
 /* LCD 与触摸屏共用 SPI3, LCD 侧的总线锁会被嵌套申请
  * (ST7789_Draw_Picture → ST7789_DrawImage_Stream → ST7789_SetWindow),
- * 所以需要递归互斥量。 */
+ * 需要递归互斥量。 */
 #define configUSE_RECURSIVE_MUTEXES                                 1
 #define configUSE_COUNTING_SEMAPHORES                               0
 #define configUSE_ALTERNATIVE_API                                   0 /* Deprecated! */
@@ -41,11 +41,7 @@
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION                             0
 #define configSUPPORT_DYNAMIC_ALLOCATION                            1
-/* 任务栈合计约 13.6KB(ui 4K + net 4K + dht22 2K + light 2K + idle 0.5K),
- * 原来的 95KB 长期闲置大半却占掉近 20% 的 SRAM。资源迁到 W25Q64 后
- * 静态 RAM 需求上升(资源层句柄 + 字模缓冲 + 图片乒乓缓冲), 这里下调到
- * 88KB, 仍留出约 74KB 空闲堆, 足够图片乒乓缓冲的 15KB 分配。 */
-#define configTOTAL_HEAP_SIZE                                       1024 * 88
+#define configTOTAL_HEAP_SIZE                                       1024 * 42
 #define configAPPLICATION_ALLOCATED_HEAP                            0
 #define configSTACK_ALLOCATION_FROM_SEPARATE_HEAP                   0
 
@@ -59,7 +55,9 @@
 
 /* Run time and task stats gathering related definitions. */
 #define configGENERATE_RUN_TIME_STATS                       0
-#define configUSE_TRACE_FACILITY                            0
+/* 1 = 提供 TaskStatus_t / uxTaskGetSystemState()，内存监测任务(Task_Monitor.c)
+ * 靠它一次性取回所有任务的名称/优先级/状态/栈水位。关闭会导致监测功能编译失败。 */
+#define configUSE_TRACE_FACILITY                            1
 #define configUSE_STATS_FORMATTING_FUNCTIONS                0
 
 /* Co-routine related definitions. */

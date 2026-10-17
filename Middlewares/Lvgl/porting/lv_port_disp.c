@@ -13,6 +13,7 @@
  *      所以 lv_conf.h 里 LV_COLOR_16_SWAP 保持 0, 这里不需要做交换。
  */
 #include "lv_port_disp.h"
+#include "BuildConfig.h"
 #include "LCD.h"
 
 /*********************
@@ -70,13 +71,11 @@ void lv_port_disp_init(void)
 
     if (lv_disp_drv_register(&s_disp_drv) == NULL)
     {
-        /* 注册失败基本只有一个原因: LVGL 的内存池太小(池子在 CCM, 见 lv_conf.h 的
-         * LV_MEM_ADR)。这里只报出来, 不挂死 —— 但后面的界面肯定不正常。 */
-        printf("[UI] ERROR: lv_disp_drv_register FAILED, LVGL mem pool too small?\r\n");
+        DBG_PRINTF("[UI] ERROR: lv_disp_drv_register FAILED, LVGL mem pool too small?\r\n");
         return;
     }
 
-    printf("[UI] LVGL disp ready: %dx%d, draw buf %lu px\r\n",
+    DBG_PRINTF("[UI] LVGL disp ready: %dx%d, draw buf %lu px\r\n",
            (int)DISP_HOR_RES, (int)DISP_VER_RES, (unsigned long)capacity_px);
 }
 

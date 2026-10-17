@@ -7,22 +7,45 @@
  * FreeRTOS 开关:
  *   1 = 使用FreeRTOS调度
  *   0 = 裸机,方便测试模块完成后加入FreeRTOS调度
- *
- * BM_TEST_MODULE (only used when USE_FREERTOS == 0):
- *   BM_TEST_MODULE_OLED   = OLED (SSD1306 0.96, soft I2C PB6=SCL/PB7=SDA)
- *   BM_TEST_MODULE_LIGHT  = 光敏电阻 (DO: PC1/EXTI1; AO: PC0/ADC1_IN10)
- *   BM_TEST_MODULE_DS1302 = DS1302 外部RTC (PE7=RST/PE8=IO/PE9=CLK)
- *   BM_TEST_MODULE_W25Q64 = W25Q64 SPI Flash 裸驱动 (CS=PA4/CLK=PA5/MISO=PA6/MOSI=PA7)
- *   BM_TEST_MODULE_LFS    = littlefs 文件系统 (依赖 W25Q64)
- *   BM_TEST_MODULE_GNSS   = ATGM336H 北斗+GPS定位 (USART3 @9600, PB10=TX/PB11=RX)
- *   BM_TEST_MODULE_TOUCH  = LCD + 触摸屏 (SPI3 共用: LCD CS=PE2, 触摸 CS=PE0/PENIRQ=PE1)
- *                           未校准时先走五点校准, 参数存 W25Q64 的 /data/touch_cal.bin
- * ------------------------------------------------------------
- * 建议测试顺序: W25Q64 -> LFS。底层驱动不通时文件系统必然失败,
- * 先跑 W25Q64 可以把"硬件/SPI/时序问题"与"文件系统问题"分开定位。
  * ============================================================ */
 
 #define USE_FREERTOS        1
+
+/* ============================================================
+ * 多色彩支持(默认关闭,仅使用默认的几种颜色)
+ * ------------------------------------------------------------
+ * 纯黑、纯白、中灰、深天蓝、薰衣草淡紫
+ * ============================================================ */
+
+#define MULTICOLLOR_SUPPORT        0
+
+/* ============================================================
+ * Debug switches
+ * 串口调试打印总开关
+ * ------------------------------------------------------------
+ * DEBUG_SUPPORT:
+ *   0 = 正式固件。DBG_PRINTF() 编译为空, USART2 不初始化,
+ *       printf / fputc / DMA / 调试互斥量都不参与链接,
+ *       不占 Flash/RAM, 也不占用 PA2/PA3。
+ *   1 = 调试固件。DBG_PRINTF() -> printf -> USART2(PA2=TX/PA3=RX),
+ *       115200-8N1, 整行经 DMA 发送。
+ *
+ * 只影响 DBG_PRINTF 这类调试输出; snprintf/sprintf 等纯格式化
+ * 函数不受影响, 功能代码保持原样。
+ *
+ * 注意: 资源烧录固件(RESOURCE_PROVISION=1)和裸机测试固件
+ * (USE_FREERTOS=0)的进度也走 DBG_PRINTF, 需要串口日志时把
+ * 这里改成 1 再编译。
+ * ============================================================ */
+
+#define DEBUG_SUPPORT        0
+
+#if (DEBUG_SUPPORT == 1)
+#include <stdio.h>
+#define DBG_PRINTF(...)      printf(__VA_ARGS__)
+#else
+#define DBG_PRINTF(...)      ((void)0)
+#endif
 
 /* ============================================================
  * 资源存储开关 (字库/图片已迁移到外部 W25Q64)
@@ -72,10 +95,7 @@
  *   0 = 正常使用。开机先读 /data/touch_cal.bin:
  *       读到了  → 直接用, 不再校准(日志: calibration loaded: kx=... )
  *       没读到  → 要求现场点 5 个十字, 成功后写回 Flash, 之后开机就不用了
- *   1 = 强制重新校准。每次上电都清掉内存里的参数重新走 5 点校准,
- *       用于换屏、或调整 Touch.h 的 TOUCH_CMD_SCREEN_X/Y 之后。
- *       注意: 置 1 后若这次没点完(超时/漏点), 参数会停留在"未校准",
- *             此时触摸按原始坐标等比折算, 位置不准但不会完全失灵。
+ *   1 = 强制重新校准。每次上电都清掉内存里的参数重新走 5 点校准
  * ============================================================ */
 
 #define TOUCH_FORCE_CALIBRATE        0

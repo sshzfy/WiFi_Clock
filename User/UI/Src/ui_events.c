@@ -7,6 +7,7 @@
 // 需要把下面两个函数的实现重新补回来。
 
 #include "ui.h"
+#include "BuildConfig.h"
 #include "App.h"
 #include "Task_Common.h"
 
@@ -32,13 +33,13 @@ void Get_WiFiInfo(lv_event_t *e)
 		 * 不要静默退回主页(用户会以为"确认键坏了") */
 		lv_label_set_text(ui_Label1, "SSID required");
 		lv_obj_set_style_text_color(ui_Label1, lv_color_hex(0xCC0000), LV_PART_MAIN | LV_STATE_DEFAULT);
-		printf("[UI] WiFi SSID is empty, input ignored\r\n");
+		DBG_PRINTF("[UI] WiFi SSID is empty, input ignored\r\n");
 		return;
 	}
 
 	WiFi_Config_Set(wifi_ssid, (wifi_password != NULL) ? wifi_password : "");
 
-	printf("[UI] WiFi config submitted: ssid=%s, password len=%u\r\n",
+	DBG_PRINTF("[UI] WiFi config submitted: ssid=%s, password len=%u\r\n",
 		   g_ssid, (unsigned)strlen(g_password));
 
 	xEventGroupSetBits(Task_Events(), EV_WIFI_CRED);
@@ -61,13 +62,13 @@ void Get_LocationInfo(lv_event_t *e)
 	{
 		lv_label_set_text(ui_Label4, "location required");
 		lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xCC0000), LV_PART_MAIN | LV_STATE_DEFAULT);
-		printf("[UI] location is empty, input ignored\r\n");
+		DBG_PRINTF("[UI] location is empty, input ignored\r\n");
 		return;
 	}
 
 	Location_Config_Set(location);
 
-	printf("[UI] location submitted: %s\r\n", g_location);
+	DBG_PRINTF("[UI] location submitted: %s\r\n", g_location);
 
 	/* 让 netTask 立刻按新定位取一次天气: 否则要等满一个天气周期(1h)才生效 */
 	xEventGroupSetBits(Task_Events(), EV_LOCATION_CRED);

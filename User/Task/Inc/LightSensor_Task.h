@@ -2,6 +2,7 @@
 #define __LIGHT_SENSOR_TASK_H__
 
 #include "main.h"
+#include "BuildConfig.h"
 #include "Task_Common.h"
 #include "Task_Config.h"
 #include "Light_Sensor.h"

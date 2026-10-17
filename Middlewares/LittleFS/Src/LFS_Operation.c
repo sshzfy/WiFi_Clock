@@ -1,4 +1,5 @@
 #include "lfs_operation.h"
+#include "BuildConfig.h"
 
 /* ================ static 函数 ================ */
 static void put_u16(uint8_t *p, uint16_t v);
@@ -47,7 +48,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
 
     if ((path == NULL) || (data == NULL) || (w == 0U) || (h == 0U))
     {
-        printf("SaveImage: invalid argument\n");
+        DBG_PRINTF("SaveImage: invalid argument\n");
         return LFS_ERR_INVAL;
     }
 
@@ -57,7 +58,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
     if (err != LFS_ERR_OK)
     {
-        printf("SaveImage: lfs_file_open failed, err = %d\n", err);
+        DBG_PRINTF("SaveImage: lfs_file_open failed, err = %d\n", err);
         return err;
     }
 
@@ -67,7 +68,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
     ret = lfs_file_write(&g_lfs, &file, header, HEADER_SIZE);
     if (ret != (lfs_ssize_t)HEADER_SIZE)
     {
-        printf("SaveImage: write header failed, ret = %d\n", (int)ret);
+        DBG_PRINTF("SaveImage: write header failed, ret = %d\n", (int)ret);
         lfs_file_close(&g_lfs, &file);
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }
@@ -76,7 +77,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
     ret = lfs_file_write(&g_lfs, &file, data, data_size);
     if (ret != (lfs_ssize_t)data_size)
     {
-        printf("SaveImage: write data failed, ret = %d, want = %u\n", (int)ret, (unsigned)data_size);
+        DBG_PRINTF("SaveImage: write data failed, ret = %d, want = %u\n", (int)ret, (unsigned)data_size);
         lfs_file_close(&g_lfs, &file);
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }
@@ -85,7 +86,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
     err = lfs_file_close(&g_lfs, &file);
     if (err != LFS_ERR_OK)
     {
-        printf("SaveImage: lfs_file_close failed, err = %d\n", err);
+        DBG_PRINTF("SaveImage: lfs_file_close failed, err = %d\n", err);
         return err;
     }
 
@@ -117,7 +118,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
 
     if ((path == NULL) || (w == NULL) || (h == NULL) || (buf == NULL))
     {
-        printf("LoadImage: invalid argument\n");
+        DBG_PRINTF("LoadImage: invalid argument\n");
         return LFS_ERR_INVAL;
     }
 
@@ -125,7 +126,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY);
     if (err != LFS_ERR_OK)
     {
-        printf("LoadImage: lfs_file_open failed, err = %d\n", err);
+        DBG_PRINTF("LoadImage: lfs_file_open failed, err = %d\n", err);
         return err;
     }
 
@@ -133,7 +134,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     ret = lfs_file_read(&g_lfs, &file, header, HEADER_SIZE);
     if (ret != (lfs_ssize_t)HEADER_SIZE)
     {
-        printf("LoadImage: read header failed, ret = %d\n", (int)ret);
+        DBG_PRINTF("LoadImage: read header failed, ret = %d\n", (int)ret);
         lfs_file_close(&g_lfs, &file);
         return LFS_ERR_INVAL;
     }
@@ -145,7 +146,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     if ((width == 0U) || (height == 0U) ||
         ((uint32_t)width * (uint32_t)height > IMAGE_PIXEL_MAX))
     {
-        printf("LoadImage: bad header, w = %u, h = %u\n", (unsigned)width, (unsigned)height);
+        DBG_PRINTF("LoadImage: bad header, w = %u, h = %u\n", (unsigned)width, (unsigned)height);
         lfs_file_close(&g_lfs, &file);
         return LFS_ERR_INVAL;
     }
@@ -154,7 +155,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     data_size = (uint32_t)width * (uint32_t)height * IMAGE_BYTES_PER_PIXEL;
     if (data_size > buf_size)
     {
-        printf("LoadImage: data_size(%u) > buf_size(%u)\n", (unsigned)data_size, (unsigned)buf_size);
+        DBG_PRINTF("LoadImage: data_size(%u) > buf_size(%u)\n", (unsigned)data_size, (unsigned)buf_size);
         lfs_file_close(&g_lfs, &file);
         return LFS_ERR_NOSPC;
     }
@@ -163,7 +164,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     ret = lfs_file_read(&g_lfs, &file, buf, data_size);
     if (ret != (lfs_ssize_t)data_size)
     {
-        printf("LoadImage: read data failed, ret = %d, want = %u\n", (int)ret, (unsigned)data_size);
+        DBG_PRINTF("LoadImage: read data failed, ret = %d, want = %u\n", (int)ret, (unsigned)data_size);
         lfs_file_close(&g_lfs, &file);
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }
@@ -192,7 +193,7 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
 
     if ((path == NULL) || (data == NULL) || (size == 0U))
     {
-        printf("SaveFont: invalid argument\n");
+        DBG_PRINTF("SaveFont: invalid argument\n");
         return LFS_ERR_INVAL;
     }
 
@@ -200,7 +201,7 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
     if (err != LFS_ERR_OK)
     {
-        printf("SaveFont: lfs_file_open failed, err = %d\n", err);
+        DBG_PRINTF("SaveFont: lfs_file_open failed, err = %d\n", err);
         return err;
     }
 
@@ -208,7 +209,7 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
     ret = lfs_file_write(&g_lfs, &file, data, size);
     if (ret != (lfs_ssize_t)size)
     {
-        printf("SaveFont: write failed, ret = %d, want = %u\n", (int)ret, (unsigned)size);
+        DBG_PRINTF("SaveFont: write failed, ret = %d, want = %u\n", (int)ret, (unsigned)size);
         lfs_file_close(&g_lfs, &file);
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }
@@ -216,7 +217,7 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
     err = lfs_file_close(&g_lfs, &file);
     if (err != LFS_ERR_OK)
     {
-        printf("SaveFont: lfs_file_close failed, err = %d\n", err);
+        DBG_PRINTF("SaveFont: lfs_file_close failed, err = %d\n", err);
         return err;
     }
 
@@ -244,7 +245,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
 
     if ((path == NULL) || (buf == NULL))
     {
-        printf("LoadFont: invalid argument\n");
+        DBG_PRINTF("LoadFont: invalid argument\n");
         return LFS_ERR_INVAL;
     }
 
@@ -252,7 +253,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY);
     if (err != LFS_ERR_OK)
     {
-        printf("LoadFont: lfs_file_open failed, err = %d\n", err);
+        DBG_PRINTF("LoadFont: lfs_file_open failed, err = %d\n", err);
         return err;
     }
 
@@ -260,7 +261,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
     size = lfs_file_size(&g_lfs, &file);
     if (size > buf_size)
     {
-        printf("LoadFont: size > buf_size, size = %u, buf_size = %u\n",
+        DBG_PRINTF("LoadFont: size > buf_size, size = %u, buf_size = %u\n",
                (unsigned)size, (unsigned)buf_size);
         lfs_file_close(&g_lfs, &file);
         return LFS_ERR_NOSPC;
@@ -270,7 +271,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
     ret = lfs_file_read(&g_lfs, &file, buf, size);
     if (ret != (lfs_ssize_t)size)
     {
-        printf("LoadFont: read failed, ret = %d, want = %u\n", (int)ret, (unsigned)size);
+        DBG_PRINTF("LoadFont: read failed, ret = %d, want = %u\n", (int)ret, (unsigned)size);
         lfs_file_close(&g_lfs, &file);
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }

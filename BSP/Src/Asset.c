@@ -139,7 +139,7 @@ static void Asset_OpenFonts(void)
         else
         {
             s_open[i] = false;
-            printf("[ASSET] open %s failed, err = %d\r\n", s_fontFiles[i].path, err);
+            DBG_PRINTF("[ASSET] open %s failed, err = %d\r\n", s_fontFiles[i].path, err);
         }
         s_pos[i] = ASSET_POS_INVALID;
     }
@@ -171,14 +171,14 @@ static void Asset_SelfCheck(void)
             /* 文件存在但大小不正确 */
             if (err == LFS_ERR_OK)
             {
-                printf("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
+                DBG_PRINTF("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
                        s_fontFiles[i].path, (unsigned long)info.size,
                        (unsigned long)s_fontFiles[i].size);
             }
             /* 文件不存在 */
             else
             {
-                printf("[ASSET] MISSING %s err=%d\r\n", s_fontFiles[i].path, err);
+                DBG_PRINTF("[ASSET] MISSING %s err=%d\r\n", s_fontFiles[i].path, err);
             }
         }
     }
@@ -200,12 +200,12 @@ static void Asset_SelfCheck(void)
             /* 文件存在但大小不正确 */
             if (err == LFS_ERR_OK)
             {
-                printf("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
+                DBG_PRINTF("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
                        im->path, (unsigned long)info.size, (unsigned long)want);
             }
             /* 文件不存在 */
             else
-                printf("[ASSET] MISSING %s err=%d\r\n", im->path, err);
+                DBG_PRINTF("[ASSET] MISSING %s err=%d\r\n", im->path, err);
         }
         /* 掩码只有 32 位, 超出范围的图片不记掩码 */
         else if (i < ASSET_IMAGE_MASK_BITS)
@@ -296,22 +296,22 @@ int Asset_Init(void)
     uint32_t jedec = W25Q64_ReadJedecId();
     if (jedec != 0xEF4017U)
     {
-        printf("[ASSET] ERROR: W25Q64 not detected (jedec = 0x%06lX)\r\n", (unsigned long)jedec);
-        printf("[ASSET] fonts/images/data all unavailable\r\n");
+        DBG_PRINTF("[ASSET] ERROR: W25Q64 not detected (jedec = 0x%06lX)\r\n", (unsigned long)jedec);
+        DBG_PRINTF("[ASSET] fonts/images/data all unavailable\r\n");
         return ASSET_ERR_IO;
     }
-    printf("[ASSET] W25Q64 jedec = 0x%06lX\r\n", (unsigned long)jedec);
+    DBG_PRINTF("[ASSET] W25Q64 jedec = 0x%06lX\r\n", (unsigned long)jedec);
 
     /* 2. 文件系统: 只挂载(幂等), 失败不格式化 */
     int err = LittleFS_Mount();
     if (err != LFS_ERR_OK)
     {
-        printf("[ASSET] ERROR: littlefs mount failed, err = %d\r\n", err);
-        printf("[ASSET] flash the provision firmware (RESOURCE_PROVISION=1) first\r\n");
+        DBG_PRINTF("[ASSET] ERROR: littlefs mount failed, err = %d\r\n", err);
+        DBG_PRINTF("[ASSET] flash the provision firmware (RESOURCE_PROVISION=1) first\r\n");
         return Asset_MapErr(err);
     }
     s_mounted = true; // 标记为已挂载
-    printf("[ASSET] littlefs mounted: %lu blocks x %lu B\r\n",
+    DBG_PRINTF("[ASSET] littlefs mounted: %lu blocks x %lu B\r\n",
            (unsigned long)g_lfs_config.block_count, (unsigned long)g_lfs_config.block_size);
 
     /* 3. 目录: 字库与图片目录由烧录固件创建, 这里只是补齐缺失的 */
@@ -320,12 +320,12 @@ int Asset_Init(void)
     /* 4. 常开字库句柄 + 资源自检 */
     Asset_OpenFonts();
     Asset_SelfCheck();
-    printf("[ASSET] selfcheck: checked=%lu, missing=%lu\r\n",
+    DBG_PRINTF("[ASSET] selfcheck: checked=%lu, missing=%lu\r\n",
            (unsigned long)s_checked, (unsigned long)s_missing);
     /* 全部缺失是最常见的情形: 资源从未烧录进 W25Q64 */
     if ((s_missing > 0U) && (s_missing == s_checked))
     {
-        printf("[ASSET] HINT: no resources on flash, flash the provision firmware first\r\n");
+        DBG_PRINTF("[ASSET] HINT: no resources on flash, flash the provision firmware first\r\n");
     }
 
     return (s_missing == 0U) ? ASSET_OK : ASSET_ERR_MISSING;
@@ -494,7 +494,7 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
         LittleFS_Unlock();
         if (err != LFS_ERR_NOENT)
         {
-            printf("[ASSET] image info %s: open failed, err = %d\r\n", path, err);
+            DBG_PRINTF("[ASSET] image info %s: open failed, err = %d\r\n", path, err);
         }
         return Asset_MapErr(err);
     }
@@ -506,7 +506,7 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
 
     if (rd != (lfs_ssize_t)sizeof(header))
     {
-        printf("[ASSET] image info %s: header incomplete (%d bytes)\r\n", path, (int)rd);
+        DBG_PRINTF("[ASSET] image info %s: header incomplete (%d bytes)\r\n", path, (int)rd);
         return ASSET_ERR_FORMAT;
     }
 
@@ -515,7 +515,7 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
 
     if ((width == 0U) || (height == 0U))
     {
-        printf("[ASSET] image info %s: bad size %ux%u\r\n", path, (unsigned)width, (unsigned)height);
+        DBG_PRINTF("[ASSET] image info %s: bad size %ux%u\r\n", path, (unsigned)width, (unsigned)height);
         return ASSET_ERR_FORMAT;
     }
 
@@ -549,7 +549,7 @@ int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
     if (err != LFS_ERR_OK)
     {
         LittleFS_Unlock();
-        printf("[ASSET] open %s failed, err = %d\r\n", img->path, err);
+        DBG_PRINTF("[ASSET] open %s failed, err = %d\r\n", img->path, err);
         return Asset_MapErr(err);
     }
     /* 跳过 4 字节文件头(width/height 编译期已知, 不必读出来) */
@@ -660,7 +660,7 @@ int Asset_SaveData(const char *name, const void *buf, uint32_t len)
 
     if (err != LFS_ERR_OK)
     {
-        printf("[ASSET] save %s failed, err = %d\r\n", path, err);
+        DBG_PRINTF("[ASSET] save %s failed, err = %d\r\n", path, err);
         return Asset_MapErr(err);
     }
 
@@ -716,7 +716,7 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
     {
         (void)lfs_file_close(&g_lfs, &file);
         LittleFS_Unlock();
-        printf("[ASSET] load %s: need %lu bytes, buffer = %lu\r\n",
+        DBG_PRINTF("[ASSET] load %s: need %lu bytes, buffer = %lu\r\n",
                path, (unsigned long)size, (unsigned long)buf_size);
         return ASSET_ERR_SPACE;
     }
@@ -728,7 +728,7 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
 
     if (rd != (lfs_ssize_t)size)
     {
-        printf("[ASSET] load %s: %d of %ld bytes\r\n", path, (int)rd, (long)size);
+        DBG_PRINTF("[ASSET] load %s: %d of %ld bytes\r\n", path, (int)rd, (long)size);
         return (rd < 0) ? Asset_MapErr((int)rd) : ASSET_ERR_IO;
     }
 
@@ -817,7 +817,7 @@ int Asset_DeleteData(const char *name)
     if (err != LFS_ERR_OK)
     {
         if (err != LFS_ERR_NOENT)
-            printf("[ASSET] delete %s failed, err = %d\r\n", path, err);
+            DBG_PRINTF("[ASSET] delete %s failed, err = %d\r\n", path, err);
         return Asset_MapErr(err);
     }
 

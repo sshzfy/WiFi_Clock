@@ -116,7 +116,7 @@ void UI_Task_EnterNight(void)
     if (Clock_IsSynced())
     {
         bool ret = RTC_Sync_From_SystemClock();
-        printf("[LP] Sync RTC time %s\r\n", ret ? "done" : "fail");
+        DBG_PRINTF("[LP] Sync RTC time %s\r\n", ret ? "done" : "fail");
     }
 
     /* 进入低功耗模式 */
@@ -139,7 +139,7 @@ void UI_Task_EnterNight(void)
     s_lcd_on = false;         // 关闭LCD
     s_oled_on = true;         // 显示OLED
 
-    printf("[LP] Enter night: LCD off, OLED on, time_source=%s\r\n", time_source ? "RTC" : "SoftClock");
+    DBG_PRINTF("[LP] Enter night: LCD off, OLED on, time_source=%s\r\n", time_source ? "RTC" : "SoftClock");
 }
 
 void UI_Task_EnterDay(void)
@@ -150,7 +150,7 @@ void UI_Task_EnterDay(void)
     uint32_t prof_t0 = Prof_Cycles(); // 整页重绘耗时(DWT CYCCNT)
     Main_Page_Display();              // 夜间未刷新, 全量重绘一次
     UI_TopBar_Draw();                 // 顶部条一行式: 覆盖 Main_Page 里的旧双行
-    printf("[PROF] main page render: %u us\r\n", (unsigned)Prof_Us(prof_t0));
+    DBG_PRINTF("[PROF] main page render: %u us\r\n", (unsigned)Prof_Us(prof_t0));
 
     s_lcd_on = true;   // 开启LCD
     s_oled_on = false; // 关闭OLED
@@ -159,7 +159,7 @@ void UI_Task_EnterDay(void)
     APP_SET_LOWPOWER(false); // 退出低功耗模式
     xEventGroupSetBits(Task_Events(), EV_NET_UPDATE_NOW | EV_DHT22_UPDATE_NOW);
 
-    printf("[UI] Enter day: OLED off, LCD on\r\n");
+    DBG_PRINTF("[UI] Enter day: OLED off, LCD on\r\n");
 }
 
 /* 当前是否处于低功耗(夜间)模式 */
@@ -186,19 +186,19 @@ static void LCD_Touch_DrawTestPoints(uint16_t x, uint16_t y)
  */
 static void LCD_TouchTest(void)
 {
-    printf("[UI] LCD_TouchTest start\r\n");
+    DBG_PRINTF("[UI] LCD_TouchTest start\r\n");
 
     LCD_Fill_Color(0U, 0U, WIDTH - 1U, HEIGHT - 1U, COLOR_BLACK);
 
     if (!Touch_Init())
     {
-        printf("[Touch] FAIL: touch init failed (SPI3 not ready?)\r\n");
+        DBG_PRINTF("[Touch] FAIL: touch init failed (SPI3 not ready?)\r\n");
         for (;;)
             ;
     }
 
     /* 检查触摸中断是否正常 */
-    printf("[Touch] PENIRQ idle = %s\r\n",
+    DBG_PRINTF("[Touch] PENIRQ idle = %s\r\n",
            Touch_IsPressed() ? "LOW  (error)" : "HIGH (ok)");
     /* 注册校准点绘制回调 */
     Touch_SetPoints_RegisterCallback(LCD_Touch_DrawTestPoints);
@@ -206,28 +206,28 @@ static void LCD_TouchTest(void)
     /* Touch_Init() 已经尝试从 /data/touch_cal.bin 读回上次的校准参数
      * TOUCH_FORCE_CALIBRATE 置 1 重新校准触摸参数 */
 #if (TOUCH_FORCE_CALIBRATE == 1)
-    printf("[Touch] FORCE_CALIBRATE on: re-calibrating\r\n");
+    DBG_PRINTF("[Touch] FORCE_CALIBRATE on: re-calibrating\r\n");
     calibration_params.calibrated = false;
 #endif
 
     /* 是否已校准触摸参数 */
     if (calibration_params.calibrated)
     {
-        printf("[Touch] calibration loaded: kx=%.4f ky=%.4f bx=%d by=%d\r\n",
+        DBG_PRINTF("[Touch] calibration loaded: kx=%.4f ky=%.4f bx=%d by=%d\r\n",
                calibration_params.kx, calibration_params.ky,
                (int)calibration_params.bx, (int)calibration_params.by);
-        printf("[Touch] using saved calibration, no calibration needed\r\n");
+        DBG_PRINTF("[Touch] using saved calibration, no calibration needed\r\n");
     }
     else
     {
-        printf("[Touch] no calibration data, click the 5 crosses on the panel\r\n");
+        DBG_PRINTF("[Touch] no calibration data, click the 5 crosses on the panel\r\n");
 
         if (Touch_Calibrate())
-            printf("[Touch] calibration done and saved: next boot uses it directly\r\n");
+            DBG_PRINTF("[Touch] calibration done and saved: next boot uses it directly\r\n");
         else if (calibration_params.calibrated)
-            printf("[Touch] calibration OK but NOT saved (RAM only), will redo next boot\r\n");
+            DBG_PRINTF("[Touch] calibration OK but NOT saved (RAM only), will redo next boot\r\n");
         else
-            printf("[Touch] WARN: calibration failed, touch falls back to raw coordinates\r\n");
+            DBG_PRINTF("[Touch] WARN: calibration failed, touch falls back to raw coordinates\r\n");
     }
 }
 
@@ -240,7 +240,7 @@ static void Detect_TouchRange(void)
     {
         x = status.x_display;
         y = status.y_display;
-        printf("[Touch] position: %d, %d\r\n", x, y);
+        DBG_PRINTF("[Touch] position: %d, %d\r\n", x, y);
 
         /* 点击了WiFi图标 → WiFi配网界面 */
         if (x >= TOUCH_X_WIFI && x < TOUCH_X_WIFI + TOUCH_SIZE_WIFI &&
@@ -405,7 +405,7 @@ static void UI_Keyboard_Open(UI_Screen_t screen)
     lv_obj_invalidate(lv_scr_act());
 
     s_kb_screen = screen;
-    printf("[UI] %s screen opened\r\n", (screen == UI_SCR_WIFI) ? "WiFi" : "location");
+    DBG_PRINTF("[UI] %s screen opened\r\n", (screen == UI_SCR_WIFI) ? "WiFi" : "location");
 }
 
 /** @brief 退出输入界面
@@ -416,6 +416,7 @@ static void UI_Keyboard_Close(void)
     UI_Screen_t closed = s_kb_screen;
 
     s_kb_screen = UI_SCR_MAIN;
+    (void)closed; /* 关闭调试打印时避免未使用变量警告 */
 
     if (s_lvgl_ready)
     {
@@ -430,7 +431,7 @@ static void UI_Keyboard_Close(void)
         }
     }
 
-    printf("[UI] %s screen closed\r\n", (closed == UI_SCR_WIFI) ? "WiFi" : "location");
+    DBG_PRINTF("[UI] %s screen closed\r\n", (closed == UI_SCR_WIFI) ? "WiFi" : "location");
 }
 
 /* ==================== uiTask(LCD唯一写者) ==================== */
@@ -448,8 +449,8 @@ static void UI_Task(void *pvParameters)
 
     /* 开始屏幕触摸检测 */
     LCD_TouchTest();
-    printf("[UI] UI_Task start\r\n");
-    printf("[UI] Board init done, boot page\r\n");
+    DBG_PRINTF("[UI] UI_Task start\r\n");
+    DBG_PRINTF("[UI] Board init done, boot page\r\n");
 
     /* 取回上次保存的WiFi凭据与定位信息(Asset层只有uiTask访问, 所以放在这里载入):
      * 没有就是空, 后续按"未配置"处理 */
@@ -460,8 +461,8 @@ static void UI_Task(void *pvParameters)
      * 这里只提示, 不阻塞流程 —— 网络与传感器功能仍可正常使用。 */
     if (!Asset_Ready())
     {
-        printf("[UI] WARN: asset layer not ready, screen shows blank blocks\r\n");
-        printf("[UI] WARN: flash the provision firmware to write fonts/images\r\n");
+        DBG_PRINTF("[UI] WARN: asset layer not ready, screen shows blank blocks\r\n");
+        DBG_PRINTF("[UI] WARN: flash the provision firmware to write fonts/images\r\n");
     }
 
     /* 开机等待页面 */
@@ -476,19 +477,19 @@ static void UI_Task(void *pvParameters)
                                                 pdMS_TO_TICKS(UI_BOOT_NET_TIMEOUT_MS));
     if ((boot_bits & EV_NET_READY) == 0)
     {
-        printf("[UI] WARN: boot net stage timeout, showing partial result\r\n");
+        DBG_PRINTF("[UI] WARN: boot net stage timeout, showing partial result\r\n");
     }
 
     /* 网络结果由 netTask 提供, UI 不再直接读它的内部状态 */
     bool boot_wifi = false, boot_service = false;
     Net_Task_GetBoot(&boot_wifi, &boot_service); // 获取开机网络结果
-    printf("[UI] Boot net stage done: wifi=%d service=%d\r\n", (int)boot_wifi, (int)boot_service);
+    DBG_PRINTF("[UI] Boot net stage done: wifi=%d service=%d\r\n", (int)boot_wifi, (int)boot_service);
 
     /* 开机结果(连接详情)
      * 结果页停留, 便于查看详情 */
     Boot_Page_Show(boot_wifi, boot_service);
     vTaskDelay(pdMS_TO_TICKS(2500));
-    printf("[UI] Enter main page\r\n");
+    DBG_PRINTF("[UI] Enter main page\r\n");
 
     uint32_t prof_t0 = Prof_Cycles(); // 整页重绘耗时(DWT CYCCNT)
 
@@ -496,7 +497,7 @@ static void UI_Task(void *pvParameters)
     Main_Page_Display();
     /* 顶部条 */
     UI_TopBar_Draw();
-    printf("[PROF] main page render: %u us\r\n", (unsigned)Prof_Us(prof_t0));
+    DBG_PRINTF("[PROF] main page render: %u us\r\n", (unsigned)Prof_Us(prof_t0));
 
     /* 进入主页面后再启动光敏任务与按键任务: 保证昼夜切换只发生在开机完成之后 */
     LightSensor_Task_Start();

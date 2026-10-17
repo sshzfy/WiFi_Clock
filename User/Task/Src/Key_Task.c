@@ -48,7 +48,7 @@ void Key_Task_OnGesture(Key_Gesture_t gesture)
         break;
     case KEY_GESTURE_CLICK_2:
     {
-        printf("[KEY]Refresh all data\r\n");
+        DBG_PRINTF("[KEY]Refresh all data\r\n");
         Key_FullRefresh(); /* 刷新所有数据 */
         break;
     }
@@ -81,8 +81,8 @@ static void Key_Task(void *pvParameters)
     Key_RegisterCallback(Key_IRQ_Notify);     /* 注册中断回调函数 */
     Key_Init();                               /* 初始化按键(PA0 + EXTI0) */
 
-    printf("[KEY] Key_Task start\r\n");
-    printf("[KEY] task ready: pressed=%d\r\n", (int)Key_IsPressed());
+    DBG_PRINTF("[KEY] Key_Task start\r\n");
+    DBG_PRINTF("[KEY] task ready: pressed=%d\r\n", (int)Key_IsPressed());
 
     for (;;)
     {

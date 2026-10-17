@@ -204,12 +204,12 @@ bool WiFi_Config_Save(void)
 
     if (Asset_SaveData(WIFI_CFG_NAME, &cfg, sizeof(cfg)) != ASSET_OK)
     {
-        printf("[NET] WiFi config save FAILED\r\n");
+        DBG_PRINTF("[NET] WiFi config save FAILED\r\n");
         return false;
     }
 
     s_wifi_cfg_dirty = false;
-    printf("[NET] WiFi config saved: ssid=%s\r\n", g_ssid);
+    DBG_PRINTF("[NET] WiFi config saved: ssid=%s\r\n", g_ssid);
 
     return true;
 }
@@ -227,7 +227,7 @@ void WiFi_Config_Load(void)
 
     if (!Asset_HasData(WIFI_CFG_NAME))
     {
-        printf("[NET] no saved WiFi config\r\n");
+        DBG_PRINTF("[NET] no saved WiFi config\r\n");
         return;
     }
 
@@ -235,7 +235,7 @@ void WiFi_Config_Load(void)
     if (len < (int)sizeof(cfg) || cfg.magic != WIFI_CFG_MAGIC ||
         cfg.version != WIFI_CFG_VERSION || cfg.size != (uint16_t)sizeof(cfg))
     {
-        printf("[NET] WiFi config invalid (len=%d), ignored\r\n", len);
+        DBG_PRINTF("[NET] WiFi config invalid (len=%d), ignored\r\n", len);
         return;
     }
 
@@ -246,7 +246,7 @@ void WiFi_Config_Load(void)
     g_ssid[sizeof(g_ssid) - 1U] = '\0';
     g_password[sizeof(g_password) - 1U] = '\0';
 
-    printf("[NET] WiFi config loaded: ssid=%s\r\n", g_ssid);
+    DBG_PRINTF("[NET] WiFi config loaded: ssid=%s\r\n", g_ssid);
     s_wifi_cfg_dirty = false;
 }
 
@@ -303,12 +303,12 @@ bool Location_Config_Save(void)
 
     if (Asset_SaveData(LOCATION_CFG_NAME, &cfg, sizeof(cfg)) != ASSET_OK)
     {
-        printf("[UI] location save FAILED\r\n");
+        DBG_PRINTF("[UI] location save FAILED\r\n");
         return false;
     }
 
     s_location_cfg_dirty = false;
-    printf("[UI] location saved: %s\r\n", g_location);
+    DBG_PRINTF("[UI] location saved: %s\r\n", g_location);
 
     return true;
 }
@@ -325,7 +325,7 @@ void Location_Config_Load(void)
 
     if (!Asset_HasData(LOCATION_CFG_NAME))
     {
-        printf("[UI] no saved location\r\n");
+        DBG_PRINTF("[UI] no saved location\r\n");
         return;
     }
 
@@ -333,7 +333,7 @@ void Location_Config_Load(void)
     if (len < (int)sizeof(cfg) || cfg.magic != LOCATION_CFG_MAGIC ||
         cfg.version != LOCATION_CFG_VERSION || cfg.size != (uint16_t)sizeof(cfg))
     {
-        printf("[UI] location invalid (len=%d), ignored\r\n", len);
+        DBG_PRINTF("[UI] location invalid (len=%d), ignored\r\n", len);
         return;
     }
 
@@ -341,7 +341,7 @@ void Location_Config_Load(void)
     strncpy(g_location, cfg.text, sizeof(g_location) - 1U);
     g_location[sizeof(g_location) - 1U] = '\0';
 
-    printf("[UI] location loaded: %s\r\n", g_location);
+    DBG_PRINTF("[UI] location loaded: %s\r\n", g_location);
     s_location_cfg_dirty = false;
 }
 
@@ -361,7 +361,7 @@ bool Wireless_Init(void)
             break;
         }
 
-        printf("[NET] AT init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
+        DBG_PRINTF("[NET] AT init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
                (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
                (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
 
@@ -370,10 +370,10 @@ bool Wireless_Init(void)
          * 平时开机不做恢复出厂, 也就没有那次重启带来的 busy/ready 抢跑窗口 */
         if (retry == 1)
         {
-            printf("[NET] AT init failed, try factory reset (AT+RESTORE)\r\n");
+            DBG_PRINTF("[NET] AT init failed, try factory reset (AT+RESTORE)\r\n");
 
             if (!AT_Factory_Reset())
-                printf("[NET] factory reset FAILED, rx len=%u: %s\r\n",
+                DBG_PRINTF("[NET] factory reset FAILED, rx len=%u: %s\r\n",
                        (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
         }
 
@@ -383,21 +383,21 @@ bool Wireless_Init(void)
 
     if (!at_ok)
     {
-        printf("[NET] AT init FAILED, max retry reached\r\n");
+        DBG_PRINTF("[NET] AT init FAILED, max retry reached\r\n");
         return false;
     }
-    printf("[NET] AT init OK\r\n");
+    DBG_PRINTF("[NET] AT init OK\r\n");
 
     /* 初始化WiFi */
     for (uint8_t retry = 1; retry <= WIRELESS_INIT_RETRY; retry++)
     {
         if (AT_WiFi_Init())
         {
-            printf("[NET] WiFi init OK\r\n");
+            DBG_PRINTF("[NET] WiFi init OK\r\n");
             return true;
         }
 
-        printf("[NET] WiFi init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
+        DBG_PRINTF("[NET] WiFi init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
                (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
                (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
 
@@ -405,7 +405,7 @@ bool Wireless_Init(void)
             vTaskDelay(pdMS_TO_TICKS(WIRELESS_INIT_GAP_MS));
     }
 
-    printf("[NET] WiFi init FAILED, max retry reached\r\n");
+    DBG_PRINTF("[NET] WiFi init FAILED, max retry reached\r\n");
     return false;
 }
 
@@ -437,7 +437,7 @@ static bool Service_WiFi_WaitConnected(uint32_t timeout_ms)
         if (AT_Get_WiFi_Info(&tmp) && tmp.connected)
         {
             WiFi_Info_Store(&tmp);
-            printf("[NET] WiFi already connected: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
+            DBG_PRINTF("[NET] WiFi already connected: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
             return true;
         }
 
@@ -450,7 +450,7 @@ static bool Service_WiFi_WaitConnected(uint32_t timeout_ms)
 
     memset(&tmp, 0, sizeof(tmp));
     WiFi_Info_Store(&tmp);
-    printf("[NET] WiFi not connected (no credentials stored)\r\n");
+    DBG_PRINTF("[NET] WiFi not connected (no credentials stored)\r\n");
 
     return false;
 }
@@ -463,14 +463,14 @@ bool Service_WiFi_Connect(void)
 
     if (!WiFi_Config_IsSet())
     {
-        printf("[NET] no WiFi credentials, wait for module auto-reconnect\r\n");
+        DBG_PRINTF("[NET] no WiFi credentials, wait for module auto-reconnect\r\n");
         return Service_WiFi_WaitConnected(WIFI_BOOT_WAIT_MS);
     }
 
-    printf("[NET] WiFi connecting to %s ...\r\n", g_ssid);
+    DBG_PRINTF("[NET] WiFi connecting to %s ...\r\n", g_ssid);
     if (!AT_Connect_WiFi(g_ssid, g_password, mac))
     {
-        printf("[NET] WiFi connect FAILED\r\n");
+        DBG_PRINTF("[NET] WiFi connect FAILED\r\n");
         return false;
     }
 
@@ -489,12 +489,12 @@ bool Service_WiFi_Connect(void)
 
     if (ok && wifi_info.connected)
     {
-        printf("[NET] WiFi connected: ssid=%s bssid=%s channel=%d rssi=%d\r\n",
+        DBG_PRINTF("[NET] WiFi connected: ssid=%s bssid=%s channel=%d rssi=%d\r\n",
                wifi_info.ssid, wifi_info.bssid, wifi_info.channel, wifi_info.rssi);
     }
     else
     {
-        printf("[NET] WiFi info FAILED\r\n");
+        DBG_PRINTF("[NET] WiFi info FAILED\r\n");
     }
 
     return (ok && wifi_info.connected);
@@ -513,11 +513,11 @@ bool Service_WiFi_Sleep(bool enable)
 {
     if (!AT_Set_Sleep(enable ? WIFI_SLEEP_MODE_IDLE : WIFI_SLEEP_MODE_FULL))
     {
-        printf("[NET] WiFi sleep set FAILED\r\n");
+        DBG_PRINTF("[NET] WiFi sleep set FAILED\r\n");
         return false;
     }
 
-    printf("[NET] WiFi %s\r\n", enable ? "modem-sleep" : "wake");
+    DBG_PRINTF("[NET] WiFi %s\r\n", enable ? "modem-sleep" : "wake");
 
     return true;
 }
@@ -544,7 +544,7 @@ int Service_WiFi_Update(void)
 
     if (!ok)
     {
-        printf("[NET] WiFi state query FAILED\r\n");
+        DBG_PRINTF("[NET] WiFi state query FAILED\r\n");
         return -1;
     }
 
@@ -552,7 +552,7 @@ int Service_WiFi_Update(void)
     if (tmp.connected)
     {
         WiFi_Info_Store(&tmp);
-        printf("[NET] WiFi check OK: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
+        DBG_PRINTF("[NET] WiFi check OK: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
         return 0;
     }
 
@@ -560,16 +560,16 @@ int Service_WiFi_Update(void)
     if (!WiFi_Config_IsSet())
     {
         WiFi_Info_Store(&tmp); // connected=0, 让UI同步切到离线图标
-        printf("[NET] WiFi offline, no credentials stored\r\n");
+        DBG_PRINTF("[NET] WiFi offline, no credentials stored\r\n");
         return -1;
     }
 
     /* 获取成功也配置过凭据但确实未连接 */
-    printf("[NET] WiFi lost, reconnecting...\r\n");
+    DBG_PRINTF("[NET] WiFi lost, reconnecting...\r\n");
     if (!AT_Connect_WiFi(g_ssid, g_password, mac))
     {
         WiFi_Info_Store(&tmp); // connected=0, 让UI同步切到离线图标
-        printf("[NET] WiFi reconnect FAILED\r\n");
+        DBG_PRINTF("[NET] WiFi reconnect FAILED\r\n");
         return -1;
     }
 
@@ -580,14 +580,14 @@ int Service_WiFi_Update(void)
         if (AT_Get_WiFi_Info(&tmp) && tmp.connected)
         {
             WiFi_Info_Store(&tmp);
-            printf("[NET] WiFi reconnected: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
+            DBG_PRINTF("[NET] WiFi reconnected: ssid=%s rssi=%d\r\n", tmp.ssid, tmp.rssi);
             return 1;
         }
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
     WiFi_Info_Store(&tmp); // connected=0, 让UI同步切到离线图标
-    printf("[NET] WiFi reconnect FAILED: no valid info\r\n");
+    DBG_PRINTF("[NET] WiFi reconnect FAILED: no valid info\r\n");
 
     return -1;
 }
@@ -604,14 +604,14 @@ bool Service_Time_Sync(void)
         {
             date_info = t;
             Clock_Sync(&date_info);
-            printf("[NET] SNTP sync OK: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+            DBG_PRINTF("[NET] SNTP sync OK: %04u-%02u-%02u %02u:%02u:%02u\r\n",
                    t.year, t.month, t.day, t.hour, t.minute, t.second);
             return true;
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
-    printf("[NET] SNTP sync FAILED\r\n");
+    DBG_PRINTF("[NET] SNTP sync FAILED\r\n");
 
     return false;
 }
@@ -672,12 +672,12 @@ static void Weather_Update_Location(void)
         /* 取IP失败不阻塞天气: 有缓存就用缓存, 否则退到服务端按来源IP定位 */
         if (weather_ip[0] != '\0')
         {
-            printf("[NET] public IP FAILED, keep location=%s\r\n", weather_ip);
+            DBG_PRINTF("[NET] public IP FAILED, keep location=%s\r\n", weather_ip);
             Weather_URL_Set_Location(weather_ip);
         }
         else
         {
-            printf("[NET] public IP FAILED, fallback to location=%s\r\n", WEATHER_IP_LOCATION);
+            DBG_PRINTF("[NET] public IP FAILED, fallback to location=%s\r\n", WEATHER_IP_LOCATION);
             Weather_URL_Set_Location(WEATHER_IP_LOCATION);
         }
         return;
@@ -688,7 +688,7 @@ static void Weather_Update_Location(void)
     {
         strncpy(weather_ip, ip, sizeof(weather_ip) - 1);
         weather_ip[sizeof(weather_ip) - 1] = '\0';
-        printf("[NET] public IP = %s\r\n", weather_ip);
+        DBG_PRINTF("[NET] public IP = %s\r\n", weather_ip);
     }
 
     /* 无条件重建: 上一步的URL里装的可能是用户输入的省市 */
@@ -705,13 +705,13 @@ static bool Weather_Fetch(AT_Weather_Info_t *info)
     http_response = AT_Get_HTTP(weather_url);
     if (http_response == NULL)
     {
-        printf("[NET] Weather HTTP FAILED\r\n");
+        DBG_PRINTF("[NET] Weather HTTP FAILED\r\n");
         return false;
     }
 
     if (!Parse_Http_Response(http_response, info))
     {
-        printf("[NET] Weather parse FAILED\r\n");
+        DBG_PRINTF("[NET] Weather parse FAILED\r\n");
         return false;
     }
 
@@ -742,11 +742,11 @@ bool Service_Weather_Update(void)
     {
         Weather_URL_Encode(location, encoded, sizeof(encoded));
         Weather_URL_Set_Location(encoded);
-        printf("[NET] Weather by user location: %s\r\n", location);
+        DBG_PRINTF("[NET] Weather by user location: %s\r\n", location);
 
         ok = Weather_Fetch(&tmp);
         if (!ok)
-            printf("[NET] user location FAILED, fallback to network IP\r\n");
+            DBG_PRINTF("[NET] user location FAILED, fallback to network IP\r\n");
     }
 
     /* 回退网络IP定位(未输入定位时也走这里) */
@@ -763,7 +763,7 @@ bool Service_Weather_Update(void)
     weather_info = tmp; // 一次性整体替换, 避免ui读到半写状态
     taskEXIT_CRITICAL();
 
-    printf("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
+    DBG_PRINTF("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
            weather_info.weather, weather_info.weather_code, weather_info.temperature);
 
     return true;
@@ -786,7 +786,7 @@ bool Service_Weather_Update(void)
 
 //     if (!AT_Get_Location(latitude, longitude, &tmp))
 //     {
-//         printf("[NET] Location FAILED\r\n");
+//         DBG_PRINTF("[NET] Location FAILED\r\n");
 //         return false;
 //     }
 
@@ -795,7 +795,7 @@ bool Service_Weather_Update(void)
 //     taskEXIT_CRITICAL();
 
 //     /* 打印的是接口返回的UTF-8原文, 调试终端需按UTF-8显示 */
-//     printf("[NET] Location OK: %s%s\r\n", location_info.province, location_info.city);
+//     DBG_PRINTF("[NET] Location OK: %s%s\r\n", location_info.province, location_info.city);
 //     return true;
 // }
 
@@ -820,14 +820,14 @@ bool Service_Room_Update(void)
         room_info.humidity = dht22.humidity;
         room_info.valid = true;
         taskEXIT_CRITICAL();
-        printf("[SENSOR] DHT22 OK: T=%.1f H=%.1f\r\n", room_info.temperature, room_info.humidity);
+        DBG_PRINTF("[SENSOR] DHT22 OK: T=%.1f H=%.1f\r\n", room_info.temperature, room_info.humidity);
     }
     else
     {
         taskENTER_CRITICAL();
         room_info.valid = false;
         taskEXIT_CRITICAL();
-        printf("[SENSOR] DHT22 FAIL: code=%d (%s)\r\n", (int)dht_ret, DHT22_ErrString(dht_ret));
+        DBG_PRINTF("[SENSOR] DHT22 FAIL: code=%d (%s)\r\n", (int)dht_ret, DHT22_ErrString(dht_ret));
     }
     return true;
 }

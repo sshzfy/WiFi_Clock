@@ -6,7 +6,7 @@ static void DHT22_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    printf("[DHT22] DHT22_Task start\r\n");
+    DBG_PRINTF("[DHT22] DHT22_Task start\r\n");
 
     bool first_run = true;
 

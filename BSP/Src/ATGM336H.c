@@ -183,7 +183,7 @@ static uint8_t ATGM_Parse_Line(char *line)
         if (s_echo_bad < 5U)
         {
             s_echo_bad++;
-            printf("[GNSS] BAD: %s", line);
+            DBG_PRINTF("[GNSS] BAD: %s", line);
         }
 #endif
         return 0;
@@ -202,7 +202,7 @@ static uint8_t ATGM_Parse_Line(char *line)
         return ATGM_EV_RMC; // 帧收到了, 但位置没有变化，或定位状态没有翻转
 
 #if (ATGM_DEBUG_ECHO == 1)
-    printf("[GNSS] %s", echo); /* echo自带"\r\n" */
+    DBG_PRINTF("[GNSS] %s", echo); /* echo自带"\r\n" */
 #endif
 
     return (uint8_t)(ATGM_EV_RMC | ATGM_EV_UPDATE);

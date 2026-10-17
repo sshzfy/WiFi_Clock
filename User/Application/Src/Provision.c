@@ -164,17 +164,17 @@ void Provision_Run(void)
     uint32_t pass = 0;
     uint32_t fail = 0;
 
-    printf("\r\n[PROV] ==== resource provision ====\r\n");
-    printf("[PROV] batch = %d, fonts = %lu, images = %lu\r\n",
+    DBG_PRINTF("\r\n[PROV] ==== resource provision ====\r\n");
+    DBG_PRINTF("[PROV] batch = %d, fonts = %lu, images = %lu\r\n",
            PROVISION_BATCH, (unsigned long)s_fontCount, (unsigned long)s_imageCount);
 
     W25Q64_Init();
 
     uint32_t jedec = W25Q64_ReadJedecId();
-    printf("[PROV] W25Q64 jedec = 0x%06lX\r\n", (unsigned long)jedec);
+    DBG_PRINTF("[PROV] W25Q64 jedec = 0x%06lX\r\n", (unsigned long)jedec);
     if (jedec != 0xEF4017U)
     {
-        printf("[PROV] ERROR: W25Q64 not detected, stopped\r\n");
+        DBG_PRINTF("[PROV] ERROR: W25Q64 not detected, stopped\r\n");
         for (;;)
             delay_ms(1000);
     }
@@ -184,7 +184,7 @@ void Provision_Run(void)
 #if (PROVISION_BATCH == 1)
     /* 批次 1 是起始批次: 直接重建文件系统, 清掉 bare_test 等遗留的旧文件,
      * 保证资源集合干净可预测。注意: 重跑批次 1 会清空已写入的批次 2、3。 */
-    printf("[PROV] batch 1: format filesystem first\r\n");
+    DBG_PRINTF("[PROV] batch 1: format filesystem first\r\n");
     err = LittleFS_Format();
 #else
     /* 批次 2、3 追加到已有文件系统; 只有挂载失败时才自动格式化。 */
@@ -192,7 +192,7 @@ void Provision_Run(void)
 #endif
     if (err != 0)
     {
-        printf("[PROV] ERROR: littlefs init failed, err = %d, stopped\r\n", err);
+        DBG_PRINTF("[PROV] ERROR: littlefs init failed, err = %d, stopped\r\n", err);
         for (;;)
             delay_ms(1000);
     }
@@ -207,7 +207,7 @@ void Provision_Run(void)
         const Provision_Font_t *it = &s_fonts[i];
 
         err = SaveFont(it->path, it->data, it->size);
-        printf("[PROV] %-24s %8lu  %s\r\n", it->path, (unsigned long)it->size,
+        DBG_PRINTF("[PROV] %-24s %8lu  %s\r\n", it->path, (unsigned long)it->size,
                (err == 0) ? "OK" : "FAIL");
         if (err == 0)
         {
@@ -229,7 +229,7 @@ void Provision_Run(void)
         uint32_t sz = 4U + (uint32_t)it->img->width * (uint32_t)it->img->height * 2U;
 
         err = Provision_SaveImage(it->img->path, it->data, it->img->width, it->img->height);
-        printf("[PROV] %-24s %8lu  %s\r\n", it->img->path, (unsigned long)sz,
+        DBG_PRINTF("[PROV] %-24s %8lu  %s\r\n", it->img->path, (unsigned long)sz,
                (err == 0) ? "OK" : "FAIL");
         if (err == 0)
         {
@@ -243,16 +243,16 @@ void Provision_Run(void)
     }
 #endif
 
-    printf("[PROV] batch %d done: PASS %lu, FAIL %lu, wrote %lu bytes\r\n",
+    DBG_PRINTF("[PROV] batch %d done: PASS %lu, FAIL %lu, wrote %lu bytes\r\n",
            PROVISION_BATCH, (unsigned long)pass, (unsigned long)fail, (unsigned long)wrote);
-    printf("[PROV] fs used blocks = %ld / %lu\r\n",
+    DBG_PRINTF("[PROV] fs used blocks = %ld / %lu\r\n",
            (long)lfs_fs_size(&g_lfs), (unsigned long)g_lfs_config.block_count);
-    printf("[PROV] next: change PROVISION_BATCH, or set RESOURCE_PROVISION back to 0\r\n");
+    DBG_PRINTF("[PROV] next: change PROVISION_BATCH, or set RESOURCE_PROVISION back to 0\r\n");
 
     for (;;)
     {
         delay_ms(3000);
-        printf("[PROV] batch %d alive: PASS %lu FAIL %lu\r\n",
+        DBG_PRINTF("[PROV] batch %d alive: PASS %lu FAIL %lu\r\n",
                PROVISION_BATCH, (unsigned long)pass, (unsigned long)fail);
     }
 }

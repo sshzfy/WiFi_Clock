@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
+#include "BuildConfig.h"
 #include "Font.h"
 #include "Image.h"
 #include "FreeRTOS.h"
@@ -43,6 +44,8 @@
 
 /* 颜色 */
 #define COLOR(r, g, b)           ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+
+#if MULTICOLLOR_SUPPORT == 1
 
 #define COLOR_BLACK               COLOR(0, 0, 0)       // 纯黑
 /* 红色系 */
@@ -107,6 +110,14 @@
 #define COLOR_SLATEGRAY           COLOR(112, 128, 144) // 蓝灰
 #define COLOR_WARMSKIN            COLOR(255, 225, 200) // 暖肤色
 #define COLOR_BEIGE               COLOR(245, 245, 220) // 米色/沙色
+
+#elif MULTICOLLOR_SUPPORT == 0
+#define COLOR_BLACK               COLOR(0, 0, 0)       // 纯黑
+#define COLOR_WHITE               COLOR(255, 255, 255) // 纯白
+#define COLOR_GRAY                COLOR(128, 128, 128) // 中灰
+#define COLOR_DEEPSKYBLUE         COLOR(0, 191, 255)   // 深天蓝
+#define COLOR_LAVENDER            COLOR(230, 230, 250) // 薰衣草淡紫
+#endif
 
 void LCD_Init(void);
 void LCD_Bus_Acquire(void);

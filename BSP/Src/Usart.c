@@ -82,6 +82,8 @@ void Usart1_RX_Flush(void)
     taskEXIT_CRITICAL();
 }
 
+#if (DEBUG_SUPPORT == 1)
+
 /* ==================== USART2 调试输出(printf 经 DMA) ====================
  * 设计:
  *  - printf 每个字符先入行缓冲, 遇 '\n' 或缓冲满时经 DMA1_Stream6(USART2_TX)
@@ -269,12 +271,18 @@ void Usart2_Debug_Init(void)
     USART_Init(USART2, &USART_InitStructure);
     USART_Cmd(USART2, ENABLE);
 
-    printf("[SYS]Build Date:%s %s\r\n", __DATE__, __TIME__);
+    DBG_PRINTF("[SYS]Build Date:%s %s\r\n", __DATE__, __TIME__);
 
     /* 初始化互斥量 */
     if (dbg_mtx == NULL)
         dbg_mtx = xSemaphoreCreateMutex(); // 创建互斥量
 }
+#else
+void Usart2_Debug_Init(void)
+{
+    /* 调试打印已关闭: 不初始化 USART2, 不占用 PA2/PA3 */
+}
+#endif
 
 // /* ==================== USART3 定位模块独占数据交换 ====================
 //  * 说明: 与 USART1 同一套路 —— RXNE中断把每个字节即时收进环形缓冲,

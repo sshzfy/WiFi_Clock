@@ -2,6 +2,7 @@
 #define __ATGM336H_H__
 
 #include "main.h"
+#include "BuildConfig.h"
 #include "Usart.h"
 #include "Timer.h"
 

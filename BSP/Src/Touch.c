@@ -184,13 +184,13 @@ static bool Touch_LoadCalibration(void)
         (data.version != TOUCH_CAL_VERSION) ||
         (data.size != (uint16_t)sizeof(TouchCalData_t)))
     {
-        printf("[TOUCH] calibration data mismatch, recalibrate\r\n");
+        DBG_PRINTF("[TOUCH] calibration data mismatch, recalibrate\r\n");
         return false;
     }
     /* 校验比例系数是否合理 */
     if ((!Touch_ScaleValid(data.kx)) || (!Touch_ScaleValid(data.ky)))
     {
-        printf("[TOUCH] calibration data invalid, recalibrate\r\n");
+        DBG_PRINTF("[TOUCH] calibration data invalid, recalibrate\r\n");
         return false;
     }
 
@@ -227,7 +227,7 @@ static bool Touch_SaveCalibration(void)
     err = Asset_SaveData(TOUCH_CAL_NAME, &data, (uint32_t)sizeof(data));
     if (err != ASSET_OK)
     {
-        printf("[TOUCH] save calibration failed, err = %d\r\n", err);
+        DBG_PRINTF("[TOUCH] save calibration failed, err = %d\r\n", err);
         return false;
     }
 
@@ -257,7 +257,7 @@ bool Touch_Init(void)
     if ((TOUCH_SPI->CR1 & SPI_CR1_SPE) == 0)
     {
         s_touch_ready = false;
-        printf("[TOUCH] SPI3 not enabled, call LCD_Init() first\r\n");
+        DBG_PRINTF("[TOUCH] SPI3 not enabled, call LCD_Init() first\r\n");
         return false;
     }
 
@@ -269,20 +269,20 @@ bool Touch_Init(void)
     /* 校准参数在外部 Flash 上: 资源层没挂载好时读不到也存不了,
      * 仍然可以读原始坐标, 只是要重新校准 */
     if (!Asset_Ready())
-        printf("[TOUCH] asset layer not ready, calibration unavailable\r\n");
+        DBG_PRINTF("[TOUCH] asset layer not ready, calibration unavailable\r\n");
 
     /* 从 Flash 读回校准参数 */
     (void)Touch_LoadCalibration();
-    printf("[TOUCH] init done, calibrated=%d\r\n", (int)calibration_params.calibrated);
+    DBG_PRINTF("[TOUCH] init done, calibrated=%d\r\n", (int)calibration_params.calibrated);
     if (calibration_params.calibrated)
     {
-        printf("[TOUCH] kx=%.4f ky=%.4f bx=%d by=%d\r\n",
+        DBG_PRINTF("[TOUCH] kx=%.4f ky=%.4f bx=%d by=%d\r\n",
                calibration_params.kx, calibration_params.ky,
                (int)calibration_params.bx, (int)calibration_params.by);
     }
     else
     {
-        printf("[TOUCH] no calibration data, run Touch_Calibrate()\r\n");
+        DBG_PRINTF("[TOUCH] no calibration data, run Touch_Calibrate()\r\n");
     }
 
     return true;
@@ -506,16 +506,16 @@ bool Touch_Calibrate(void)
 
     if (!s_touch_ready)
     {
-        printf("[TOUCH] not initialized, call Touch_Init() first\r\n");
+        DBG_PRINTF("[TOUCH] not initialized, call Touch_Init() first\r\n");
         return false;
     }
 
-    printf("[TOUCH] calibration start: click the 5 points in order\r\n");
+    DBG_PRINTF("[TOUCH] calibration start: click the 5 points in order\r\n");
 
     /*依次划出 5 个校准点 */
     while (i < 5U)
     {
-        printf("[TOUCH] click point %u at (%u,%u)\r\n", (unsigned)(i + 1U),
+        DBG_PRINTF("[TOUCH] click point %u at (%u,%u)\r\n", (unsigned)(i + 1U),
                (unsigned)cal_points[i][0], (unsigned)cal_points[i][1]);
 
         /* 让界面把这个校准点画出来(清屏 + 画十字) */
@@ -525,7 +525,7 @@ bool Touch_Calibrate(void)
         /* 等按下; 带超时, 避免死等 */
         if (!Touch_WaitState(true, TOUCH_CAL_PRESS_TIMEOUT_MS))
         {
-            printf("[TOUCH] calibration timeout: no press detected\r\n");
+            DBG_PRINTF("[TOUCH] calibration timeout: no press detected\r\n");
             return false;
         }
         /* 等触摸稳定 */
@@ -533,17 +533,17 @@ bool Touch_Calibrate(void)
 
         if (!Touch_ReadFiltered(&raw_x[i], &raw_y[i]))
         {
-            printf("[TOUCH] sample rejected, click the same point again\r\n");
+            DBG_PRINTF("[TOUCH] sample rejected, click the same point again\r\n");
             continue; // i 不递增, 重点这个点
         }
 
-        printf("[TOUCH] point %u raw = (%u,%u)\r\n", (unsigned)(i + 1U),
+        DBG_PRINTF("[TOUCH] point %u raw = (%u,%u)\r\n", (unsigned)(i + 1U),
                (unsigned)raw_x[i], (unsigned)raw_y[i]);
 
         /* 等松开; 带超时, 避免死等 */
         if (!Touch_WaitState(false, TOUCH_CAL_RELEASE_TIMEOUT_MS))
         {
-            printf("[TOUCH] calibration timeout: release not detected\r\n");
+            DBG_PRINTF("[TOUCH] calibration timeout: release not detected\r\n");
             return false;
         }
         /* 等松手稳定 */
@@ -563,11 +563,11 @@ bool Touch_Calibrate(void)
     if (((x_span < 100.0f) && (x_span > -100.0f)) ||
         ((y_span < 100.0f) && (y_span > -100.0f)))
     {
-        printf("[TOUCH] invalid span: X=%.1f Y=%.1f, calibration failed\r\n", x_span, y_span);
+        DBG_PRINTF("[TOUCH] invalid span: X=%.1f Y=%.1f, calibration failed\r\n", x_span, y_span);
         if ((x_span < 100.0f) && (x_span > -100.0f))
-            printf("[TOUCH] hint: X barely moves while Y does -> swap TOUCH_CMD_SCREEN_X / SCREEN_Y\r\n");
+            DBG_PRINTF("[TOUCH] hint: X barely moves while Y does -> swap TOUCH_CMD_SCREEN_X / SCREEN_Y\r\n");
         else
-            printf("[TOUCH] hint: Y barely moves while X does -> swap TOUCH_CMD_SCREEN_X / SCREEN_Y\r\n");
+            DBG_PRINTF("[TOUCH] hint: Y barely moves while X does -> swap TOUCH_CMD_SCREEN_X / SCREEN_Y\r\n");
         return false;
     }
 
@@ -583,7 +583,7 @@ bool Touch_Calibrate(void)
         (bx_f < -32768.0f) || (bx_f > 32767.0f) ||
         (by_f < -32768.0f) || (by_f > 32767.0f))
     {
-        printf("[TOUCH] calibration out of range, failed\r\n");
+        DBG_PRINTF("[TOUCH] calibration out of range, failed\r\n");
         return false;
     }
 
@@ -595,21 +595,21 @@ bool Touch_Calibrate(void)
     calibration_params.calibrated = true; // 校准成功, 标记为已校准
 
     /* 用中心点校验一下(它不参与拟合): 误差大说明轴交换/方向反了 */
-    printf("[TOUCH] center check: expect (%u,%u) got (%.1f,%.1f)\r\n",
+    DBG_PRINTF("[TOUCH] center check: expect (%u,%u) got (%.1f,%.1f)\r\n",
            (unsigned)(TOUCH_WIDTH / 2U), (unsigned)(TOUCH_HEIGHT / 2U),
            (kx * (float)raw_x[4] + bx_f), (ky * (float)raw_y[4] + by_f));
 
-    printf("[TOUCH] kx=%.4f ky=%.4f bx=%d by=%d\r\n",
+    DBG_PRINTF("[TOUCH] kx=%.4f ky=%.4f bx=%d by=%d\r\n",
            calibration_params.kx, calibration_params.ky,
            (int)calibration_params.bx, (int)calibration_params.by);
 
     if (!Touch_SaveCalibration())
     {
-        printf("[TOUCH] save failed, calibration kept in RAM only\r\n");
+        DBG_PRINTF("[TOUCH] save failed, calibration kept in RAM only\r\n");
         return false;
     }
 
-    printf("[TOUCH] calibration saved to /data/%s.bin\r\n", TOUCH_CAL_NAME);
+    DBG_PRINTF("[TOUCH] calibration saved to /data/%s.bin\r\n", TOUCH_CAL_NAME);
 
     return true;
 }

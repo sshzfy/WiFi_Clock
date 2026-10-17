@@ -68,7 +68,7 @@ int main(void)
 
 void vAssertCalled(const char *file, int line)
 {
-    printf("Assertion failed in file %s at line %d\n", file, line);
+    DBG_PRINTF("Assertion failed in file %s at line %d\n", file, line);
     while (1)
         ;
 }
@@ -76,7 +76,7 @@ void vAssertCalled(const char *file, int line)
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
     (void)xTask;
-    printf("Stack overflow in task %s\n", pcTaskName);
+    DBG_PRINTF("Stack overflow in task %s\n", pcTaskName);
     while (1)
         ;
 }

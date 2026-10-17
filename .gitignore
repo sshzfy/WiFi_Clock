@@ -1,10 +1,9 @@
 # ============================================================
 # 敏感凭据
-# 真实 WiFi 密码 / 接口 key 只写在本地的 User/Inc/Secrets.h,
-# 仓库里只跟踪模板 User/Inc/Secrets.example.h。
+# 真实 WiFi 密码 / 接口 key 只写在本地的 User/Application/Inc/Secrets.h
 # 注意: 一旦真实值曾经提交过, 加 .gitignore 并不能把它从历史里删掉。
 # ============================================================
-User/Inc/Secrets.h
+User/Application/Inc/Secrets.h
 
 # ============================================================
 # Keil MDK 构建产物

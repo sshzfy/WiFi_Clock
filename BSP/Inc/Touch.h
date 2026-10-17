@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
+#include "BuildConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "Timer.h"

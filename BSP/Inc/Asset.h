@@ -21,6 +21,7 @@
 #define __ASSET_H__
 
 #include "main.h"
+#include "BuildConfig.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include "Font.h"

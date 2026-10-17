@@ -43,7 +43,7 @@ static bool Light_HandleKey(void)
     s_key_toggle_night = false;              // 清除请求标志
     s_night = !s_night;                      // 切换昼夜状态
     s_baseline_dark = Light_Sensor_IsDark(); // 记录当前光照状态, 作为自动判定基线
-    printf("[LIGHT] key switch -> %s\r\n", s_night ? "night" : "day");
+    DBG_PRINTF("[LIGHT] key switch -> %s\r\n", s_night ? "night" : "day");
     App_Apply_Night(s_night);
     return true;
 }
@@ -52,7 +52,7 @@ static void LightSensor_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    printf("[LIGHT] LightSensor_Task start\r\n");
+    DBG_PRINTF("[LIGHT] LightSensor_Task start\r\n");
 
     s_light_task = xTaskGetCurrentTaskHandle();      // 保存当前任务句柄, 用于中断回调
     Light_Sensor_RegisterCallback(Light_IRQ_Notify); /* 注册中断回调函数 */
@@ -64,7 +64,7 @@ static void LightSensor_Task(void *pvParameters)
     /* 基线取反: 使第4步的"与基线相同则跳过"不成立, 强制上电先判定一次 */
     s_baseline_dark = !Light_Sensor_IsDark(); // 第一次上电值为 true, 使第4步的"与基线相同则跳过"不成立
 
-    printf("[LIGHT] task ready: DO_state=%d dark=%d\r\n",
+    DBG_PRINTF("[LIGHT] task ready: DO_state=%d dark=%d\r\n",
            (int)Light_Sensor_DO_State, (int)Light_Sensor_IsDark());
 
     for (;;)
@@ -109,13 +109,13 @@ static void LightSensor_Task(void *pvParameters)
             continue;
 
         s_baseline_dark = dark; // 更新自动判定基线
-        printf("[LIGHT] auto: level=%s, mode=%s\r\n",
+        DBG_PRINTF("[LIGHT] auto: level=%s, mode=%s\r\n",
                dark ? "dark" : "bright", s_night ? "night" : "day");
 
         if (dark != s_night) /* 当前光照状态和当前昼夜模式不同 */
         {
             s_night = dark; // 更新昼夜模式
-            printf("[LIGHT] auto request %s\r\n", s_night ? "NIGHT" : "DAY");
+            DBG_PRINTF("[LIGHT] auto request %s\r\n", s_night ? "NIGHT" : "DAY");
             App_Apply_Night(s_night); /* 提交一次昼夜切换 */
         }
     }
