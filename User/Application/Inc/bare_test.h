@@ -12,7 +12,7 @@
 #include "External_RTC.h"
 #include "LFS_Operation.h"
 #include "Asset.h"
-#include "ATGM336H.h"
+// #include "ATGM336H.h"
 #include "LCD.h"
 #include "Touch.h"
 #include "lvgl.h"

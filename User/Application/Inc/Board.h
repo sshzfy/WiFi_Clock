@@ -10,6 +10,7 @@
 #include "Usart.h"
 #include "Asset.h"
 #include "Profiling.h"
+#include "Touch.h"
 
 void Board_Peripheral_Init(void);
 void Board_Init(void);

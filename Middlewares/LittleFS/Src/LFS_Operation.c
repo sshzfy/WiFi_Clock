@@ -1,4 +1,8 @@
-#include "LFS_Operation.h"
+#include "lfs_operation.h"
+
+/* ================ static 函数 ================ */
+static void put_u16(uint8_t *p, uint16_t v);
+static uint16_t get_u16(const uint8_t *p);
 
 /**
  * @brief 保存 16 位大端读写, 保证存/取使用同一字节序
@@ -11,16 +15,13 @@ static void put_u16(uint8_t *p, uint16_t v)
     p[1] = (uint8_t)(v & 0xFFU); // 低字节
 }
 
-/**
- * @brief 从 2 字节缓冲区按大端格式读取 16 位整数。
- * @param p 输入缓冲区，至少 2 字节
- *
- * @return 解析出的 16 位整数
- * */
+/* 从 2 字节缓冲区按大端格式读取 16 位整数 */
 static uint16_t get_u16(const uint8_t *p)
 {
     return (uint16_t)(((uint16_t)p[0] << 8) | (uint16_t)p[1]);
 }
+
+/* ================ public 函数 ================ */
 
 /**
  * @brief 保存图像到 littlefs 文件系统。
@@ -33,7 +34,7 @@ static uint16_t get_u16(const uint8_t *p)
  *
  * @param path  目标文件路径
  * @param data  像素数据指针(RGB565, 低字节在前)
- *
+ * @param w,h   图像宽度, 图像高度
  * @return 0 成功；其他值为 littlefs 错误码
  */
 int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
@@ -93,16 +94,13 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
 
 /**
  * @brief 从 littlefs 文件系统加载图像。
- *
  * 流程：
  *   1. 读取文件头，得到 width / height；
  *   2. 校验宽高合法性，避免畸形文件导致溢出；
  *   3. 检查目标缓冲区大小；
  *   4. 读取像素数据。
- *
  * @param path     源文件路径
- * @param w        输出参数：图像宽度
- * @param h        输出参数：图像高度
+ * @param w,h    输出参数：图像宽度, 图像高度
  * @param buf      输出缓冲区
  * @param buf_size 输出缓冲区大小
  *
@@ -114,8 +112,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     uint8_t header[HEADER_SIZE];
     uint32_t data_size;
     lfs_ssize_t ret;
-    uint16_t width;
-    uint16_t height;
+    uint16_t width, height;
     int err;
 
     if ((path == NULL) || (w == NULL) || (h == NULL) || (buf == NULL))
@@ -173,7 +170,6 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
 
     lfs_file_close(&g_lfs, &file);
 
-    /* 所有数据读取成功后再写出宽高，避免失败时留下不完整结果 */
     *w = width;
     *h = height;
 
@@ -182,13 +178,10 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
 
 /**
  * @brief 保存字体二进制数据到 littlefs 文件系统。
- *
  * @param w,h   图像宽高(像素)
  * @param data 字体数据指针
  * @param size 数据字节数
- *
  * @return 0 成功；其他值为 littlefs 错误码
- *
  * @note 数据本体不解析，原样写入。
  */
 int SaveFont(const char *path, const uint8_t *data, uint32_t size)
@@ -232,17 +225,14 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
 
 /**
  * @brief 从 littlefs 文件系统读取字体二进制数据。
- *
  * 流程：
  *   1. 打开文件；
  *   2. 用 lfs_file_size 获取文件实际大小；
  *   3. 若大于缓冲区，返回 LFS_ERR_NOSPC，不做部分读取；
  *   4. 读取全部内容。
- *
  * @param path     源文件路径
  * @param buf      输出缓冲区
  * @param buf_size 输出缓冲区大小
- *
  * @return >= 0 实际读取字节数；< 0 littlefs 错误码
  */
 int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
@@ -287,5 +277,5 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
 
     lfs_file_close(&g_lfs, &file);
 
-    return (int)size; // 返回实际读取字节数
+    return (int)size;
 }

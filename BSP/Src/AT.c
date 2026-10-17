@@ -1,5 +1,4 @@
 #include "AT.h"
-#include "Secrets.h" /* AMAP_KEY 等凭据集中在这里(不入库) */
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // 数组元素个数
 
@@ -13,15 +12,21 @@ static const AT_ACK_Match_t AT_ACK_Match[] =
         {AT_ACK_READY, "ready\r\n"},
 };
 
+/* ================ static 函数 ================ */
+static void AT_GPIO_Init(void);
+static void AT_USART_Init(void);
+static void AT_NVIC_Init(void);
 static void AT_Usart_Send(const char *data);
 static AT_ACK_t AT_Match_Internal_ACK(const char *str);
+static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout);
 static bool AT_Wait_Boot(uint32_t timeout);
 static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info);
 static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info);
 static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info);
+static uint8_t Month2Num(const char *month_str);
+static uint8_t Weekday3Num(const char *weekday_str);
 
-/* ==================== AT 初始化相关函数 ==================== */
-
+/* ================ AT 初始化相关函数 ================ */
 static void AT_GPIO_Init(void)
 {
     /* 初始化GPIOA */
@@ -54,40 +59,7 @@ static void AT_NVIC_Init(void)
     NVIC_Init(&NVIC_InitStruct);
 }
 
-/* ==================== AT底层通信相关函数 ==================== */
-
-bool AT_Init(void)
-{
-    /* 外设初始化 */
-    AT_GPIO_Init();
-    AT_USART_Init();
-    AT_NVIC_Init();
-
-    /* 等模组能应答 "AT": 拿到 OK 就说明它已经启动完成、可以接收命令了。
-     * 这里**不再下发 AT+RESTORE**: 恢复出厂会擦掉模组保存的配置并强制重启,
-     * 而那次重启正是"模组还没准备好, 先回 busy p... / ready"这类偶发失败的来源。
-     * 需要恢复出厂时, 由上层在异常路径上调用 AT_Factory_Reset()。 */
-    if (!AT_Wait_Boot(3000))
-        return false;
-
-    return true;
-}
-
-/**
- * @brief 恢复模组出厂设置, 并等它重启完成
- * @return true 成功
- * @note  AT+RESTORE 会擦掉模组内保存的配置(Wi-Fi 模式、已保存的 AP 等)并**强制重启**。
- *        重启期间模组先吐的是 ready / busy p..., 而不是 OK —— 这正是 AT_Init()
- *        偶发失败的来源(见 README 11.11)。因此它不再出现在每次开机的必经路径上,
- *        只作为"模组不应答或配置疑似损坏"时的恢复手段, 由上层按需调用。
- */
-bool AT_Factory_Reset(void)
-{
-    if (!AT_Send_Command("AT+RESTORE", 2000))
-        return false;
-
-    return AT_Wait_Ready(5000); // 重启完成前不能发别的命令
-}
+/* ================ AT底层通信相关函数 ================ */
 
 /**
  * @brief 通过Usart向ESP32发送AT指令
@@ -197,12 +169,248 @@ static bool AT_Wait_Boot(uint32_t timeout)
     return false;
 }
 
+/* ================ 解析函数 ================ */
+
+/**
+ * @brief 解析CWSTATE回复
+ * @param response CWSTATE回复字符串
+ * @param info WiFi信息结构体指针
+ * @return true 成功,false 失败
+ */
+static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
+{
+    // 命令和命令回复内容：
+    //     "AT+CWSTATE?\r\n"
+    //     "+CWSTATE:2,\"Laptop -S\"\r\n"
+    //     "\r\n"
+    //     "OK\r\n";
+    response = strstr(response, "+CWSTATE:");
+
+    if (response == NULL)
+        return false;
+
+    int wifi_state; // 0=断开, 1=连接中, 2=已连接
+
+    /* 解析wifi_state和ssid */
+    if (sscanf(response, "+CWSTATE:%d,\"%63[^\"]\"", &wifi_state, info->ssid) != 2)
+        return false;
+
+    info->connected = (wifi_state == 2);
+
+    return true;
+}
+
+/**
+ * @brief 解析CWJAP回复
+ * @param response CWJAP回复字符串
+ * @param info WiFi信息结构体指针
+ * @return true 成功,false 失败
+ */
+static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
+{
+    // 命令和命令回复内容：
+    //     "AT+CWJAP?\r\n"
+    //     "+CWJAP:\"Laptop-S\",\"7e:b5:66:b3:56:55\",1,-59,0,1,3,0,1\r\n"
+    //     "\r\n"
+    //     "OK\r\n";
+    response = strstr(response, "+CWJAP:");
+
+    if (response == NULL)
+        return false;
+
+    /* 解析ssid/bssid/channel/rssi */
+    if (sscanf(response, "+CWJAP:\"%63[^\"]\",\"%17[^\"]\",%d,%d", info->ssid, info->bssid, &info->channel, &info->rssi) != 4)
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief 解析CIPSNTPTIME回复
+ * @param response CIPSNTPTIME回复字符串
+ * @param date_info 日期信息结构体指针
+ * @return true 成功,false 失败
+ */
+static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info)
+{
+    // 命令和命令回复内容：
+    //     "AT+CIPSNTPTIME?\r\n"
+    //     "+CIPSNTPTIME:Tue Oct 19 17:47:56 2021\r\n"
+    //     "OK\r\n";
+    response = strstr(response, "+CIPSNTPTIME:");
+
+    if (response == NULL)
+        return false;
+
+    char weekday_str[8];
+    char month_str[4];
+
+    /* 解析日期时间 */
+    if (sscanf(response, "+CIPSNTPTIME:%3s %3s %hhu %hhu:%hhu:%hhu %hu",
+               weekday_str, month_str, &date_info->day, &date_info->hour, &date_info->minute, &date_info->second, &date_info->year) != 7)
+        return false;
+
+    date_info->weekday = Weekday3Num(weekday_str);
+    date_info->month = Month2Num(month_str);
+
+    return true;
+}
+
+/* ================ SNTP相关底层函数 ================ */
+
+/**
+ * @brief 月份字符串转换为月份数字
+ * @param month_str 月份字符串
+ * @return 月份数字
+ */
+static uint8_t Month2Num(const char *month_str)
+{
+    const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+    for (uint8_t i = 0; i < 12; i++)
+    {
+        if (strcmp(month_str, months[i]) == 0)
+            return i + 1;
+    }
+
+    return 0;
+}
+
+/**
+ * @brief 星期几字符串转换为星期几数字
+ * @param weekday_str 星期几字符串
+ * @return 星期几数字
+ */
+static uint8_t Weekday3Num(const char *weekday_str)
+{
+    const char *weekdays[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+
+    for (uint8_t i = 0; i < 7; i++)
+    {
+        if (strcmp(weekday_str, weekdays[i]) == 0)
+            return i + 1;
+    }
+    return 0;
+}
+
+// /* ================ HTTP 逆地理编码(经纬度 → 省/市) ================ */
+
+// /* AMAP_KEY(高德"Web服务"类型key, 逆地理编码用)在 User/Inc/Secrets.h(不入库) */
+
+// /* 只用 base 档: 需要的 formatted_address 与 addressComponent(省/市)都在里面。
+//  * all 档会额外带上 roads / roadinters / pois / aois, 响应可达数十KB, 而 AT 的
+//  * 接收缓冲(rx_buf)只有1KB, 必然在中途被截断 —— 不要图省事改成 all。 */
+// #define AMAP_REGEO_URL_FMT "https://restapi.amap.com/v3/geocode/regeo?key=%s&location=%.6f,%.6f&extensions=base"
+
+// /**
+//  * @brief 用经纬度反查省/市(高德逆地理编码)
+//  * @param latitude  纬度(十进制度, 南纬为负)
+//  * @param longitude 经度(十进制度, 西经为负)
+//  * @param info      输出: province / city, 均为UTF-8原文
+//  * @return true 成功(至少取到省或市)
+//  * @note  高德的 location 参数是"经度,纬度", 与入参顺序相反, 别写反;
+//  *        失败(坐标无效/网络错误/key无效)时 info 被清零, 界面据此显示占位符。
+//  */
+// bool AT_Get_Location(float latitude, float longitude, AT_Location_Info_t *info)
+// {
+//     static char tx_buf[192];
+//     const char *response;
+
+//     if (info == NULL)
+//         return false;
+
+//     memset(info, 0, sizeof(*info));
+
+//     /* 坐标非法或尚未定位: (0,0) 在几内亚湾, 是"还没有定位"最常见的初值 */
+//     if (latitude < -90.0f || latitude > 90.0f ||
+//         longitude < -180.0f || longitude > 180.0f ||
+//         (latitude == 0.0f && longitude == 0.0f))
+//         return false;
+
+//     snprintf(tx_buf, sizeof(tx_buf), AMAP_REGEO_URL_FMT, AMAP_KEY, (double)longitude, (double)latitude);
+
+//     response = AT_Get_HTTP(tx_buf);
+//     if (response == NULL)
+//         return false;
+
+//     return Parse_Http_Location_Response(response, info);
+// }
+
+// bool Parse_Http_Location_Response(const char *response, AT_Location_Info_t *info)
+// {
+//     // 命令和命令回复内容(节选, extensions=base):
+//     //     "AT+HTTPCLIENT=2,1,\"https://restapi.amap.com/v3/geocode/regeo?key=<key>&location=115.556428,37.339625&extensions=base\",,,2\r\n"
+//     //     "+HTTPCLIENT:486,{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\",\"regeocode\":{\"formatted_address\":\"河北省衡水市冀州区南午村镇155乡道\","
+//     //                      "\"addressComponent\":{\"city\":\"衡水市\",\"province\":\"河北省\",\"adcode\":\"131103\",\"district\":\"冀州区\","
+//     //                                          \"towncode\":\"131103103000\",\"streetNumber\":{...},\"businessAreas\":[]}}}\r\n"
+//     //     "\r\n"
+//     //     "OK\r\n";
+//     // 失败时服务端只回错误码, 形如:
+//     //     {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}   —— 没有 addressComponent
+//     if (response == NULL || info == NULL)
+//         return false;
+
+//     memset(info, 0, sizeof(*info));
+
+//     /* 直接找 addressComponent: 不依赖 formatted_address 是否存在, 也不会被
+//      * regeocode 里的其它同名字段带偏 */
+//     const char *response_address = strstr(response, "\"addressComponent\":");
+//     if (response_address == NULL)
+//         return false;
+
+//     /* 1. 省份 */
+//     const char *response_province = strstr(response_address, "\"province\":");
+//     if (response_province != NULL)
+//         (void)sscanf(response_province, "\"province\":\"%31[^\"]\"", info->province);
+
+//     /* 2. 城市: 直辖市在这里是空数组 "city":[], 上面的格式匹配不上, 于是保持空串,
+//      *    界面便只显示省份。注意 "\"city\":" 不会匹配到 "citycode"。 */
+//     const char *response_city = strstr(response_address, "\"city\":");
+//     if (response_city != NULL)
+//         (void)sscanf(response_city, "\"city\":\"%31[^\"]\"", info->city);
+
+//     return (info->province[0] != '\0') || (info->city[0] != '\0');
+// }
+
+/* ================ public 函数 ================ */
+bool AT_Init(void)
+{
+    /* 外设初始化 */
+    AT_GPIO_Init();
+    AT_USART_Init();
+    AT_NVIC_Init();
+    /* 等模组能应答 "AT": 拿到 OK 就说明它已经启动完成、可以接收命令了。
+     * 这里不下发 AT+RESTORE: 恢复出厂会擦掉模组保存的配置并强制重启,
+     * 而那次重启是"模组还没准备好, 先回 busy p... / ready"这类偶发失败的来源
+     * 需要恢复出厂时, 由上层在异常路径上调用 AT_Factory_Reset() */
+    if (!AT_Wait_Boot(3000))
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief 恢复模组出厂设置, 并等它重启完成
+ * @return true 成功
+ * @note  AT+RESTORE 会擦掉模组内保存的配置(Wi-Fi 模式、已保存的 AP 等)并**强制重启**。
+ *        重启期间模组先吐的是 ready / busy p..., 而不是 OK
+ *        只作为"模组不应答或配置疑似损坏"时的恢复手段, 由上层按需调用。
+ */
+bool AT_Factory_Reset(void)
+{
+    if (!AT_Send_Command("AT+RESTORE", 2000))
+        return false;
+
+    return AT_Wait_Ready(5000); // 重启完成前不能发别的命令
+}
+
+/* ================ AT 通信相关 public 函数 ================ */
+
 /**
  * @brief 发送AT指令并等待 "OK"
  * @param command 指令字符串
  * @param timeout 超时时间, 单位ms(含重发等待)
  * @return true 成功,false 失败
- *
  * @note  收到 "busy p..." 说明模组暂时拒绝该命令(常见于刚上电/重启后
  *        Wi-Fi协议栈还在初始化), 只要总时间还没用完就重发一次;
  *        其它 ACK(ERROR / ready / 超时)一律判失败, 不重发。
@@ -241,7 +449,6 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
  * @brief 等待模组输出 "ready"
  * @param timeout 超时时间, 单位ms
  * @return true 收到 ready
- *
  * @note  AT_Usart_Wait_Receive() 匹配到**任意**已知 ACK 就会返回, 直接拿它
  *        当"等 ready"用是错的: 模组重启途中先冒出的 OK / ERROR / busy 会让
  *        本函数立刻失败(实测 AT_Init() 因此只花约100ms就报失败, 而真正的超时
@@ -276,7 +483,7 @@ const char *AT_Get_Response(void)
     return rx_buf;
 }
 
-/* ==================== WiFi相关底层函数 ==================== */
+/* ================ AT WiFi public 函数 ================ */
 
 bool AT_WiFi_Init(void)
 {
@@ -333,12 +540,15 @@ bool AT_Is_WiFi_Conected(void)
     return info.connected;
 }
 
+/* ================ AT 简单低功耗 public 函数 ================ */
+
 /**
  * @brief 设置ESP32-C3的Wi-Fi睡眠模式
- * @param mode 0=关闭睡眠(全速); 1=Modem-sleep按AP的DTIM; 2=Light-sleep; 3=Modem-sleep按listen interval
- * @return true 设置成功,false 失败
- * @note  该设置不写入flash, 模组一旦重启就会丢失, 因此每次上电都要重新下发。
- *        Modem-sleep只按周期关闭RF, Wi-Fi连接保持, 不会掉线。
+ * @param mode 0 = 关闭睡眠(全速, 约80mA)
+ *             1 = Modem-sleep, RF按AP的DTIM周期关闭(ESP32-C3约20mA)  ← 夜间使用
+ *             2 = Light-sleep(约130uA, 但必须先用 AT+SLEEPWKCFG 配好唤醒源;
+ *               ESP32-C3只支持定时器/GPIO唤醒, 当前硬件未连唤醒GPIO, 故不使用)
+ *             3 = Modem-sleep, RF按 AT+CWJAP 的 listen interval 关闭
  */
 bool AT_Set_Sleep(uint8_t mode)
 {
@@ -351,61 +561,7 @@ bool AT_Set_Sleep(uint8_t mode)
     return true;
 }
 
-/**
- * @brief 解析CWSTATE回复
- * @param response CWSTATE回复字符串
- * @param info WiFi信息结构体指针
- * @return true 成功,false 失败
- */
-static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
-{
-    // 命令和命令回复内容：
-    //     "AT+CWSTATE?\r\n"
-    //     "+CWSTATE:2,\"Laptop -S\"\r\n"
-    //     "\r\n"
-    //     "OK\r\n";
-    response = strstr(response, "+CWSTATE:");
-
-    if (response == NULL)
-        return false;
-
-    int wifi_state; // 0=断开, 1=连接中, 2=已连接
-
-    /* 解析wifi_state和ssid */
-    if (sscanf(response, "+CWSTATE:%d,\"%63[^\"]\"", &wifi_state, info->ssid) != 2)
-        return false;
-
-    info->connected = (wifi_state == 2);
-
-    return true;
-}
-
-/**
- * @brief 解析CWJAP回复
- * @param response CWJAP回复字符串
- * @param info WiFi信息结构体指针
- * @return true 成功,false 失败
- */
-static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
-{
-    // 命令和命令回复内容：
-    //     "AT+CWJAP?\r\n"
-    //     "+CWJAP:\"Laptop-S\",\"7e:b5:66:b3:56:55\",1,-59,0,1,3,0,1\r\n"
-    //     "\r\n"
-    //     "OK\r\n";
-    response = strstr(response, "+CWJAP:");
-
-    if (response == NULL)
-        return false;
-
-    /* 解析ssid/bssid/channel/rssi */
-    if (sscanf(response, "+CWJAP:\"%63[^\"]\",\"%17[^\"]\",%d,%d", info->ssid, info->bssid, &info->channel, &info->rssi) != 4)
-        return false;
-
-    return true;
-}
-
-/* ==================== SNTP相关底层函数 ==================== */
+/* ================ SNTP相关 public 函数 ================ */
 
 /**
  * @brief 初始化SNTP模块
@@ -443,73 +599,7 @@ bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
     return true;
 }
 
-/**
- * @brief 月份字符串转换为月份数字
- * @param month_str 月份字符串
- * @return 月份数字
- */
-static uint8_t Month2Num(const char *month_str)
-{
-    const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-    for (uint8_t i = 0; i < 12; i++)
-    {
-        if (strcmp(month_str, months[i]) == 0)
-            return i + 1;
-    }
-
-    return 0;
-}
-
-/**
- * @brief 星期几字符串转换为星期几数字
- * @param weekday_str 星期几字符串
- * @return 星期几数字
- */
-static uint8_t Weekday3Num(const char *weekday_str)
-{
-    const char *weekdays[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-
-    for (uint8_t i = 0; i < 7; i++)
-    {
-        if (strcmp(weekday_str, weekdays[i]) == 0)
-            return i + 1;
-    }
-    return 0;
-}
-
-/**
- * @brief 解析CIPSNTPTIME回复
- * @param response CIPSNTPTIME回复字符串
- * @param date_info 日期信息结构体指针
- * @return true 成功,false 失败
- */
-static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info)
-{
-    // 命令和命令回复内容：
-    //     "AT+CIPSNTPTIME?\r\n"
-    //     "+CIPSNTPTIME:Tue Oct 19 17:47:56 2021\r\n"
-    //     "OK\r\n";
-    response = strstr(response, "+CIPSNTPTIME:");
-
-    if (response == NULL)
-        return false;
-
-    char weekday_str[8];
-    char month_str[4];
-
-    /* 解析日期时间 */
-    if (sscanf(response, "+CIPSNTPTIME:%3s %3s %hhu %hhu:%hhu:%hhu %hu",
-               weekday_str, month_str, &date_info->day, &date_info->hour, &date_info->minute, &date_info->second, &date_info->year) != 7)
-        return false;
-
-    date_info->weekday = Weekday3Num(weekday_str);
-    date_info->month = Month2Num(month_str);
-
-    return true;
-}
-
-/* ==================== HTTP 天气相关底层函数 ==================== */
+/* ================ HTTP 天气相关 public 函数 ================ */
 
 /**
  * @brief 发送HTTP请求
@@ -595,8 +685,7 @@ bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
     return true;
 }
 
-/* ==================== HTTP 获取公网IP相关底层函数 ==================== */
-
+/* ================ HTTP 获取公网 IP 相关 public 函数 ================ */
 #define AT_IP_URL "https://ipv4.icanhazip.com" // 公网IP查询接口, 直接返回纯文本IP, 不需要key
 
 /**
@@ -648,83 +737,4 @@ bool Parse_Http_IP_Response(const char *response, char *ip)
         return false;
 
     return true;
-}
-
-/* ==================== HTTP 逆地理编码(经纬度 → 省/市) ==================== */
-
-/* AMAP_KEY(高德"Web服务"类型key, 逆地理编码用)在 User/Inc/Secrets.h(不入库) */
-
-/* 只用 base 档: 需要的 formatted_address 与 addressComponent(省/市)都在里面。
- * all 档会额外带上 roads / roadinters / pois / aois, 响应可达数十KB, 而 AT 的
- * 接收缓冲(rx_buf)只有1KB, 必然在中途被截断 —— 不要图省事改成 all。 */
-#define AMAP_REGEO_URL_FMT "https://restapi.amap.com/v3/geocode/regeo?key=%s&location=%.6f,%.6f&extensions=base"
-
-/**
- * @brief 用经纬度反查省/市(高德逆地理编码)
- * @param latitude  纬度(十进制度, 南纬为负)
- * @param longitude 经度(十进制度, 西经为负)
- * @param info      输出: province / city, 均为UTF-8原文
- * @return true 成功(至少取到省或市)
- * @note  高德的 location 参数是"经度,纬度", 与入参顺序相反, 别写反;
- *        失败(坐标无效/网络错误/key无效)时 info 被清零, 界面据此显示占位符。
- */
-bool AT_Get_Location(float latitude, float longitude, AT_Location_Info_t *info)
-{
-    static char tx_buf[192];
-    const char *response;
-
-    if (info == NULL)
-        return false;
-
-    memset(info, 0, sizeof(*info));
-
-    /* 坐标非法或尚未定位: (0,0) 在几内亚湾, 是"还没有定位"最常见的初值 */
-    if (latitude < -90.0f || latitude > 90.0f ||
-        longitude < -180.0f || longitude > 180.0f ||
-        (latitude == 0.0f && longitude == 0.0f))
-        return false;
-
-    snprintf(tx_buf, sizeof(tx_buf), AMAP_REGEO_URL_FMT, AMAP_KEY, (double)longitude, (double)latitude);
-
-    response = AT_Get_HTTP(tx_buf);
-    if (response == NULL)
-        return false;
-
-    return Parse_Http_Location_Response(response, info);
-}
-
-bool Parse_Http_Location_Response(const char *response, AT_Location_Info_t *info)
-{
-    // 命令和命令回复内容(节选, extensions=base):
-    //     "AT+HTTPCLIENT=2,1,\"https://restapi.amap.com/v3/geocode/regeo?key=<key>&location=115.556428,37.339625&extensions=base\",,,2\r\n"
-    //     "+HTTPCLIENT:486,{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\",\"regeocode\":{\"formatted_address\":\"河北省衡水市冀州区南午村镇155乡道\","
-    //                      "\"addressComponent\":{\"city\":\"衡水市\",\"province\":\"河北省\",\"adcode\":\"131103\",\"district\":\"冀州区\","
-    //                                          \"towncode\":\"131103103000\",\"streetNumber\":{...},\"businessAreas\":[]}}}\r\n"
-    //     "\r\n"
-    //     "OK\r\n";
-    // 失败时服务端只回错误码, 形如:
-    //     {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}   —— 没有 addressComponent
-    if (response == NULL || info == NULL)
-        return false;
-
-    memset(info, 0, sizeof(*info));
-
-    /* 直接找 addressComponent: 不依赖 formatted_address 是否存在, 也不会被
-     * regeocode 里的其它同名字段带偏 */
-    const char *response_address = strstr(response, "\"addressComponent\":");
-    if (response_address == NULL)
-        return false;
-
-    /* 1. 省份 */
-    const char *response_province = strstr(response_address, "\"province\":");
-    if (response_province != NULL)
-        (void)sscanf(response_province, "\"province\":\"%31[^\"]\"", info->province);
-
-    /* 2. 城市: 直辖市在这里是空数组 "city":[], 上面的格式匹配不上, 于是保持空串,
-     *    界面便只显示省份。注意 "\"city\":" 不会匹配到 "citycode"。 */
-    const char *response_city = strstr(response_address, "\"city\":");
-    if (response_city != NULL)
-        (void)sscanf(response_city, "\"city\":\"%31[^\"]\"", info->city);
-
-    return (info->province[0] != '\0') || (info->city[0] != '\0');
 }

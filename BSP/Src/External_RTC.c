@@ -5,31 +5,42 @@
  * LSB
  * ================================*/
 
-static inline void DS1302_CLK_HIGH() { GPIO_SetBits(DS1302_PORT, DS1302_CLK_PIN); }
-static inline void DS1302_CLK_LOW() { GPIO_ResetBits(DS1302_PORT, DS1302_CLK_PIN); }
-static inline void DS1302_RST_HIGH() { GPIO_SetBits(DS1302_PORT, DS1302_RST_PIN); }
-static inline void DS1302_RST_LOW() { GPIO_ResetBits(DS1302_PORT, DS1302_RST_PIN); }
+/* ================ static 函数 ================== */
+static inline void DS1302_CLK_HIGH(void) { GPIO_SetBits(DS1302_PORT, DS1302_CLK_PIN); }
+static inline void DS1302_CLK_LOW(void) { GPIO_ResetBits(DS1302_PORT, DS1302_CLK_PIN); }
+static inline void DS1302_RST_HIGH(void) { GPIO_SetBits(DS1302_PORT, DS1302_RST_PIN); }
+static inline void DS1302_RST_LOW(void) { GPIO_ResetBits(DS1302_PORT, DS1302_RST_PIN); }
+static void DS1302_GPIO_Init(void);
+static void DS1302_GPIO_OUT(void);
+static void DS1302_GPIO_IN(void);
+static inline void DS1302_IO_Write(uint8_t bit);
+static inline uint8_t DS1302_IO_Read(void);
+static void DS1302_WriteByte(uint8_t data);
+static uint8_t DS1302_ReadByte(void);
+static void DS1302_WriteReg(uint8_t cmd, uint8_t data);
+// static uint8_t DS1302_ReadReg(uint8_t cmd);
+static uint8_t Bcd2Dec(uint8_t value);
+static uint8_t Dec2Bcd(uint8_t value);
+void DS1302_Init(void);
+static void DS1302_BurstRead(uint8_t raw[8]);
+static bool DS1302_ReadOnce(DS1302_Time_t *time);
 
 static void DS1302_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
-
     /* RST / SCLK 推挽输出 */
     GPIO_InitStruct.GPIO_Pin = DS1302_RST_PIN | DS1302_CLK_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
     GPIO_Init(DS1302_PORT, &GPIO_InitStruct);
-
     /* IO 默认输出, 后面读时设为输入 */
     GPIO_InitStruct.GPIO_Pin = DS1302_IO_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
     GPIO_Init(DS1302_PORT, &GPIO_InitStruct);
 
     GPIO_ResetBits(DS1302_PORT, DS1302_RST_PIN);
@@ -41,13 +52,11 @@ static void DS1302_GPIO_OUT(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
-
     GPIO_InitStruct.GPIO_Pin = DS1302_IO_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
     GPIO_Init(DS1302_PORT, &GPIO_InitStruct);
 }
 
@@ -55,13 +64,11 @@ static void DS1302_GPIO_IN(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
-
     GPIO_InitStruct.GPIO_Pin = DS1302_IO_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
     GPIO_Init(DS1302_PORT, &GPIO_InitStruct);
 }
 
@@ -80,7 +87,6 @@ static inline uint8_t DS1302_IO_Read(void)
 
 /**
  * @brief 写入一个字节到DS1302, 低位先写
- *
  * @param data 要写入的字节
  */
 static void DS1302_WriteByte(uint8_t data)
@@ -102,7 +108,6 @@ static void DS1302_WriteByte(uint8_t data)
 
 /**
  * @brief 从DS1302读取一个字节, 低位先读
- *
  * @return 读取到的字节
  * @note 采样必须在 SCLK 拉高"之前"完成。DS1302 只在上升沿后极短的 t_CDH 内
  *       保持数据, 随后就释放 IO(高阻), 此时线电平由 MCU 内部约 40k 上拉拉高;
@@ -120,13 +125,14 @@ static uint8_t DS1302_ReadByte(void)
     {
         data >>= 1;
 
-        if (DS1302_IO_Read()) /* 先读入引脚数据，再拉高 SCLK */
+        /* 先读入引脚数据，再拉高 SCLK */
+        if (DS1302_IO_Read())
             data |= 0x80U;
-
-        DS1302_CLK_HIGH(); /* 上升沿: 从机锁存 */
+        /* 上升沿: 从机锁存 */
+        DS1302_CLK_HIGH();
         delay_us(10);
-
-        DS1302_CLK_LOW(); /* 下降沿: 从机输出 */
+        /* 下降沿: 从机输出 */
+        DS1302_CLK_LOW();
         delay_us(10);
     }
 
@@ -149,25 +155,25 @@ static void DS1302_WriteReg(uint8_t cmd, uint8_t data)
     delay_us(10);
 }
 
-static uint8_t DS1302_ReadReg(uint8_t cmd)
-{
-    uint8_t data = 0;
+// static uint8_t DS1302_ReadReg(uint8_t cmd)
+// {
+//     uint8_t data = 0;
 
-    DS1302_RST_LOW();
-    DS1302_CLK_LOW();
-    delay_us(10);
+//     DS1302_RST_LOW();
+//     DS1302_CLK_LOW();
+//     delay_us(10);
 
-    DS1302_RST_HIGH();
-    delay_us(10);
+//     DS1302_RST_HIGH();
+//     delay_us(10);
 
-    DS1302_WriteByte(cmd);
-    data = DS1302_ReadByte();
+//     DS1302_WriteByte(cmd);
+//     data = DS1302_ReadByte();
 
-    DS1302_RST_LOW();
-    delay_us(10);
+//     DS1302_RST_LOW();
+//     delay_us(10);
 
-    return data;
-}
+//     return data;
+// }
 
 /* ================ BCD 转换 ==================*/
 static uint8_t Bcd2Dec(uint8_t value)
@@ -194,7 +200,6 @@ void DS1302_Init(void)
 
 /**
  * @brief 突发读取 8 字节寄存器
- *
  * @param raw 至少 8 字节的输出缓冲, 顺序: 秒 分 时 日 月 周 年 WP
  */
 static void DS1302_BurstRead(uint8_t raw[8])
@@ -209,7 +214,8 @@ static void DS1302_BurstRead(uint8_t raw[8])
     DS1302_RST_HIGH();
     delay_us(10);
 
-    DS1302_WriteByte(0xBF); /* 时钟突发读取 */
+    /* 时钟突发读取 */
+    DS1302_WriteByte(0xBF);
 
     for (uint8_t i = 0; i < 8; i++)
         raw[i] = DS1302_ReadByte();
@@ -220,10 +226,8 @@ static void DS1302_BurstRead(uint8_t raw[8])
 
 /**
  * @brief 读一次DS1302时间(突发读 + 合法性判断)
- *
  * @param time 存储读取到的时间结构体指针
- * @return true 成功
- * @return false 失败
+ * @return true 成功,false 失败
  */
 static bool DS1302_ReadOnce(DS1302_Time_t *time)
 {
@@ -240,7 +244,7 @@ static bool DS1302_ReadOnce(DS1302_Time_t *time)
 
     time->sec = Bcd2Dec(buf[0] & 0x7F);
     time->min = Bcd2Dec(buf[1] & 0x7F);
-    time->hour = Bcd2Dec(buf[2] & 0x3F); /* 24小时制 */
+    time->hour = Bcd2Dec(buf[2] & 0x3F); // 24小时制
     time->day = Bcd2Dec(buf[3] & 0x3F);
     time->month = Bcd2Dec(buf[4] & 0x1F);
     time->week = Bcd2Dec(buf[5] & 0x07);
@@ -265,13 +269,13 @@ static bool DS1302_ReadOnce(DS1302_Time_t *time)
     return true;
 }
 
+/* ================ public 函数 ==================*/
+
 /**
  * @brief 从DS1302读取时间(连读两次比对)
- *
  * @param time 存储读取到的时间结构体指针
  * @return true 成功
  * @return false 失败
- *
  * @note  突发读期间若时钟半周期被压缩, 可能只错某一位而结果仍落在合法范围内
  *        (例如 00:13 被读成 01:13), 单靠范围校验挡不住。这里连读两次比对:
  *        两次间隔约2ms, 除"秒"以外的字段不应变化, 不一致就判本次读取失败,
@@ -299,17 +303,16 @@ bool DS1302_ReadTime(DS1302_Time_t *time)
 
 /**
  * @brief 设置DS1302时间
- *
  * @param time 要设置的时间结构体指针
- * @return true 成功
- * @return false 失败
+ * @return true 成功,false 失败
  */
 bool DS1302_SetTime(const DS1302_Time_t *time)
 {
     if (time == NULL)
         return false;
 
-    DS1302_WriteReg(0x8E, 0x00); /* 解除写保护 */
+    /* 解除写保护 */
+    DS1302_WriteReg(0x8E, 0x00);
 
     DS1302_RST_LOW();
     DS1302_CLK_LOW();
@@ -318,7 +321,8 @@ bool DS1302_SetTime(const DS1302_Time_t *time)
     DS1302_RST_HIGH();
     delay_us(10);
 
-    DS1302_WriteByte(0xBE); /* 时钟突发写入 */
+    /* 时钟突发写入 */
+    DS1302_WriteByte(0xBE);
 
     DS1302_WriteByte(Dec2Bcd(time->sec) & 0x7F); /* CH=0，启动 */
     DS1302_WriteByte(Dec2Bcd(time->min) & 0x7F);
@@ -332,7 +336,8 @@ bool DS1302_SetTime(const DS1302_Time_t *time)
     DS1302_RST_LOW();
     delay_us(10);
 
-    DS1302_WriteReg(0x8E, 0x80); /* 恢复写保护 */
+    /* 恢复写保护 */
+    DS1302_WriteReg(0x8E, 0x80);
 
     return true;
 }

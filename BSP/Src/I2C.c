@@ -11,32 +11,17 @@
  * 主机接受最后一个字节后发送 nack，通知从机数据接收完成
  * ================================ */
 
-static inline void Soft_I2C_SDA_HIGH(Soft_I2C_t *Soft_I2C)    { GPIO_SetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
-static inline void Soft_I2C_SDA_LOW(Soft_I2C_t *Soft_I2C)     { GPIO_ResetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
-static inline void Soft_I2C_SCL_HIGH(Soft_I2C_t *Soft_I2C)    { GPIO_SetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin); }
-static inline void Soft_I2C_SCL_LOW(Soft_I2C_t *Soft_I2C)     { GPIO_ResetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin); }
+/* ================ static 函数 ================ */
+static inline void Soft_I2C_SDA_HIGH(Soft_I2C_t *Soft_I2C) { GPIO_SetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
+static inline void Soft_I2C_SDA_LOW(Soft_I2C_t *Soft_I2C) { GPIO_ResetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
+static inline void Soft_I2C_SCL_HIGH(Soft_I2C_t *Soft_I2C) { GPIO_SetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin); }
+static inline void Soft_I2C_SCL_LOW(Soft_I2C_t *Soft_I2C) { GPIO_ResetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin); }
 static inline uint8_t Soft_I2C_Read_SDA(Soft_I2C_t *Soft_I2C) { return GPIO_ReadInputDataBit((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
-
-void Soft_I2C_Init(Soft_I2C_t *Soft_I2C)
-{
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_StructInit(&GPIO_InitStruct);
-
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-
-    GPIO_InitStruct.GPIO_Pin = Soft_I2C->SCL_Pin;
-    GPIO_Init(Soft_I2C->SCL_Port, &GPIO_InitStruct);
-
-    GPIO_InitStruct.GPIO_Pin = Soft_I2C->SDA_Pin;
-    GPIO_Init(Soft_I2C->SDA_Port, &GPIO_InitStruct);
-
-    Soft_I2C_SDA_HIGH(Soft_I2C);
-    Soft_I2C_SCL_HIGH(Soft_I2C);
-    delay_us(5);
-}
+static void Soft_I2C_Start(Soft_I2C_t *Soft_I2C);
+static void Soft_I2C_Stop(Soft_I2C_t *Soft_I2C);
+static uint8_t Soft_I2C_Wait_Ack(Soft_I2C_t *Soft_I2C);
+static void Soft_I2C_Send_ACK(Soft_I2C_t *Soft_I2C);
+static void Soft_I2C_Send_NACK(Soft_I2C_t *Soft_I2C);
 
 static void Soft_I2C_Start(Soft_I2C_t *Soft_I2C)
 {
@@ -96,9 +81,30 @@ static void Soft_I2C_Send_NACK(Soft_I2C_t *Soft_I2C)
     delay_us(5);
 }
 
+/* ================ public 函数 ================ */
+void Soft_I2C_Init(Soft_I2C_t *Soft_I2C)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_StructInit(&GPIO_InitStruct);
+
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+
+    GPIO_InitStruct.GPIO_Pin = Soft_I2C->SCL_Pin;
+    GPIO_Init(Soft_I2C->SCL_Port, &GPIO_InitStruct);
+
+    GPIO_InitStruct.GPIO_Pin = Soft_I2C->SDA_Pin;
+    GPIO_Init(Soft_I2C->SDA_Port, &GPIO_InitStruct);
+
+    Soft_I2C_SDA_HIGH(Soft_I2C);
+    Soft_I2C_SCL_HIGH(Soft_I2C);
+    delay_us(5);
+}
+
 /**
  * @brief 发送一个字节
- *
  * @param Soft_I2C I2C结构体指针
  * @param data 要发送的字节
  * */
@@ -122,7 +128,6 @@ void Soft_I2C_Send_Byte(Soft_I2C_t *Soft_I2C, uint8_t data)
 
 /**
  * @brief 接收一个字节
- *
  * @param Soft_I2C I2C结构体指针
  * @param ack_flag 是否发送 ack 确认,0 表示发送 ack,1 表示发送 nack
  * @return uint8_t 接收的字节
@@ -153,7 +158,6 @@ uint8_t Soft_I2c_Receive_Byte(Soft_I2C_t *Soft_I2C, uint8_t ack_flag)
 
 /**
  * @brief 发送多个字节
- *
  * @param Soft_I2C I2C结构体指针
  * @param dev_addr 从机地址
  * @param reg_addr 寄存器地址
@@ -195,7 +199,6 @@ uint8_t Soft_I2C_Send_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t reg_
 
 /**
  * @brief 接收多个字节
- *
  * @param Soft_I2C I2C结构体指针
  * @param dev_addr 从机地址
  * @param reg_addr 寄存器地址

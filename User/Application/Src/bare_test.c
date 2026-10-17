@@ -866,102 +866,102 @@ static void LFS_BareMetal_Test(void)
     }
 }
 
-/* ================ ATGM336H 定位模块测试 ================
- * 目标: 只验证"接线 + 波特率 + NMEA 收帧 + 校验和 + 解析"这一条链路,
- *       既不接界面(除 OLED 显示), 也不接系统时钟 —— 跑通之后再并入 FreeRTOS。
- * 接线: 模块 TXD -> PB11(USART3_RX), 模块 VCC/GND 与主控共地;
- *       模块 RXD(PB10) 可悬空, 只有需要下发配置命令时才要接。
- * ==================================================== */
+// /* ================ ATGM336H 定位模块测试 ================
+//  * 目标: 只验证"接线 + 波特率 + NMEA 收帧 + 校验和 + 解析"这一条链路,
+//  *       既不接界面(除 OLED 显示), 也不接系统时钟 —— 跑通之后再并入 FreeRTOS。
+//  * 接线: 模块 TXD -> PB11(USART3_RX), 模块 VCC/GND 与主控共地;
+//  *       模块 RXD(PB10) 可悬空, 只有需要下发配置命令时才要接。
+//  * ==================================================== */
 
-/* 连续多少秒一个RMC帧都没收到就提示接线/波特率 */
-#define ATGM_TEST_NO_DATA_SEC 5U
+// /* 连续多少秒一个RMC帧都没收到就提示接线/波特率 */
+// #define ATGM_TEST_NO_DATA_SEC 5U
 
-static void ATGM336H_BareMetal_Test(void)
-{
-    char buf[24];
-    ATGM_Info_t info;
-    uint8_t ev;
-    bool last_valid = false;
-    bool got_frame = false;
-    uint32_t tick = 0;
-    uint32_t no_frame_sec = 0;
+// static void ATGM336H_BareMetal_Test(void)
+// {
+//     char buf[24];
+//     ATGM_Info_t info;
+//     uint8_t ev;
+//     bool last_valid = false;
+//     bool got_frame = false;
+//     uint32_t tick = 0;
+//     uint32_t no_frame_sec = 0;
 
-    OLED_Init();
-    OLED_Clear();
-    OLED_Write_String(0, 0, "LAT ---         ", &Font_16); /* 先摆上"还没有定位" */
-    OLED_Write_String(0, 16, "LON ---         ", &Font_16);
+//     OLED_Init();
+//     OLED_Clear();
+//     OLED_Write_String(0, 0, "LAT ---         ", &Font_16); /* 先摆上"还没有定位" */
+//     OLED_Write_String(0, 16, "LON ---         ", &Font_16);
 
-    ATGM336H_Init();
-    printf("[GNSS] ATGM336H init: USART3 @ %u-8N1, PB10=TX PB11=RX\r\n",
-           (unsigned)USART3_BAUD);
-    printf("[GNSS] waiting for $xxRMC; report on position change\r\n");
+//     ATGM336H_Init();
+//     printf("[GNSS] ATGM336H init: USART3 @ %u-8N1, PB10=TX PB11=RX\r\n",
+//            (unsigned)USART3_BAUD);
+//     printf("[GNSS] waiting for $xxRMC; report on position change\r\n");
 
-    for (;;)
-    {
-        ev = ATGM336H_Poll(); /* 非阻塞; 每100ms读一次, 保证环形缓冲不溢出 */
+//     for (;;)
+//     {
+//         ev = ATGM336H_Poll(); /* 非阻塞; 每100ms读一次, 保证环形缓冲不溢出 */
 
-        if (ev & ATGM_EV_RMC)
-            got_frame = true;
+//         if (ev & ATGM_EV_RMC)
+//             got_frame = true;
 
-        /* ---- 位置有变化或定位状态翻转: 刷界面并打一行 ---- */
-        if (ev & ATGM_EV_UPDATE)
-        {
-            ATGM336H_GetInfo(&info);
+//         /* ---- 位置有变化或定位状态翻转: 刷界面并打一行 ---- */
+//         if (ev & ATGM_EV_UPDATE)
+//         {
+//             ATGM336H_GetInfo(&info);
 
-            if (info.valid)
-            {
-                float la = (info.latitude >= 0.0f) ? info.latitude : -info.latitude;
-                float lo = (info.longitude >= 0.0f) ? info.longitude : -info.longitude;
+//             if (info.valid)
+//             {
+//                 float la = (info.latitude >= 0.0f) ? info.latitude : -info.latitude;
+//                 float lo = (info.longitude >= 0.0f) ? info.longitude : -info.longitude;
 
-                snprintf(buf, sizeof(buf), "LAT %c%.5f", (info.latitude >= 0.0f) ? 'N' : 'S', (double)la);
-                OLED_Write_String(0, 0, buf, &Font_16);
+//                 snprintf(buf, sizeof(buf), "LAT %c%.5f", (info.latitude >= 0.0f) ? 'N' : 'S', (double)la);
+//                 OLED_Write_String(0, 0, buf, &Font_16);
 
-                snprintf(buf, sizeof(buf), "LON %c%.5f", (info.longitude >= 0.0f) ? 'E' : 'W', (double)lo);
-                OLED_Write_String(0, 16, buf, &Font_16);
+//                 snprintf(buf, sizeof(buf), "LON %c%.5f", (info.longitude >= 0.0f) ? 'E' : 'W', (double)lo);
+//                 OLED_Write_String(0, 16, buf, &Font_16);
 
-                printf("[GNSS] LAT=%.5f LON=%.5f\r\n",
-                       (double)info.latitude, (double)info.longitude);
-            }
-            else
-            {
-                /* 定长字符串, 避免上一次的内容留下残影 */
-                OLED_Write_String(0, 0, "LAT ---         ", &Font_16);
-                OLED_Write_String(0, 16, "LON ---         ", &Font_16);
-            }
+//                 printf("[GNSS] LAT=%.5f LON=%.5f\r\n",
+//                        (double)info.latitude, (double)info.longitude);
+//             }
+//             else
+//             {
+//                 /* 定长字符串, 避免上一次的内容留下残影 */
+//                 OLED_Write_String(0, 0, "LAT ---         ", &Font_16);
+//                 OLED_Write_String(0, 16, "LON ---         ", &Font_16);
+//             }
 
-            /* 定位有无的变化单独报一行 */
-            if (info.valid != last_valid)
-            {
-                last_valid = info.valid;
-                printf("[GNSS] %s\r\n", info.valid ? "fix acquired" : "fix lost");
-            }
-        }
+//             /* 定位有无的变化单独报一行 */
+//             if (info.valid != last_valid)
+//             {
+//                 last_valid = info.valid;
+//                 printf("[GNSS] %s\r\n", info.valid ? "fix acquired" : "fix lost");
+//             }
+//         }
 
-        delay_ms(100);
+//         delay_ms(100);
 
-        if ((++tick % 10U) != 0U) /* 每秒结算一次"有没有收到帧" */
-            continue;
+//         if ((++tick % 10U) != 0U) /* 每秒结算一次"有没有收到帧" */
+//             continue;
 
-        /* ---- 一个RMC帧都没收到: 提示接线/波特率(第5秒一次, 之后每30秒一次) ---- */
-        if (got_frame)
-        {
-            got_frame = false;
-            no_frame_sec = 0;
-        }
-        else
-        {
-            no_frame_sec++;
+//         /* ---- 一个RMC帧都没收到: 提示接线/波特率(第5秒一次, 之后每30秒一次) ---- */
+//         if (got_frame)
+//         {
+//             got_frame = false;
+//             no_frame_sec = 0;
+//         }
+//         else
+//         {
+//             no_frame_sec++;
 
-            if (no_frame_sec == ATGM_TEST_NO_DATA_SEC ||
-                (no_frame_sec > ATGM_TEST_NO_DATA_SEC && (no_frame_sec % 30U) == 0U))
-            {
-                printf("[GNSS] no $xxRMC for %us -- check module TXD -> PB11, common GND, "
-                       "baud=%u, and antenna placement\r\n",
-                       (unsigned)no_frame_sec, (unsigned)USART3_BAUD);
-            }
-        }
-    }
-}
+//             if (no_frame_sec == ATGM_TEST_NO_DATA_SEC ||
+//                 (no_frame_sec > ATGM_TEST_NO_DATA_SEC && (no_frame_sec % 30U) == 0U))
+//             {
+//                 printf("[GNSS] no $xxRMC for %us -- check module TXD -> PB11, common GND, "
+//                        "baud=%u, and antenna placement\r\n",
+//                        (unsigned)no_frame_sec, (unsigned)USART3_BAUD);
+//             }
+//         }
+//     }
+// }
 
 /* ================ LCD + 触摸测试 ================ */
 

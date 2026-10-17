@@ -44,8 +44,9 @@ static void Net_Task(void *pvParameters)
 
     for (;;)
     {
-        /* 1s 心跳; 同时等待"退出低功耗立即补更"与"键盘提交了新凭据"两个请求 */
-        EventBits_t bits = xEventGroupWaitBits(Task_Events(), EV_NET_UPDATE_NOW | EV_WIFI_CRED,
+        /* 1s 心跳; 同时等待"退出低功耗立即补更"与"键盘提交了新凭据/新定位"三个请求 */
+        EventBits_t bits = xEventGroupWaitBits(Task_Events(),
+                                              EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED,
                                               pdTRUE, pdFALSE, pdMS_TO_TICKS(1000));
 
         /* 低功耗状态变化 → 同步模组的Wi-Fi省电档位。
@@ -69,6 +70,13 @@ static void Net_Task(void *pvParameters)
         /* 低功耗期间: 冻结周期计数器, 不执行任何 update */
         if (APP_IS_LOWPOWER())
             continue;
+
+        /* 键盘刚提交了新定位: 不必等满天气周期, 立即按新定位取一次天气 */
+        if (bits & EV_LOCATION_CRED)
+        {
+            printf("[NET] location updated, refresh weather now\r\n");
+            weathercnt = 1U;
+        }
 
         /* 键盘刚提交了新凭据: 用新凭据强制重连一次(落盘由 uiTask 负责) */
         if (bits & EV_WIFI_CRED)

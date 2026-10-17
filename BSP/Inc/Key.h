@@ -7,13 +7,13 @@
 #include "task.h"
 
 /* 按键: PA0, 硬件消抖, 空闲下拉(低), 按下为高 */
-#define KEY_GPIO_PORT           GPIOA
-#define KEY_GPIO_PIN            GPIO_Pin_0
-#define KEY_EXTI_LINE           EXTI_Line0
-#define KEY_EXTI_PORT_SOURCE    EXTI_PortSourceGPIOA  // SYSCFG 端口源
-#define KEY_EXTI_PIN_SOURCE     EXTI_PinSource0
-#define KEY_EXTI_IRQn           EXTI0_IRQn            // NVIC 通道
-#define KEY_EXTI_IRQHandler     EXTI0_IRQHandler
+#define KEY_GPIO_PORT               GPIOA
+#define KEY_GPIO_PIN                GPIO_Pin_0
+#define KEY_EXTI_LINE               EXTI_Line0
+#define KEY_EXTI_PORT_SOURCE        EXTI_PortSourceGPIOA // SYSCFG 端口源
+#define KEY_EXTI_PIN_SOURCE         EXTI_PinSource0
+#define KEY_EXTI_IRQn               EXTI0_IRQn
+#define KEY_EXTI_IRQHandler         EXTI0_IRQHandler
 
 /* 手势: 由 RTOS 层的按键任务识别后产生(本层只上报按下/松开边沿) */
 typedef enum

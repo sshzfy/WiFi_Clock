@@ -132,7 +132,9 @@ Project4/
 | `Board.c` | 板级初始化：时钟、GPIO、各外设时钟使能、测试 LED、资源层（`Asset_Init`） |
 | `App.c` | 服务层：WiFi / SNTP / 天气 / 温湿度 / 软件时钟；共享数据的整块赋值 |
 | `app_task.c` | 任务装配层：只负责创建 `ui` 任务；任务实现见下行 |
-| `Page.h` + `Boot_Page.c` / `Main_Page.c` | 界面绘制与页面布局常量（`Page.h` 是界面的公共头） |
+| `Page.h` + `Boot_Page.c` / `Main_Page.c` | 界面绘制与页面布局常量（`Page.h` 是界面的公共头）；主页面与开机页是**裸绘**的 |
+| `ui.c` / `ui_events.c` + `screens/ui_WiFi.c` / `screens/ui_location.c` | SquareLine 生成的 LVGL 输入界面（配网 / 定位）与事件实现；只有这两屏交给 LVGL 渲染（见 4.3、4.4） |
+| `ui_helpers.c` | SquareLine 的控件辅助函数；**保留工程裁剪版**——新版会引用本工程未启用的控件导致链接失败 |
 | `Provision.c` | 资源烧录：把源码内备份的字库/图片写入 W25Q64 |
 | `bare_test.c` | 裸机模块测试用例（W25Q64 / littlefs / DS1302 / 光敏 / OLED / GNSS） |
 | `stm32f4xx_it.c` | 中断桩 |
@@ -233,9 +235,11 @@ Project4/
 | bit6 | `EV_WAKEUP` | `LightSensor_Task` → `UI_Task` | 请求回到白天 |
 | bit7 | `EV_NET_UPDATE_NOW` | `UI_Task` → `Net_Task` | 退出夜间后立即补网络更新 |
 | bit8 | `EV_DHT22_UPDATE_NOW` | `UI_Task` → `DHT22_Task` | 退出夜间后立即补温湿度采集 |
-| bit9 | `EV_KEYBOARD` | `UI_Task`（触摸判定） → `UI_Task` | 点了 WiFi 图标，调出键盘界面 |
-| bit10 | `EV_MAIN_SCREEN` | 键盘界面回调 → `UI_Task` | 键盘确认/取消，退回主界面 |
-| bit11 | `EV_WIFI_CRED` | `UI_Task`（键盘回调） → `Net_Task` | 提交了新的 WiFi 凭据，请重连 |
+| bit9 | `EV_KEYBOARD` | `UI_Task`（触摸判定） → `UI_Task` | 点了 WiFi 图标，调出配网界面 |
+| bit10 | `EV_MAIN_SCREEN` | 输入界面回调 → `UI_Task` | 确认/取消，退回主界面 |
+| bit11 | `EV_WIFI_CRED` | `UI_Task`（界面回调） → `Net_Task` | 提交了新的 WiFi 凭据，请重连 |
+| bit12 | `EV_LOCATION_KB` | `UI_Task`（触摸判定） → `UI_Task` | 点了定位图标，调出定位输入界面 |
+| bit13 | `EV_LOCATION_CRED` | `UI_Task`（界面回调） → `Net_Task` | 提交了新的定位信息，立即按新定位取天气 |
 
 > **bit7 与 bit8 必须分开**。`xEventGroupWaitBits` 是清除式等待，两个任务共用一个位时，
 > 先被唤醒的会把位清掉，另一个永远收不到通知。
@@ -290,6 +294,9 @@ ESP32-C3 ──USART1──▶ AT.c ──▶ wifi_info ──▶ 顶部状态�
                        ├─▶ AT_Get_IP ─▶ 公网 IP ─▶ 天气 URL 的 location=<IP>
                        └─▶ AT_Get_HTTP ─▶ Parse_Http_Response ─▶ weather_info ─▶ 天气卡片
 
+天气定位（Service_Weather_Update）：
+  定位界面输入的省+市（优先）──取不到/没输入──▶ 公网 IP ──查不到──▶ 字面量 ip（服务端按来源 IP）
+
 DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡片
 
 光敏 EXTI1 ──通知──▶ LightSensor_Task（2s 去抖）──▶ 事件组 ──▶ UI_Task 切屏
@@ -331,44 +338,96 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 按键手势也走同一入口——`Key_Task` 只调用 `LightSensor_Task_RequestToggleNight()` 发出请求，
 最终由 `LightSensor_Task` 统一裁决（单击/三击尚未分配）。
 
-### 4.3 WiFi 配网：LVGL 键盘界面
+### 4.3 输入界面（LVGL）：WiFi 配网与定位
 
-主页面（时钟/日期/天气/室内温湿度）仍是**裸绘**的，LVGL 只接管"点了左上角 WiFi 图标之后"
-的键盘界面。两者共用同一块 SPI 屏，因此必须严格错开：
+主页面（时钟/日期/天气/室内温湿度）仍是**裸绘**的，LVGL 只接管"点了左上角图标之后"的输入界面：
 
-1. 白天主循环按 `UI_TOUCH_POLL_MS`（50ms）轮询 `Detect_TouchRange()`，判定触摸点是否落在
-   WiFi 图标上（图标是 `(5,5)` 起 20×20，判定区域与它一致），命中就置 `EV_KEYBOARD`；
-   轮询节拍必须明显小于一次点击的持续时间（约 100~200ms），否则整段点击会落在两次采样
-   之间，表现成"点了没反应"；
-2. `UI_Task` 收到后调 `UI_WiFi_Keyboard_Open()`：首次进入时 `lv_init()` →
+| 主页图标 | LVGL 屏幕 | 输入内容 | 事件位 | 存到 |
+| --- | --- | --- | --- | --- |
+| WiFi 图标 `(5,5)` 20×20 | `ui_WiFi` | SSID + 密码 | `EV_KEYBOARD` | `/data/wifi_cfg.bin` |
+| 定位图标 `(5,26)` 20×20 | `ui_location` | 省+市（一行文本） | `EV_LOCATION_KB` | `/data/location.bin` |
+
+两者共用同一块 SPI 屏，因此必须严格错开：
+
+1. 白天主循环按 `UI_TOUCH_POLL_MS`（50ms）轮询 `Detect_TouchRange()`，按上表的坐标判定点到哪个
+   图标，命中就置对应事件位；轮询节拍必须明显小于一次点击的持续时间（约 100~200ms），
+   否则整段点击会落在两次采样之间，表现成"点了没反应"；
+2. `UI_Task` 收到后调 `UI_Keyboard_Open(屏幕)`：首次进入时 `lv_init()` →
    `lv_port_disp_init()` → `lv_port_indev_init()` → `ui_init()`，之后每次只是
-   `lv_disp_load_scr(ui_keyboard)` + 复位输入状态 + 强制整屏重绘；
-3. 键盘界面激活期间主循环改成 **10ms** 心跳，每拍喂一次 `lv_tick_inc()` 并调
+   `lv_disp_load_scr(目标屏幕)` + 复位输入状态 + 强制整屏重绘；
+3. 输入界面激活期间主循环改成 **10ms** 心跳，每拍喂一次 `lv_tick_inc()` 并调
    `lv_timer_handler()`（LVGL 的触摸读取与刷屏都发生在这一句里），主页面的局部刷新全部跳过；
-4. 键盘上的"确认"把两个输入框的内容交给 `WiFi_Config_Set()`（只改 RAM，临界区内整体替换）
-   并置 `EV_WIFI_CRED`；`Net_Task` 收到后立即用新凭据 `AT_Connect_WiFi()` 重连，无需等
-   10min 的周期检查。SSID 为空时**不提交也不退出**，把 `SSID` 标签改成红色 `SSID required`
-   留在原地（静默退回主页会让人以为确认键坏了）。键盘的"✓"把 `READY` 发给键盘对象、
-   "回车"发给输入框，所以两处都接了同一个提交函数；
-5. `UI_Task` 处理 `EV_MAIN_SCREEN` 时关闭键盘界面、把凭据落盘
-   （`/data/wifi_cfg.bin`）、再整屏重画主页面。**退出键盘不触发任何网络补更**：
-   提交过凭据的场景已由 `EV_WIFI_CRED` 覆盖（重连 + 补 SNTP/天气），按 X 取消则本来
-   就不该有网络动作；`EV_NET_UPDATE_NOW` 专指"退出夜间立即补更"，借来当"回主界面
-   顺便刷一下"会让 netTask 打出 LowPower 相关日志、语义对不上。主界面右上角那一块
-   也不再单独判触摸——那是键盘界面上 X 的位置，主界面跟着判会让误点触发一次无谓的
-   整屏重绘和网络补更。
+4. 界面上的"确认"把输入交给 `WiFi_Config_Set()` / `Location_Config_Set()`（只改 RAM，
+   临界区内整体替换）。WiFi 凭据还会置 `EV_WIFI_CRED`，`Net_Task` 收到后立即用新凭据
+   `AT_Connect_WiFi()` 重连，无需等 10min 的周期检查。输入为空时**不提交也不退出**，把标签
+   改成红色提示留在原地（静默退回主页会让人以为确认键坏了）。软键盘的"✓"把 `READY` 发给
+   键盘对象、"回车"发给输入框，所以两处都接了同一个提交函数；
+5. `UI_Task` 处理 `EV_MAIN_SCREEN` 时关闭界面、把改动过的内容落盘、再整屏重画主页面。
+   **退出界面本身不触发网络补更**，只有"确实提交了新内容"才通知 netTask：WiFi 凭据走
+   `EV_WIFI_CRED`（重连 + 补 SNTP/天气），定位信息走 `EV_LOCATION_CRED`（只补一次天气）。
+   按 X 取消则本来就不该有网络动作；`EV_NET_UPDATE_NOW` 专指"退出夜间立即补更"，
+   借来当"回主界面顺便刷一下"会让 netTask 打出 LowPower 相关日志、语义对不上。
+
+**主页面顶部状态条**（一行式，由 `UI_Task.c` 的 `UI_TopBar_Draw()` 绘制）：
+
+```
+[WiFi][定位]                    [WiFi名,城市名]   ← 图标 (5,5) / (26,5)；信息右对齐到 x=235
+                    时钟从 y=46 开始
+```
+
+- 左上角并排两个 20×20 图标：WiFi 在 `(5,5)`、定位在 `(26,5)`，与触摸热区
+  （`UI_Task.h` 的 `TOUCH_X_WIFI` / `TOUCH_X_LOC`）一一对应；
+- 右上角一条信息，格式 `[WiFi名,城市名]`，**两个名字各自最多 10 字符**（整条最长 23 字符
+  = 184 像素，右对齐到 x=235，左边不会压到定位图标），超长由 `snprintf` 截断；宽度按
+  ASCII 字符算（16 号字单字符宽 = `Font_16B.size / 2`），**中文暂不支持**——城市名是中文时
+  文字会偏左，但不会越出屏幕；
+- 图标取自 W25Q64 里的 `wifi` / `nowifi` / `loc` / `noloc` 图，未连接或未设置定位时用
+  对应的 off 版，信息里相应字段显示 `--`；
+- `Main_Page.c` 里的旧 `Main_Page_Net_Update()` 仍是"双行"画法（该文件是 GB2312，不便改），
+  每次 `Main_Page_Display()` 之后由 `UI_TopBar_Draw()` 清屏重画成一行覆盖掉，视觉上只有一行。
+
+**定位信息的下游用途**：它不只是画在状态条上 —— `Service_Weather_Update()` 的定位优先级是
+"**用户输入 > 网络 IP**"：先用输入的省+市取一次天气；取不到（响应里没有 `results`，多为城市名
+写错）或从未输入过，就回退到网络 IP（先查公网 IP 用 `location=<IP>`，查不到再用字面量 `ip`，
+由服务端按请求来源 IP 定位）。输入内容按 UTF-8 逐字节做百分号编码后再拼进 URL，所以中文、
+空格都能安全传参。
 
 **几个必须守住的点**（改动时容易踩）：
 
 | 点 | 原因 |
 | --- | --- |
+| **`LCD_Init()` 之前必须先 `Touch_Park()`** | SPI3 由 LCD 初始化，那一刻触摸 CS(PE0) 还是复位后的浮空输入；XPT2046 会把 LCD 的初始化时钟当成自己的命令收进去，状态机错位后**只有掉电才能恢复**——表现就是"Keil 下载完触摸失灵、拔电源才正常"（下载只复位 STM32，触摸控制器一直有电） |
 | LVGL 只在 `uiTask` 里初始化与驱动 | 刷屏走 LCD 的 SPI3 通路，LCD 的"唯一写者"约定不能破 |
-| LVGL 的绘制缓冲借用 LCD 的整行缓冲（240×48） | 主 SRAM 只剩约 1.5KB，另开 10 行缓冲（4800B）直接爆内存；缓冲必须在 SRAM，CCM 里的内存 DMA 访问不到 |
+| LVGL 的绘制缓冲借用 LCD 的整行缓冲（240×48） | 主 SRAM 只剩约 2KB，另开 10 行缓冲（4800B）直接爆内存；缓冲必须在 SRAM，CCM 里的内存 DMA 访问不到 |
 | LVGL 的 24KB 内存池放在 CCM（`LV_MEM_ADR = 0x10000000`） | 不占主 SRAM；`Board.c` 里显式使能了 CCM 时钟 |
 | 输入框必须带 `LV_OBJ_FLAG_CLICK_FOCUSABLE` | 否则点击不产生 `LV_EVENT_FOCUSED`，键盘永远不会显示 |
-| 每次进入键盘前 `lv_indev_reset(NULL, NULL)` | 上一轮残留的按下/焦点状态会让这次的 `LV_EVENT_FOCUSED` 不再发出 |
-| 键盘屏幕只建一次、反复复用 | 每次 `ui_init()` 都会再分配一个主题与整套控件，24KB 堆会被逐步吃光 |
-| 凭据落盘放在 `UI_Task` 里而不是 LVGL 事件回调里 | littlefs 写入要几十 ms，放在回调里会卡住界面交互 |
+| 每次进入界面前 `lv_indev_reset(NULL, NULL)` | 上一轮残留的按下/焦点状态会让这次的 `LV_EVENT_FOCUSED` 不再发出 |
+| 两个屏幕都只建一次、反复复用 | 每次 `ui_init()` 都会再分配一个主题与整套控件，24KB 堆会被逐步吃光 |
+| 落盘放在 `UI_Task` 里而不是 LVGL 事件回调里 | littlefs 写入要几十 ms，放在回调里会卡住界面交互 |
+| `ui_helpers.c` 保留工程裁剪版，不要直接用 SquareLine 的新版 | 新版带arc/dropdown/img/slider/spinbox 等辅助函数，而本工程为省 Flash 关掉了这些控件，会链接失败（见 4.4） |
+
+### 4.4 用 SquareLine 重新导出界面时的注意事项
+
+界面由 SquareLine Studio 1.6.2 生成（LVGL 8.3.11），导出目录结构与工程略有差异，
+重新导出后**不要直接整体覆盖**，按下面处理：
+
+| 导出内容 | 处理方式 |
+| --- | --- |
+| `ui.c` / `ui.h` | 直接覆盖（`ui.h` 里的 `#include "screens/xxx.h"` 与工程的 `User/UI/Inc/screens/` 对应） |
+| `screens/ui_WiFi.c` / `ui_location.c` | 覆盖到 `User/UI/Src/screens/`，但要把 `#include "../ui.h"` 改成 `#include "ui.h"`，并**重新打上手工补丁**（见下） |
+| `screens/*.h` | 直接覆盖到 `User/UI/Inc/screens/` |
+| `ui_helpers.c` | **不要覆盖**，保留工程版（原因见上表最后一行） |
+| `ui_helpers.h` | 可覆盖（多出的声明只要不被调用就没有影响） |
+| `ui_events.c` | 覆盖后要**补回 `Get_WiFiInfo()` / `Get_LocationInfo()` 的实现**（导出的是空壳） |
+| `components/ui_comp_hook.c` | 空文件，工程不需要 |
+
+屏幕源文件上需要重打的手工补丁（两处屏幕一样）：
+
+1. 输入框加 `LV_OBJ_FLAG_CLICK_FOCUSABLE` + `lv_textarea_set_one_line()` + `lv_textarea_set_max_length()`，
+   密码框再加 `lv_textarea_set_password_mode()`；
+2. 两个回调里**删掉 `_ui_flag_modify(<屏幕>, LV_OBJ_FLAG_HIDDEN, ADD)`** —— 屏幕的进出由
+   `uiTask` 统一处理（它还要重画主页面），在 LVGL 事件回调里隐藏正在处理事件的对象会出问题；
+3. 输入框再补一个 `LV_EVENT_READY` 分支（软键盘"回车"把 READY 发给输入框而非键盘对象）。
 
 **没有配置过凭据时**，开机阶段不去发 `AT+CWJAP`（空 SSID 必然失败，结果页就会一路显示
 Disconnect，而模组其实可能已经用它自己 NVS 里记着的 AP 连上了）。这里改成只查询、最多等
@@ -479,6 +538,7 @@ int n = Asset_LoadData("calib", &cfg, sizeof(cfg));   // 取，返回实际字�
 | --- | --- | --- |
 | WiFi 凭据 | `User/Inc/Secrets.h` 的 `WIFI_SSID` / `WIFI_PASSWORD` / `WIFI_MAC` | 要连接的 2.4GHz WiFi；`WIFI_MAC` 填 `NULL` 表示不绑定 BSSID |
 | 心知天气 key | `User/Inc/Secrets.h` 的 `WEATHER_KEY` | `App.c` 里的天气 URL 与初值都由它拼出 |
+| 天气定位 | 运行期从主页定位图标进入输入（省+市） | 优先用它取天气；没输入或取不到时回退网络 IP 定位 |
 | `AMAP_KEY` | `User/Inc/Secrets.h` | 高德"Web服务"key（逆地理编码预留用） |
 | `HSE_VALUE` | `Core/stm32f4xx.h` | 必须与实际晶振一致 |
 
@@ -495,8 +555,8 @@ copy User\Inc\Secrets.example.h User\Inc\Secrets.h
 
 ## 7. 编码与维护约定
 
-- **源码编码**：UTF-8（无 BOM），每个文件内部行尾统一。例外：`User/Src/main.c` 与
-  `User/Src/Main_Page.c` 是 **GB2312**——界面中文要直接送进 GB2312 字库，改动时不能用
+- **源码编码**：UTF-8（无 BOM），每个文件内部行尾统一。例外：`User/Application/Src/main.c` 与
+  `User/UI/Src/Main_Page.c` 是 **GB2312**——界面中文要直接送进 GB2312 字库，改动时不能用
   只认 UTF-8 的编辑器保存，也不要"另存为 UTF-8"批量转换。
 - **中文界面字符串**必须按 GB2312 写入，否则 LCD 会把一个汉字拆成两个字节查表，显示空白或错字。
 - **注释用中文**，函数头用 `/** @brief ... */`，分节用 `/* ====== 标题 ====== */`。
@@ -515,8 +575,11 @@ copy User\Inc\Secrets.example.h User\Inc\Secrets.h
 | 正确性 | 光敏 AO 模式用了 `ADC_Channel_0`（应为 `ADC_Channel_10`）；切到 AO 模式前必须先改 |
 | 正确性 | `Test_LED_GPIO_init()` 裸机分支只赋值了 `GPIO_Pin` / `GPIO_Mode`，其余字段是栈上垃圾值 |
 | 正确性 | `Parse_Http_Response()` 不清零输出结构体，缺失字段会保留调用方的旧值 |
+| 设计取舍 | 用户输入的定位每次天气更新都先试一次：城市名写错时每轮多一次失败的 HTTP 请求（1h 一次，失败响应很快），换来"改对输入即生效" |
 | 正确性 | `Asset` 的图片掩码只有 32 位：超过 32 张的图片仍参与自检，但 `Asset_ImageOk()` 对它们恒返回 false（代码里已挡住 `1UL << i` 的溢出） |
 | 健壮性 | `W25Q64_RWByte()` 等 SPI 等待、`LCD.c` 的 DMA 完成等待都是**无超时忙等**，硬件异常会卡死 |
+| 健壮性 | DHT22 的 5 字节全 0 时校验和恰好也是 0，能骗过校验返回"成功"（界面显示 `0.0`）；`DHT22_ReadData()` 已把全 0 判为 `all-zero` 失败并触发重试 |
+| 健壮性 | `LCD_TouchTest()` 里 `Touch_Init()` 失败会 `for(;;);` 死循环，uiTask 从此冻结（触摸无反应、界面不再刷新）。日志停在 `[Touch] FAIL: ...`，之后不再有新行 |
 | 健壮性 | `TIM5_ms` 是 64 位 `volatile`，ISR 与任务间读写非原子（当前靠重读 + UIF 补偿规避） |
 | 冗余 | `Image_Main_Page`（153600 B）已烧录、参与开机自检，但界面从未绘制它 |
 | 冗余 | `DS1302_ReadReg()` 未被引用；全量重编共 17 条告警，其余 16 条都来自 LVGL 自身源码（枚举混用、符号转换等），本项目代码零告警 |

@@ -29,11 +29,11 @@
 #include "lfs_port.h"
 #include "W25Q64.h"
 
-#define ASSET_IMAGE_HEADER_SIZE 4U                               // 图片文件头: width(2, 大端) + height(2, 大端), 与 LFS_Operation 的格式一致
-#define ASSET_DATA_NAME_MAX 32U                                  // 运行数据文件名长度上限(不含结尾 '\0')
-#define ASSET_DATA_PATH_MAX (7U + ASSET_DATA_NAME_MAX + 4U + 1U) // 运行数据路径缓冲: "/data/" + name(<=32) + ".bin" + '\0'
-#define ASSET_POS_INVALID 0xFFFFFFFFU                            // 句柄位置失效标记
-#define ASSET_IMAGE_MASK_BITS 32U                                // 图片自检结果掩码的位数(一张图一位)
+#define ASSET_IMAGE_HEADER_SIZE        4U                                   // 图片文件头: width(2, 大端) + height(2, 大端), 与 LFS_Operation 的格式一致
+#define ASSET_DATA_NAME_MAX            32U                                  // 运行数据文件名长度上限(不含结尾 '\0')
+#define ASSET_DATA_PATH_MAX            (7U + ASSET_DATA_NAME_MAX + 4U + 1U) // 运行数据路径缓冲: "/data/" + name(<=32) + ".bin" + '\0'
+#define ASSET_POS_INVALID              0xFFFFFFFFU                          // 句柄位置失效标记
+#define ASSET_IMAGE_MASK_BITS          32U                                  // 图片自检结果掩码的位数(一张图一位)
 
 /* 字库资源文件表: 顺序必须与 Font.h 里的 Asset_FontId_t 枚举严格一致 */
 typedef struct
@@ -56,24 +56,20 @@ typedef enum
     ASSET_ERR_MISSING = -8 // 挂载成功但资源自检有缺失项: 读资源会失败, 运行数据仍可用
 } Asset_Err_t;
 
-/* ==================== 初始化与状态 ==================== */
 int Asset_Init(void);
 bool Asset_Ready(void);
 uint32_t Asset_MissingCount(void);
 uint32_t Asset_CheckedCount(void);
 int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes);
 
-/* ==================== 只读资源: 字库 ==================== */
 int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len);
 
-/* ==================== 只读资源: 图片 ==================== */
 bool Asset_ImageOk(const Image_t *img);
 int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h);
 int Asset_ImageOpen(const Image_t *img, lfs_file_t *f);
 int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len);
 void Asset_ImageClose(lfs_file_t *f);
 
-/* ==================== 运行数据: /data/<name>.bin ==================== */
 int Asset_SaveData(const char *name, const void *buf, uint32_t len);
 int Asset_LoadData(const char *name, void *buf, uint32_t buf_size);
 int Asset_DataSize(const char *name, uint32_t *size);

@@ -18,8 +18,8 @@ extern "C" {
 
 ///////////////////// SCREENS ////////////////////
 
-#include "ui_keyboard.h"
-#include "ui_blank.h"
+#include "screens/ui_WiFi.h"
+#include "screens/ui_location.h"
 
 ///////////////////// VARIABLES ////////////////////
 

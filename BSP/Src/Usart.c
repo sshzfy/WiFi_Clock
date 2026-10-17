@@ -32,9 +32,11 @@ void USART1_IRQHandler(void)
 {
     if (USART_GetITStatus(USART1, USART_IT_RXNE) == SET)
     {
-        char c = (char)USART_ReceiveData(USART1); /* 读DR会同时清除RXNE/ORE */
+        /* 读DR会同时清除RXNE/ORE */
+        char c = (char)USART_ReceiveData(USART1);
         uint16_t next = (uint16_t)((rx_tail + 1) % USART1_RX_RING_SIZE);
-        if (next != rx_head) /* 非满则入队 */
+        /* 非满则入队 */
+        if (next != rx_head)
         {
             rx_ring[rx_tail] = c;
             rx_tail = next;
@@ -49,7 +51,7 @@ uint16_t Usart1_RX_Count(void)
     uint16_t tail = rx_tail;
     uint16_t head = rx_head;
 
-    return (uint16_t)((tail - head + USART1_RX_RING_SIZE) % USART1_RX_RING_SIZE); /* 计算有效字节数 */
+    return (uint16_t)((tail - head + USART1_RX_RING_SIZE) % USART1_RX_RING_SIZE); // 计算有效字节数
 }
 
 int Usart1_RX_Read(void)
@@ -80,86 +82,6 @@ void Usart1_RX_Flush(void)
     taskEXIT_CRITICAL();
 }
 
-/* ==================== USART3 定位模块独占数据交换 ====================
- * 说明: 与 USART1 同一套路 —— RXNE中断把每个字节即时收进环形缓冲,
- * ATGM336H 解析层再从缓冲读取。模块默认1Hz连发6~8帧NMEA, 9600bps下
- * 每秒约700字节, 512字节缓冲足够。
- * ISR优先级=5(configMAX_SYSCALL_INTERRUPT_PRIORITY), 未调用RTOS API。
- * ======================================== */
-
-#define USART3_RX_RING_SIZE 512
-
-static volatile char rx3_ring[USART3_RX_RING_SIZE]; // RX环形缓冲区
-static volatile uint16_t rx3_head = 0;              // RX头指针
-static volatile uint16_t rx3_tail = 0;              // RX尾指针
-
-void Usart3_Init(void)
-{
-    /* 初始化GPIO: TX/RX复用推挽; RX上拉, 模块不在位时不会浮空收噪声 */
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_USART3);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_USART3);
-
-    GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-    /* 初始化NVIC: 抢占优先级与USART1一致 */
-    NVIC_InitTypeDef NVIC_InitStructure;
-    NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 5;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-
-    /* 初始化USART3 */
-    USART_InitTypeDef USART_InitStructure;
-    USART_StructInit(&USART_InitStructure);
-    USART_InitStructure.USART_BaudRate = USART3_BAUD;                               // 波特率 9600bps(模块默认)
-    USART_InitStructure.USART_WordLength = USART_WordLength_8b;                     // 字长 8位
-    USART_InitStructure.USART_StopBits = USART_StopBits_1;                          // 停止位 1位
-    USART_InitStructure.USART_Parity = USART_Parity_No;                             // 校验位 无校验
-    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;                 // 模式 RX/TX
-    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // 硬件流控制 无硬件流控制
-    USART_Init(USART3, &USART_InitStructure);
-    USART_ITConfig(USART3, USART_IT_RXNE, ENABLE); // RXNE中断 → Usart.c环形缓冲
-    USART_Cmd(USART3, ENABLE);
-
-    rx3_head = 0;
-    rx3_tail = 0;
-}
-
-void USART3_IRQHandler(void)
-{
-    if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-    {
-        char c = (char)USART_ReceiveData(USART3); /* 读DR会同时清除RXNE */
-        uint16_t next = (uint16_t)((rx3_tail + 1) % USART3_RX_RING_SIZE);
-        if (next != rx3_head) /* 非满则入队 */
-        {
-            rx3_ring[rx3_tail] = c;
-            rx3_tail = next;
-        }
-        /* 满则丢弃 */
-        USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-    }
-}
-
-int Usart3_RX_Read(void)
-{
-    int c;
-
-    if (rx3_head == rx3_tail) /* 环形缓冲区为空 */
-        return -1;
-    c = (uint8_t)rx3_ring[rx3_head];                             // 读取头指针字符
-    rx3_head = (uint16_t)((rx3_head + 1) % USART3_RX_RING_SIZE); // 更新头指针
-    return c;
-}
-
 /* ==================== USART2 调试输出(printf 经 DMA) ====================
  * 设计:
  *  - printf 每个字符先入行缓冲, 遇 '\n' 或缓冲满时经 DMA1_Stream6(USART2_TX)
@@ -176,6 +98,12 @@ static uint16_t dbg_len = 0;               // 行缓冲区有效字符数
 static SemaphoreHandle_t dbg_mtx = NULL;   // 行缓冲区互斥量,保护整行输出
 static TaskHandle_t dbg_line_owner = NULL; // 当前持有锁的任务句柄
 static bool dbg_dma_ready = false;         // DMA是否初始化
+
+/* ================ static 函数 ================ */
+static bool Dbg_Can_Block(void);
+static void Dbg_Byte_Poll(uint8_t c);
+static void Dbg_Dma_Init(void);
+static void Dbg_Flush(void);
 
 /**
  * @brief 判断当前上下文是否允许调用 FreeRTOS 的阻塞 API
@@ -347,3 +275,83 @@ void Usart2_Debug_Init(void)
     if (dbg_mtx == NULL)
         dbg_mtx = xSemaphoreCreateMutex(); // 创建互斥量
 }
+
+// /* ==================== USART3 定位模块独占数据交换 ====================
+//  * 说明: 与 USART1 同一套路 —— RXNE中断把每个字节即时收进环形缓冲,
+//  * ATGM336H 解析层再从缓冲读取。模块默认1Hz连发6~8帧NMEA, 9600bps下
+//  * 每秒约700字节, 512字节缓冲足够。
+//  * ISR优先级=5(configMAX_SYSCALL_INTERRUPT_PRIORITY), 未调用RTOS API。
+//  * ======================================== */
+
+// #define USART3_RX_RING_SIZE 512
+
+// static volatile char rx3_ring[USART3_RX_RING_SIZE]; // RX环形缓冲区
+// static volatile uint16_t rx3_head = 0;              // RX头指针
+// static volatile uint16_t rx3_tail = 0;              // RX尾指针
+
+// void Usart3_Init(void)
+// {
+//     /* 初始化GPIO: TX/RX复用推挽; RX上拉, 模块不在位时不会浮空收噪声 */
+//     GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_USART3);
+//     GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_USART3);
+
+//     GPIO_InitTypeDef GPIO_InitStructure;
+//     GPIO_StructInit(&GPIO_InitStructure);
+//     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
+//     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+//     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+//     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+//     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+//     GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+//     /* 初始化NVIC: 抢占优先级与USART1一致 */
+//     NVIC_InitTypeDef NVIC_InitStructure;
+//     NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
+//     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 5;
+//     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+//     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+//     NVIC_Init(&NVIC_InitStructure);
+
+//     /* 初始化USART3 */
+//     USART_InitTypeDef USART_InitStructure;
+//     USART_StructInit(&USART_InitStructure);
+//     USART_InitStructure.USART_BaudRate = USART3_BAUD;                               // 波特率 9600bps(模块默认)
+//     USART_InitStructure.USART_WordLength = USART_WordLength_8b;                     // 字长 8位
+//     USART_InitStructure.USART_StopBits = USART_StopBits_1;                          // 停止位 1位
+//     USART_InitStructure.USART_Parity = USART_Parity_No;                             // 校验位 无校验
+//     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;                 // 模式 RX/TX
+//     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // 硬件流控制 无硬件流控制
+//     USART_Init(USART3, &USART_InitStructure);
+//     USART_ITConfig(USART3, USART_IT_RXNE, ENABLE); // RXNE中断 → Usart.c环形缓冲
+//     USART_Cmd(USART3, ENABLE);
+
+//     rx3_head = 0;
+//     rx3_tail = 0;
+// }
+
+// void USART3_IRQHandler(void)
+// {
+//     if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//     {
+//         char c = (char)USART_ReceiveData(USART3); /* 读DR会同时清除RXNE */
+//         uint16_t next = (uint16_t)((rx3_tail + 1) % USART3_RX_RING_SIZE);
+//         if (next != rx3_head) /* 非满则入队 */
+//         {
+//             rx3_ring[rx3_tail] = c;
+//             rx3_tail = next;
+//         }
+//         /* 满则丢弃 */
+//         USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//     }
+// }
+
+// int Usart3_RX_Read(void)
+// {
+//     int c;
+
+//     if (rx3_head == rx3_tail) /* 环形缓冲区为空 */
+//         return -1;
+//     c = (uint8_t)rx3_ring[rx3_head];                             // 读取头指针字符
+//     rx3_head = (uint16_t)((rx3_head + 1) % USART3_RX_RING_SIZE); // 更新头指针
+//     return c;
+// }

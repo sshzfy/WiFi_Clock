@@ -3,17 +3,17 @@
 // LVGL version: 8.3.11
 // Project name: SquareLine_Project
 
-#ifndef UI_KEYBOARD_H
-#define UI_KEYBOARD_H
+#ifndef UI_WIFI_H
+#define UI_WIFI_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// SCREEN: ui_keyboard
-extern void ui_keyboard_screen_init(void);
-extern void ui_keyboard_screen_destroy(void);
-extern lv_obj_t * ui_keyboard;
+// SCREEN: ui_WiFi
+extern void ui_WiFi_screen_init(void);
+extern void ui_WiFi_screen_destroy(void);
+extern lv_obj_t * ui_WiFi;
 extern void ui_event_TextArea1(lv_event_t * e);
 extern lv_obj_t * ui_TextArea1;
 extern lv_obj_t * ui_Label1;
@@ -31,4 +31,3 @@ extern lv_obj_t * ui_Button1;
 #endif
 
 #endif
-

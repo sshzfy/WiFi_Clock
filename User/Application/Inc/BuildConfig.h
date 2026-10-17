@@ -22,7 +22,7 @@
  * 先跑 W25Q64 可以把"硬件/SPI/时序问题"与"文件系统问题"分开定位。
  * ============================================================ */
 
-#define USE_FREERTOS   1
+#define USE_FREERTOS        1
 
 /* ============================================================
  * 资源存储开关 (字库/图片已迁移到外部 W25Q64)
@@ -46,21 +46,22 @@
  * 注意: 备份数据仍完整保留在 Screen_Resource 的 .c 文件里,
  *       只是被 #if 排除在正式固件之外, 随时可重新烧录补救。
  * ============================================================ */
-#define RESOURCE_DATA_IN_ROM   0
-#define RESOURCE_PROVISION     0
-#define PROVISION_BATCH        1
+
+#define RESOURCE_DATA_IN_ROM        0
+#define RESOURCE_PROVISION          0
+#define PROVISION_BATCH             1
 
 /* 烧录固件必然需要数据本体, 这里自动联动, 避免两个开关不一致 */
 #if (RESOURCE_PROVISION == 1)
 #undef  RESOURCE_DATA_IN_ROM
-#define RESOURCE_DATA_IN_ROM   1
+#define RESOURCE_DATA_IN_ROM        1
 #endif
 
 #if (USE_FREERTOS == 0)
 /* 裸机模块测试项: 在此切换。
  * 注意: 该宏是唯一入口, 不要在 bare_test.c 里另建同名变量。 */
 #ifndef BM_TEST_MODULE
-#define BM_TEST_MODULE BM_TEST_MODULE_TOUCH
+#define BM_TEST_MODULE        BM_TEST_MODULE_TOUCH
 #endif
 #endif /* USE_FREERTOS == 0 */
 
@@ -76,6 +77,7 @@
  *       注意: 置 1 后若这次没点完(超时/漏点), 参数会停留在"未校准",
  *             此时触摸按原始坐标等比折算, 位置不准但不会完全失灵。
  * ============================================================ */
-#define TOUCH_FORCE_CALIBRATE 0
+
+#define TOUCH_FORCE_CALIBRATE        0
 
 #endif /* __BUILD_CONFIG_H__ */

@@ -1,29 +1,24 @@
 #include "LCD.h"
 
-#define GRAM_DMA_MAX_HALFWORD 65535U // DMA NDTR(16bit)单次最大半字数
-#define SCRATCH_H_PX 48              // 最大渲染行高(对齐Font_48)
+static __align(4) uint8_t s_renderbuf[WIDTH * SCRATCH_H_PX * 2]; // 渲染缓冲,( 240px ) * 最高 48px * 2 字节, 字符串整行与图标共用
+static uint8_t *s_picbuf[2] = {NULL, NULL};                      // 图片乒乓缓冲(heap 分配)。任一块为 NULL 表示分配失败, 退化为单缓冲串行
+static uint8_t s_matrix[ASSET_GLYPH_BYTES_MAX];                  // 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行)
+static uint8_t s_spi_datasize = 0;                               // SPI 数据宽度(8位命令/16位像素)，0=未设置 8=8位 16=16位
+static volatile bool s_renderbuf_busy = false;                   // s_renderbuf 正被整块写入占用(图形库刷屏中), 用来发现跨任务抢占
+static SemaphoreHandle_t s_spi_mtx = NULL;                       // SPI3 独占锁(递归): LCD 与触摸屏共用这条总线
 
-/* SPI3 时钟: LCD 用 21MHz 保证刷图速度; XPT2046(触摸)的 SCLK 上限 2MHz,
- * 所以触摸访问期间临时降到 656kHz, 用完恢复 */
-#define LCD_SPI_BR_FAST SPI_BaudRatePrescaler_2  // 42MHz / 2  = 21MHz
-#define LCD_SPI_BR_SLOW SPI_BaudRatePrescaler_64 // 42MHz / 64 = 656kHz
-
-/* 图片流式发送的乒乓缓冲: 每块 WIDTH*16 像素 = 7680 字节, 两块共 15360 字节,
- * 在 LCD_Init() 里从 FreeRTOS heap 分配。
- * 必须落在 SRAM1(heap_4 的 ucHeap 位于 .bss 段) —— DMA 访问不了 CCM。 */
-#define PIC_BLOCK_LINES 16                        // 每一块缓冲块行数
-#define PIC_BLOCK_PIXEL (WIDTH * PIC_BLOCK_LINES) // 每一块缓冲块像素数
-
-static void LCD_SpiLock(void);
-static void LCD_SpiUnlock(void);
+/* ================ static 函数 ================ */
 static void LCD_Delay(uint32_t ms);
+static void LCD_SpiLock(void);
 static void LCD_GPIO_Init(void);
 static void LCD_SPI_Init(void);
 static void LCD_DMA_Init(void);
+static void LCD_Wait_TXE(void);
+static void LCD_Wait_BSY(void);
 static void LCD_SPI_SetDataSize(uint8_t size);
 static void LCD_SPI_Send8(const uint8_t *data, uint16_t len);
 static void LCD_SPI_SetPrescaler(uint16_t prescaler);
-static void LCD_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc);
+static void LCD_DMA_Transmit(const uint8_t *src, uint32_t halfwords, bool inc);
 static void LCD_DMA_Start(const uint8_t *src, uint32_t halfwords);
 static bool LCD_DMA_WaitDone(void);
 static bool LCD_PicBuf_Init(void);
@@ -31,37 +26,33 @@ static void LCD_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len);
 static void LCD_Write_Gram(const uint8_t data[], uint32_t len, bool increase);
 static void LCD_Rest(void);
 static void LCD_Set_Backlight(bool state);
-static void LCD_Wait_TXE(void);
-static void LCD_Wait_BSY(void);
 static void LCD_Display_Init(void);
 static void LCD_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold);
 static bool Is_in_Screen(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 static bool Is_GB2312(char ch);
-static void LCD_PixTransparent(uint8_t *buf, uint32_t px, uint16_t target_back);
-static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
-                                 bool transparency, uint16_t target_back);
+static void LCD_PixTransparent(uint8_t *buf, uint32_t pix_cnt, uint16_t target_bc);
+static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img, bool transparency, uint16_t target_bc);
 
-/* 渲染缓冲: 一满行(240px)*最高48px*2字节, 字符串整行与图标共用。
- * 显式 4 字节对齐: 同一块内存也被 LVGL 借去当绘制缓冲, 而它最终由 DMA 按半字读走。 */
-static __align(4) uint8_t s_scratch[WIDTH * SCRATCH_H_PX * 2];
-static uint8_t *s_picBuf[2] = {NULL, NULL};         // 图片乒乓缓冲(heap 分配)。任一块为 NULL 表示分配失败, 退化为单缓冲串行
-static uint8_t s_glyph[ASSET_GLYPH_BYTES_MAX];      // 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行)
-static uint8_t s_spi_datasize = 0;                  // SPI 数据宽度(8位命令/16位像素)，0=未设置 8=8位 16=16位
-static volatile bool s_scratch_busy = false;        // s_scratch 正被整块写入占用(图形库刷屏中), 用来发现跨任务抢占
-static SemaphoreHandle_t s_spi_mtx = NULL;          // SPI3 独占锁(递归): LCD 与触摸屏共用这条总线
+static void LCD_Delay(uint32_t ms)
+{
+    if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
+        vTaskDelay(pdMS_TO_TICKS(ms));
+    else
+        delay_ms(ms);
+}
 
-/* ==================== SPI3 总线互斥 ====================
- * 所有会驱动 SCK/CS 的操作都要先拿到这把锁, 否则触摸屏(XPT2046)可能在
+/**
+ * @brief 获取 SPI3 总线互斥锁
+ * @note 所有会驱动 SCK/CS 的操作都要先拿到这把锁, 否则触摸屏(XPT2046)可能在
  * "LCD 已拉低 CS 但还没发完"的瞬间插进来, 两个从设备同时被选中会花屏。
  * 用递归互斥量: LCD_SetWindow()/LCD_Fill_Color() 会被上层函数嵌套调用。
- * 裸机(调度器未启动)下是单线程, 既不创建锁也不取锁, 免得碰 RTOS 内部状态。 */
+ */
 static void LCD_SpiLock(void)
 {
     if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
         return;
 
-    /* 兜底: 正常路径在 LCD_Init() 里已创建 */
     if (s_spi_mtx == NULL)
         s_spi_mtx = xSemaphoreCreateRecursiveMutex();
 
@@ -78,19 +69,7 @@ static void LCD_SpiUnlock(void)
         (void)xSemaphoreGiveRecursive(s_spi_mtx);
 }
 
-/* ==================== 延时 ====================
- * 调度器已在跑就让出 CPU, 裸机(调度器未启动)时退化为忙等。
- * 裸机下直接调 vTaskDelay() 会因为当前任务为空而崩, 初始化流程里的
- * 复位/上电等待都走这里。 */
-static void LCD_Delay(uint32_t ms)
-{
-    if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
-        vTaskDelay(pdMS_TO_TICKS(ms));
-    else
-        delay_ms(ms);
-}
-
-/* ==================== 相关外设配置 ====================*/
+/* ================ 相关外设配置 ================*/
 static void LCD_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -107,7 +86,6 @@ static void LCD_GPIO_Init(void)
     GPIO_PinAFConfig(LCD_SPI_PORT, GPIO_PinSource10, GPIO_AF_SPI3);
     GPIO_PinAFConfig(LCD_SPI_PORT, GPIO_PinSource11, GPIO_AF_SPI3);
     GPIO_PinAFConfig(LCD_SPI_PORT, GPIO_PinSource12, GPIO_AF_SPI3);
-
     GPIO_InitStructure.GPIO_Pin = LCD_SCLK_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF; // 复用模式
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
@@ -137,7 +115,7 @@ static void LCD_SPI_Init(void)
     s_spi_datasize = 8;
 }
 
-/* ==================== DMA 相关配置 ==================== */
+/* ================ DMA 相关配置 ================ */
 static void LCD_DMA_Init(void)
 {
     DMA_InitTypeDef DMA_InitStructure;
@@ -158,8 +136,20 @@ static void LCD_DMA_Init(void)
     DMA_Init(DMA1_Stream5, &DMA_InitStructure);
 }
 
+static void LCD_Wait_TXE(void)
+{
+    while (SPI_GetFlagStatus(SPI3, SPI_FLAG_TXE) == RESET)
+        ;
+}
+
+static void LCD_Wait_BSY(void)
+{
+    while (SPI_GetFlagStatus(SPI3, SPI_FLAG_BSY) != RESET)
+        ;
+}
+
 /**
- * @brief 设置SPI数据宽度(8位命令/16位像素),只在需要切换时切换; 且先等SPI空闲再在SPE=0下修改, 保证可靠
+ * @brief 设置SPI数据宽度(8位命令/16位像素)
  * @param size 8=8位 16=16位
  */
 static void LCD_SPI_SetDataSize(uint8_t size)
@@ -167,13 +157,12 @@ static void LCD_SPI_SetDataSize(uint8_t size)
     if (s_spi_datasize == size)
         return;
 
-    /* 等待SPI空闲 */
     LCD_Wait_BSY();
     /* 禁用SPI3
-     * 安全设置SPI3数据宽度 */
+     * 安全设置SPI3数据宽度
+     * 启用SPI3 */
     SPI_Cmd(SPI3, DISABLE);
     SPI_DataSizeConfig(SPI3, (size == 16) ? SPI_DataSize_16b : SPI_DataSize_8b);
-    /* 启用SPI3 */
     SPI_Cmd(SPI3, ENABLE);
 
     s_spi_datasize = size; // 更新SPI数据宽度
@@ -188,11 +177,10 @@ static void LCD_SPI_Send8(const uint8_t *data, uint16_t len)
 {
     for (uint16_t i = 0; i < len; i++)
     {
-        /* 发送数据并等待 SPI3 发送完成 */
         SPI_SendData(SPI3, data[i]);
         LCD_Wait_TXE();
     }
-    /* 等待SPI空闲 */
+
     LCD_Wait_BSY();
 }
 
@@ -203,26 +191,25 @@ static void LCD_SPI_Send8(const uint8_t *data, uint16_t len)
  */
 static void LCD_SPI_SetPrescaler(uint16_t prescaler)
 {
-    /* 等本次传输彻底结束 */
+    /* 先等本次传输彻底结束 */
     LCD_Wait_BSY();
-    /* 关闭 SPI 安全修改 BR */
+
     SPI_Cmd(SPI3, DISABLE);
     SPI3->CR1 = (uint16_t)((SPI3->CR1 & (uint16_t)(~SPI_CR1_BR)) | prescaler);
-    /* 重新使能(CR2 里的 DMA 请求位不受影响) */
     SPI_Cmd(SPI3, ENABLE);
 }
 
 /**
- * @brief 半字模式内存→外设 DMA 泵; 内部自动按NDTR上限分块, 出错(TE)则中止
+ * @brief 半字模式内存→外设 DMA 传输; 内部自动按NDTR上限分块, 出错(TE)则中止
  * @param src 要发送的数据指针
  * @param halfwords 要发送的数据长度(半字)
  * @param inc 是否自动增加内存指针
  */
-static void LCD_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
+static void LCD_DMA_Transmit(const uint8_t *src, uint32_t halfwords, bool inc)
 {
     while (halfwords > 0)
     {
-        uint32_t chunk = (halfwords > GRAM_DMA_MAX_HALFWORD) ? GRAM_DMA_MAX_HALFWORD : halfwords; // 分块大小,不超过最大传输半字数65535
+        uint32_t chunk = (halfwords > GRAM_DMA_MAX_HALFWORD) ? GRAM_DMA_MAX_HALFWORD : halfwords; // 分块大小,不超过最大传输半字数 65535
 
         /* 配置DMA1_Stream5参数
          * 等待DMA1_Stream5禁用，确保安全更改配置参数 */
@@ -233,10 +220,15 @@ static void LCD_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
         DMA1_Stream5->NDTR = (uint16_t)chunk; // 设置传输半字数
         DMA1_Stream5->M0AR = (uint32_t)src;   // 设置内存基地址
 
+        /* 配置内存地址增加/不增加 */
         if (inc)
-            DMA1_Stream5->CR |= DMA_SxCR_MINC; // 内存地址增加
+        {
+            DMA1_Stream5->CR |= DMA_SxCR_MINC;
+        }
         else
-            DMA1_Stream5->CR &= (uint32_t)~DMA_SxCR_MINC; // 内存地址不增加
+        {
+            DMA1_Stream5->CR &= (uint32_t)~DMA_SxCR_MINC;
+        }
 
         /* 清除DMA标志位 */
         DMA_ClearFlag(DMA1_Stream5, DMA_FLAG_FEIF5 | DMA_FLAG_TCIF5 | DMA_FLAG_TEIF5);
@@ -248,7 +240,7 @@ static void LCD_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
             if (DMA_GetFlagStatus(DMA1_Stream5, DMA_FLAG_TEIF5) != RESET)
             {
                 DMA_Cmd(DMA1_Stream5, DISABLE);
-                printf("[ERR]LCD_DMA_Pump: DMA传输错误\r\n");
+                printf("[ERR]LCD_DMA_Transmit: DMA transfer error\r\n");
                 return; // 传输错误
             }
         }
@@ -257,7 +249,9 @@ static void LCD_DMA_Pump(const uint8_t *src, uint32_t halfwords, bool inc)
 
         halfwords -= chunk; // 剩余半字数
         if (inc)
+        {
             src += (uint32_t)chunk * 2; // 内存指针增加
+        }
     }
 }
 
@@ -283,10 +277,6 @@ static void LCD_DMA_Start(const uint8_t *src, uint32_t halfwords)
     DMA_Cmd(DMA1_Stream5, ENABLE);
 }
 
-/**
- * @brief 等待当前 DMA 发送结束
- * @return true 正常完成; false 传输出错(已中止)
- */
 static bool LCD_DMA_WaitDone(void)
 {
     /* 等待DMA传输完成 */
@@ -310,27 +300,25 @@ static bool LCD_DMA_WaitDone(void)
  */
 static bool LCD_PicBuf_Init(void)
 {
-    /* 初始化图片双缓冲，如果已经初始化则直接返回true */
-    if (s_picBuf[0] != NULL && s_picBuf[1] != NULL)
+    /* 初始化图片双缓冲 */
+    if (s_picbuf[0] != NULL && s_picbuf[1] != NULL)
         return true;
 
-    /* 从FreeRTOS heap分配内存 */
-    s_picBuf[0] = (uint8_t *)pvPortMalloc((uint32_t)PIC_BLOCK_PIXEL * 2U);
-    s_picBuf[1] = (uint8_t *)pvPortMalloc((uint32_t)PIC_BLOCK_PIXEL * 2U);
-
-    /* 检查内存分配成功，只要有一个分配失败就释放所有内存
-     * 因为双缓冲需要两块内存同时可用，单块无法构成 ping-pong 结构 */
-    if (s_picBuf[0] == NULL || s_picBuf[1] == NULL)
+    /* 从FreeRTOS heap 分配内存并检查是否成功 */
+    s_picbuf[0] = (uint8_t *)pvPortMalloc((uint32_t)PIC_BLOCK_PIXEL * 2U);
+    s_picbuf[1] = (uint8_t *)pvPortMalloc((uint32_t)PIC_BLOCK_PIXEL * 2U);
+    if (s_picbuf[0] == NULL || s_picbuf[1] == NULL)
     {
-        if (s_picBuf[0] != NULL)
+        if (s_picbuf[0] != NULL)
         {
-            vPortFree(s_picBuf[0]); /* 释放内存 */
-            s_picBuf[0] = NULL;     // 释放成功后，将指针设为NULL，防止野指针访问
+            /* 释放内存并设置指针为NULL, 防止野指针访问 */
+            vPortFree(s_picbuf[0]);
+            s_picbuf[0] = NULL;
         }
-        if (s_picBuf[1] != NULL)
+        if (s_picbuf[1] != NULL)
         {
-            vPortFree(s_picBuf[1]); /* 释放内存 */
-            s_picBuf[1] = NULL;     // 释放成功后，将指针设为NULL，防止野指针访问
+            vPortFree(s_picbuf[1]);
+            s_picbuf[1] = NULL;
         }
         printf("[LCD ] ping-pong buffer alloc failed, fallback to single buffer\r\n");
         return false;
@@ -342,7 +330,7 @@ static bool LCD_PicBuf_Init(void)
     return true;
 }
 
-/* ==================== LCD底层接口 ==================== */
+/* ================ LCD底层接口 ================ */
 
 /**
  * @brief 写入8位命令寄存器
@@ -382,7 +370,6 @@ static void LCD_Write_Reg(uint8_t reg, const uint8_t data[], uint16_t len)
  */
 static void LCD_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
 {
-    /* 独占 SPI3, 防止触摸屏在事务中间插进来 */
     LCD_SpiLock();
 
     /* 设置SPI3数据宽度为半字 */
@@ -392,24 +379,20 @@ static void LCD_Write_Gram(const uint8_t data[], uint32_t len, bool increase)
     GPIO_ResetBits(LCD_PORT, LCD_CS_PIN);
     GPIO_SetBits(LCD_PORT, LCD_DC_PIN);
     /* 启动DMA传输 */
-    LCD_DMA_Pump(data, len >> 1, increase);
+    LCD_DMA_Transmit(data, len >> 1, increase);
     /* 等待SPI3传输完成
      * 释放CS,结束一次数据传输 */
     LCD_Wait_BSY();
     GPIO_SetBits(LCD_PORT, LCD_CS_PIN);
 
-    /* 释放SPI3, 允许其他事务使用 */
     LCD_SpiUnlock();
 }
 
 static void LCD_Rest(void)
 {
-    /* 复位LCD
-     * 等待复位完成 */
     GPIO_ResetBits(LCD_PORT, LCD_RESET_PIN);
     LCD_Delay(20);
-    /* 使能LCD
-     * 等待使能完成 */
+
     GPIO_SetBits(LCD_PORT, LCD_RESET_PIN);
     LCD_Delay(120);
 }
@@ -417,18 +400,6 @@ static void LCD_Rest(void)
 static void LCD_Set_Backlight(bool state)
 {
     GPIO_WriteBit(LCD_PORT, LCD_BACKLIGHT_PIN, state ? Bit_SET : Bit_RESET);
-}
-
-static void LCD_Wait_TXE(void)
-{
-    while (SPI_GetFlagStatus(SPI3, SPI_FLAG_TXE) == RESET)
-        ;
-}
-
-static void LCD_Wait_BSY(void)
-{
-    while (SPI_GetFlagStatus(SPI3, SPI_FLAG_BSY) != RESET)
-        ;
 }
 
 static void LCD_Display_Init(void)
@@ -451,23 +422,21 @@ static void LCD_Display_Init(void)
     LCD_Write_Reg(0xD6, (uint8_t[]){0xA1}, 1);
     LCD_Write_Reg(0xE0, (uint8_t[]){0xF0, 0x00, 0x06, 0x04, 0x05, 0x05, 0x31, 0x44, 0x48, 0x36, 0x12, 0x12, 0x2B, 0x34}, 14);
     LCD_Write_Reg(0xE1, (uint8_t[]){0xF0, 0x0B, 0x0F, 0x0F, 0x0D, 0x26, 0x31, 0x43, 0x47, 0x38, 0x14, 0x14, 0x2C, 0x32}, 14);
-    /* 打开显示前先把GRAM刷黑: LCD复位不清GRAM, 若不清, 打开显示与背光
-     * 后会先亮出复位前残留在GRAM里的旧画面(例如上次加载完的主页), 一直挂到
-     * 调用方画完第一帧为止 —— 表现为复位后约1秒的残留。 */
-    LCD_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, COLOR_BLACK);
-    /* 打开显示
+
+    /* 打开显示前先把GRAM刷黑清屏
+     * 打开显示
      * 等待显示打开完成
      * 开启背光 */
+    LCD_Fill_Color(0, 0, WIDTH - 1, HEIGHT - 1, COLOR_BLACK);
     LCD_Write_Reg(0x29, NULL, 0);
     LCD_Delay(10);
     LCD_Set_Backlight(true);
 }
 
-/* ==================== 屏幕显示相关函数 ====================*/
+/* ================ 屏幕显示相关函数 ================*/
 
 /**
- * @brief 设置显示窗口
- *        一次CS低电平内连续写入 0x2A/0x2B/0x2C, 省去多次CS与BSY往返
+ * @brief 设置显示窗口,一次CS低电平内连续写入 0x2A/0x2B/0x2C, 省去多次CS与BSY往返
  * @param x1 窗口左上角X坐标
  * @param y1 窗口左上角Y坐标
  * @param x2 窗口右下角X坐标
@@ -488,7 +457,6 @@ static void LCD_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     ydata[2] = (uint8_t)(y2 >> 8); // 窗口右下角Y坐标高8位
     ydata[3] = (uint8_t)y2;        // 窗口右下角Y坐标低8位
 
-    /* 独占 SPI3: 这一段 CS 一直拉着, 不能被触摸屏打断 */
     LCD_SpiLock();
 
     /* 切换 SPI 数据宽度为 8 位 */
@@ -522,17 +490,9 @@ static void LCD_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     /* 拉高CS，取消选中LCD屏幕，结束数据传输 */
     GPIO_SetBits(LCD_PORT, LCD_CS_PIN);
 
-    /* 释放 SPI3 */
     LCD_SpiUnlock();
 }
 
-/**
- * @brief 判断两个 RGB565 颜色是否在阈值内接近
- * @param c1 RGB565值，颜色1
- * @param c2 RGB565值，颜色2
- * @param threshold 允许的最大差值（0~255，建议 30~50）
- * @return true 表示相近
- */
 static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold)
 {
     /* 分离 RGB 分量（RGB565：R[15:11], G[10:5], B[4:0] */
@@ -544,12 +504,12 @@ static bool Color_IsClose(uint16_t c1, uint16_t c2, uint8_t threshold)
     uint8_t b2 = c2 & 0x1F;
 
     /* 计算分量绝对差值（归一化到 0~255 更直观） */
-    int dr = abs(r1 - r2) * 8; // 5bit -> 255
-    int dg = abs(g1 - g2) * 4; // 6bit -> 252
-    int db = abs(b1 - b2) * 8;
+    int diff_r = abs(r1 - r2) * 8; // 5bit -> 255
+    int diff_g = abs(g1 - g2) * 4; // 6bit -> 252
+    int diff_b = abs(b1 - b2) * 8; // 5bit -> 255
 
     /* 简单阈值：各分量差值均小于 threshold */
-    return (dr < threshold && dg < threshold && db < threshold);
+    return (diff_r < threshold && diff_g < threshold && diff_b < threshold);
 }
 
 static bool Is_in_Screen(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
@@ -568,21 +528,22 @@ static bool Is_GB2312(char ch)
 }
 
 /**
- * @brief 把缓冲里接近白色的像素替换成目标背景色(原地修改)
+ * @brief 把缓冲里接近白色的像素替换成目标背景色
  * @param buf 像素缓冲(RGB565, 低字节在前)
- * @param px  像素个数
- * @param target_back 替换成的目标背景色
+ * @param pix_cnt  像素个数
+ * @param target_bc 替换成的目标背景色
  */
-static void LCD_PixTransparent(uint8_t *buf, uint32_t px, uint16_t target_back)
+static void LCD_PixTransparent(uint8_t *buf, uint32_t pix_cnt, uint16_t target_bc)
 {
-    for (uint32_t i = 0; i < px; i++)
+    for (uint32_t i = 0; i < pix_cnt; i++)
     {
         uint16_t pixel = (uint16_t)((uint16_t)buf[i * 2U] | ((uint16_t)buf[i * 2U + 1U] << 8)); // 从缓冲区读取像素值
 
-        /* 判断像素是否接近白色（阈值 90） */
+        /* 判断像素是否接近白色（阈值 90，为测试出的值）
+         * 本项目中使用的图片均以白色为背景 */
         if (Color_IsClose(pixel, COLOR_WHITE, 90))
         {
-            pixel = target_back;
+            pixel = target_bc;
             buf[i * 2U] = (uint8_t)(pixel & 0xFFU);
             buf[i * 2U + 1U] = (uint8_t)(pixel >> 8);
         }
@@ -591,18 +552,16 @@ static void LCD_PixTransparent(uint8_t *buf, uint32_t px, uint16_t target_back)
 
 /**
  * @brief 从 W25Q64 流式读取图片并写入 LCD(可选透明色替换)
- *
  * @param x,y         绘制起始坐标
  * @param img         图片描述(宽高 + littlefs 路径)
- * @param transparency 是否把接近白色的像素替换为 target_back
- * @param target_back 透明替换的目标色
- *
+ * @param transparency 是否把接近白色的像素替换为 target_bc
+ * @param target_bc 透明替换的目标色
  * @note 双缓冲的核心: 一块数据正由 DMA 发送时, CPU 同时从 SPI1 读下一块。
  *       SPI1 与 SPI3 同为 21MHz, 因此全屏图的读取时间可以被完全隐藏。
  *       heap 分配失败时自动退化为单缓冲串行, 功能不受影响。
  */
 static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
-                                 bool transparency, uint16_t target_back)
+                                 bool transparency, uint16_t target_bc)
 {
     if (img == NULL)
         return;
@@ -616,7 +575,7 @@ static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
     /* 资源缺失时填背景色, 保证画面结构不塌也不花屏 */
     if (!Asset_ImageOk(img))
     {
-        LCD_Fill_Color(x, y, x + w - 1, y + h - 1, transparency ? target_back : COLOR_BLACK);
+        LCD_Fill_Color(x, y, x + w - 1, y + h - 1, transparency ? target_bc : COLOR_BLACK);
         return;
     }
 
@@ -628,22 +587,22 @@ static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
     bool prof_full = (x == 0U) && (y == 0U) && (w == WIDTH) && (h == HEIGHT); // 是否全屏
     uint32_t prof_t0 = prof_full ? Prof_Cycles() : 0U;                        // 记录开始时间
 
-    uint32_t total_px = (uint32_t)w * (uint32_t)h;                                      // 总像素数
-    bool dbl = (s_picBuf[0] != NULL && s_picBuf[1] != NULL);                            // 双缓冲是否可用
-    uint32_t blk = dbl ? (uint32_t)PIC_BLOCK_PIXEL : (uint32_t)(sizeof(s_scratch) / 2); // 每块像素数
-    uint8_t *buf[2];                                                                    // 双缓冲指针
+    uint32_t total_px = (uint32_t)w * (uint32_t)h;                                               // 总像素数
+    bool double_buf = (s_picbuf[0] != NULL && s_picbuf[1] != NULL);                              // 双缓冲是否可用
+    uint32_t blk = double_buf ? (uint32_t)PIC_BLOCK_PIXEL : (uint32_t)(sizeof(s_renderbuf) / 2); // 每块像素数
+    uint8_t *buf[2];                                                                             // 双缓冲指针
 
     /* 双缓冲: 发送与读取并行 */
-    if (dbl)
+    if (double_buf)
     {
-        buf[0] = s_picBuf[0];
-        buf[1] = s_picBuf[1];
+        buf[0] = s_picbuf[0];
+        buf[1] = s_picbuf[1];
     }
     /* 回退: 复用字符串渲染缓冲, 串行收发 */
     else
     {
-        buf[0] = s_scratch;
-        buf[1] = s_scratch;
+        buf[0] = s_renderbuf;
+        buf[1] = s_renderbuf;
     }
 
     /* 设置绘制区域
@@ -669,7 +628,7 @@ static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
     /* 替换接近白色的像素 */
     else if (transparency)
     {
-        LCD_PixTransparent(buf[0], n0, target_back);
+        LCD_PixTransparent(buf[0], n0, target_bc);
     }
 
     /* 发送剩余像素 */
@@ -693,7 +652,7 @@ static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
             }
             else if (transparency)
             {
-                LCD_PixTransparent(buf[nxt], n2, target_back);
+                LCD_PixTransparent(buf[nxt], n2, target_bc);
             }
         }
 
@@ -712,15 +671,13 @@ static void LCD_DrawImage_Stream(uint16_t x, uint16_t y, const Image_t *img,
     {
         printf("[PROF] full-screen image %ux%u, %u bytes, %s, %u us\r\n",
                (unsigned)w, (unsigned)h, (unsigned)(total_px * 2U),
-               dbl ? "ping-pong" : "single", (unsigned)Prof_Us(prof_t0));
+               double_buf ? "ping-pong" : "single", (unsigned)Prof_Us(prof_t0));
     }
 }
 
-/* ==================== 对外接口函数 ====================*/
+/* ================ public 函数 ================*/
 void LCD_Init(void)
 {
-    /* 只有多任务下才需要总线锁: 初始化时先建好, 避免多任务首次抢锁时重复创建。
-     * 裸机(调度器未启动)是单线程, 不碰锁。 */
     if ((xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) && (s_spi_mtx == NULL))
         s_spi_mtx = xSemaphoreCreateRecursiveMutex();
 
@@ -733,14 +690,11 @@ void LCD_Init(void)
 }
 
 /**
- * @brief  SPI3 总线借给别的器件(触摸屏 XPT2046)使用前的准备
- * @note   1) 先拿到总线锁: 触摸事务期间 LCD 任务进不来, 不会出现两个从设备
- *            同时被 CS 选中的情况(那会把时钟/数据发错设备);
+ * @brief  SPI3 总线借给别的器件(触摸屏 TSC2046)使用前的准备
+ * @note   1) 先拿到总线锁
  *         2) 等 LCD 正在跑的 DMA 发完;
- *         3) 数据宽度切回 8 位(触摸按字节收发), 并同步 s_spi_datasize,
- *            否则 LCD 以为还是 16 位而跳过切换, 之后刷图会花屏;
- *         4) 降速到 656kHz(XPT2046 的 SCLK 上限 2MHz)。
- *         用完必须配对调用 LCD_Bus_Release()。
+ *         3) 数据宽度切回 8 位
+ *         4) 降速到 656kHz
  */
 void LCD_Bus_Acquire(void)
 {
@@ -763,12 +717,27 @@ void LCD_Bus_Release(void)
 }
 
 /**
+ * @brief 屏幕电源开关
+ * @param on true=显示开+背光; false=背光灭+显示睡眠(显存保留)
+ */
+void LCD_Display_Power(bool on)
+{
+    if (on)
+    {
+        LCD_Write_Reg(0x29, NULL, 0);
+        LCD_Set_Backlight(true);
+    }
+    else
+    {
+        LCD_Set_Backlight(false);
+        LCD_Write_Reg(0x28, NULL, 0);
+    }
+}
+
+/**
  * @brief 填充颜色
- *
- * @param x1 坐标1
- * @param y1 坐标1
- * @param x2 坐标2
- * @param y2 坐标2
+ * @param x1,y1 左上角 X Y 坐标(闭区间)
+ * @param x2,y2 右下角 X Y 坐标(闭区间)
  * @param color 颜色
  */
 void LCD_Fill_Color(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
@@ -791,9 +760,10 @@ void LCD_Fill_Color(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t
  */
 void LCD_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image)
 {
-    /* 整幅图是一个连续事务(CS 全程拉低), 由外层持锁, 内层 SetWindow 递归加锁 */
     LCD_SpiLock();
+
     LCD_DrawImage_Stream(x, y, image, false, COLOR_BLACK);
+
     LCD_SpiUnlock();
 }
 
@@ -802,13 +772,14 @@ void LCD_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image)
  *        改色在缓冲内原地完成, 之后再走 DMA 发送
  * @param x,y        绘制起始坐标
  * @param image       图片结构体指针
- * @param target_back 目标背景色（例如 COLOR_WHITE）
+ * @param target_bc 目标背景色（例如 COLOR_WHITE）
  */
-void LCD_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_back)
+void LCD_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_bc)
 {
-    /* 同上: 整幅图一次持锁到底 */
     LCD_SpiLock();
-    LCD_DrawImage_Stream(x, y, image, true, target_back);
+
+    LCD_DrawImage_Stream(x, y, image, true, target_bc);
+
     LCD_SpiUnlock();
 }
 
@@ -828,12 +799,14 @@ void LCD_Draw_Pixels(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, const u
 
     /* 整段持锁: 0x2C 命令与像素数据之间不留空档, 与 LCD_Draw_Picture 的做法一致。
      * 内层的 SetWindow/Write_Gram 用的是递归互斥量, 嵌套取锁是安全的。
-     * s_scratch_busy 顺带记录"图形库正在用这块缓冲", 供 LCD_Write_String 检查。 */
+     * s_renderbuf_busy 顺带记录"图形库正在用这块缓冲", 供 LCD_Write_String 检查。 */
     LCD_SpiLock();
-    s_scratch_busy = true;
+
+    s_renderbuf_busy = true;
     LCD_SetWindow(x1, y1, x2, y2);
     LCD_Write_Gram((const uint8_t *)pixels, size * 2U, true);
-    s_scratch_busy = false;
+    s_renderbuf_busy = false;
+
     LCD_SpiUnlock();
 }
 
@@ -847,7 +820,7 @@ uint16_t *LCD_RenderBuffer(uint32_t *capacity_px)
     if (capacity_px != NULL)
         *capacity_px = (uint32_t)WIDTH * (uint32_t)SCRATCH_H_PX;
 
-    return (uint16_t *)s_scratch;
+    return (uint16_t *)s_renderbuf;
 }
 
 /**
@@ -863,12 +836,10 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, ui
     if (font == NULL || str == NULL || font->size == 0 || font->size > SCRATCH_H_PX)
         return;
 
-    /* s_scratch 同时被图形库(LVGL)借去当绘制缓冲, 两边靠"都由 uiTask 串行调用"错开。
-     * 真出现并发就一定会花屏, 这里报出来比默默画错容易查得多。 */
-    if (s_scratch_busy)
+    if (s_renderbuf_busy)
         printf("[LCD] WARN: render buffer busy (graphics flush in progress)\r\n");
 
-    uint16_t size = font->size; // 字体大小（像素）
+    uint16_t size = font->size;
     const char *p = str;
 
     while (*p)
@@ -943,8 +914,8 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, ui
         {
             /* 逐字符读字模再铺进缓冲。
              * 外层是字符、内层是行: 每个字模只从 W25Q64 读一次, 先落在
-             * s_glyph, 再按行散写进 s_scratch 的对应列偏移。 */
-            uint8_t *buf = s_scratch; // 指向全局缓冲区的起点
+             * s_matrix, 再按行散写进 s_renderbuf 的对应列偏移。 */
+            uint8_t *buf = s_renderbuf; // 指向全局缓冲区的起点
 
             for (uint16_t k = 0; k < n; k++)
             {
@@ -956,10 +927,10 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, ui
                 {
                     uint32_t need = (uint32_t)ob * size; // 该字模字节数, 最大 144(48号ASCII的3*48)
 
-                    if (need <= sizeof(s_glyph) &&
-                        Asset_ReadFont(g[k].fid, g[k].off, s_glyph, need) == 0)
+                    if (need <= sizeof(s_matrix) &&
+                        Asset_ReadFont(g[k].fid, g[k].off, s_matrix, need) == 0)
                     {
-                        mb = s_glyph;
+                        mb = s_matrix;
                     }
                 }
 
@@ -989,7 +960,7 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, ui
             }
 
             LCD_SetWindow(x, y, x + run_px - 1, y + size - 1);
-            LCD_Write_Gram(s_scratch, (uint32_t)run_px * size * 2, true);
+            LCD_Write_Gram(s_renderbuf, (uint32_t)run_px * size * 2, true);
         }
 
         if (*p == '\0')
@@ -999,25 +970,5 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *str, uint16_t color_font, ui
         y += size;
         if (y > HEIGHT - 1)
             return;
-    }
-}
-
-/**
- * @brief 屏幕电源开关
- * @param on true=显示开(0x29)+背光; false=背光灭+显示睡眠(0x28, 显存保留)
- */
-void LCD_Display_Power(bool on)
-{
-    /* 显示开 */
-    if (on)
-    {
-        LCD_Write_Reg(0x29, NULL, 0);
-        LCD_Set_Backlight(true);
-    }
-    /* 显示关(显存保留, 唤醒无需重初始化) */
-    else
-    {
-        LCD_Set_Backlight(false);
-        LCD_Write_Reg(0x28, NULL, 0);
     }
 }

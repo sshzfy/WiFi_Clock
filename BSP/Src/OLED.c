@@ -1,11 +1,7 @@
 #include "OLED.h"
-#include "Asset.h"
 
-/* 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行) */
-static uint8_t s_oled_glyph[ASSET_GLYPH_BYTES_MAX];
-
-/* 清屏用的全零页: 一次 I2C 事务写满一整页(128 列) */
-static uint8_t s_oled_zeros[OLED_WIDTH];
+static uint8_t s_oled_glyph[ASSET_GLYPH_BYTES_MAX]; // 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行)
+static uint8_t s_oled_zeros[OLED_WIDTH];            // 清屏用的全零页: 一次 I2C 事务写满一整页(128 列)
 
 Soft_I2C_t oled_i2c = {
     .SCL_Port = OLED_GPIO_PORT,
@@ -13,13 +9,13 @@ Soft_I2C_t oled_i2c = {
     .SCL_Pin = OLED_GPIO_SCL_PIN,
     .SDA_Pin = OLED_GPIO_SDA_PIN,
 };
-/* ================ 硬件底层函数 ================ */
 
-/**
- * @brief 写入OLED命令
- *
- * @param cmd 要写入的命令
- * */
+/* ================ static 函数 ================ */
+static void OLED_WriteCmd(uint8_t cmd);
+static void OLED_WriteData(uint8_t data);
+static void OLED_SetCursor(uint8_t page, uint8_t col);
+
+/* ================ 硬件底层函数 ================ */
 static void OLED_WriteCmd(uint8_t cmd)
 {
     if (&oled_i2c == NULL)
@@ -27,11 +23,6 @@ static void OLED_WriteCmd(uint8_t cmd)
     Soft_I2C_Send_Bytes(&oled_i2c, OLED_ADDR, OLED_CMD_BYTE, &cmd, 1);
 }
 
-/**
- * @brief 写入OLED数据
- *
- * @param data 要写入的数据
- * */
 static void OLED_WriteData(uint8_t data)
 {
     if (&oled_i2c == NULL)
@@ -41,25 +32,26 @@ static void OLED_WriteData(uint8_t data)
 
 /**
  * @brief 设置OLED光标位置
- *
- * @param y 要设置的光标位置的行
- * @param x 要设置的光标位置的列
+ * @param page 要设置的光标位置的页
+ * @param col 要设置的光标位置的列
  * */
 static void OLED_SetCursor(uint8_t page, uint8_t col)
 {
-    OLED_WriteCmd(0xB0 | page);                /* 设置页地址 */
-    OLED_WriteCmd(0x10 | ((col & 0xF0) >> 4)); /* 列高4位 */
-    OLED_WriteCmd(0x00 | (col & 0x0F));        /* 列低4位 */
+    /* 设置页地址
+     *列高4位
+     *列低4位 */
+    OLED_WriteCmd(0xB0 | page);
+    OLED_WriteCmd(0x10 | ((col & 0xF0) >> 4));
+    OLED_WriteCmd(0x00 | (col & 0x0F));
 }
 
-/* ================ 应用函数 ================ */
+/* ================ public函数 ================ */
 
 /**
  * @brief 清除OLED显示
- *
  * @note 按页整块写: 每页一次 I2C 事务写 128 字节, 共 8 次。
  *       原先逐列发 1024 次单字节事务, 上电清屏要花约 240ms。
- * */
+ */
 void OLED_Clear(void)
 {
     for (uint8_t page = 0; page < 8; page++)
@@ -71,9 +63,8 @@ void OLED_Clear(void)
 
 /**
  * @brief 写入OLED字符
- *
  * @param ch 要写入的字符
- * */
+ */
 void OLED_WriteChar(uint8_t x, uint8_t y, char ch, const Font_t *font)
 {
     if (font == NULL || font->ascii_id == ASSET_FID_NONE)
@@ -81,9 +72,10 @@ void OLED_WriteChar(uint8_t x, uint8_t y, char ch, const Font_t *font)
     if (x >= OLED_WIDTH || y >= OLED_HEIGHT)
         return;
 
+    /* 只处理可见ASCII */
     uint8_t index = (uint8_t)ch - ' ';
     if (index >= 95)
-        return; /* 只处理可见ASCII */
+        return;
 
     uint16_t full_size = font->size;          // 字模原始高度
     uint16_t full_width = full_size / 2;      // 字模原始宽度
@@ -143,12 +135,11 @@ void OLED_WriteChar(uint8_t x, uint8_t y, char ch, const Font_t *font)
 
 /**
  * @brief 写入OLED字符串
- *
  * @param x 要写入的字符串的起始列
  * @param y 要写入的字符串的起始行
  * @param str 要写入的字符串
  * @param font 要写入的字符串的字体
- * */
+ */
 void OLED_Write_String(uint8_t x, uint8_t y, const char *str, const Font_t *font)
 {
     if (font == NULL)
@@ -164,9 +155,6 @@ void OLED_Write_String(uint8_t x, uint8_t y, const char *str, const Font_t *font
     }
 }
 
-/**
- * @brief 夜间显示: HH:MM(Font_48居中) + 日期(Font_16居中), 不显示秒
- * */
 void OLED_ShowClock(uint8_t hh, uint8_t mm, uint16_t year, uint8_t mon, uint8_t day)
 {
     char buf[16];
@@ -180,29 +168,21 @@ void OLED_ShowClock(uint8_t hh, uint8_t mm, uint16_t year, uint8_t mon, uint8_t 
     OLED_Write_String((OLED_WIDTH - 10 * (Font_16.size / 2)) / 2, 48, buf, &Font_16);
 }
 
-/**
- * @brief 开启OLED显示
- * */
 void OLED_Display_On(void)
 {
-    OLED_WriteCmd(0xAF); /* 开启显示 */
-    OLED_Clear();        /* 清屏, 由调用方随后绘制内容 */
+    /* 开启显示
+     * 清屏, 由调用方随后绘制内容 */
+    OLED_WriteCmd(0xAF);
+    OLED_Clear();
 }
 
-/**
- * @brief 关闭OLED显示
- * */
 void OLED_Display_Off(void)
 {
     OLED_Clear();
-    OLED_WriteCmd(0xAE); /* 关闭显示 */
+    /* 关闭显示 */
+    OLED_WriteCmd(0xAE);
 }
 
-/**
- * @brief 初始化OLED
- *
- * @param i2c I2C句柄
- * */
 void OLED_Init(void)
 {
     Soft_I2C_Init(&oled_i2c);

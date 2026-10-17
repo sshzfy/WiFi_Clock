@@ -4,12 +4,8 @@ static volatile uint64_t TIM5_ms = 0; // TIM5 毫秒计数器
 
 /**
  * @brief 初始化TIM5为1ms定时器, 实现RTC时间基准
- *
  * TIM5挂在APB1总线上, 当APB1预分频≥2时, 定时器时钟 = APB1 * 2 = SystemCoreClock / 2
  * 例: SystemCoreClock=168MHz时, TIM5时钟=84MHz, PSC=83 → 1MHz, ARR=999 → 1kHz(1ms中断)
- *
- * @param None
- * @return None
  */
 void TIM5_Init(void)
 {
@@ -22,11 +18,13 @@ void TIM5_Init(void)
     uint32_t pclk1 = RCC_Clocks.PCLK1_Frequency; // APB1时钟频率
     uint32_t tim5_clk;
 
-    if (hclk1 == pclk1) /* APB时钟1分频时, 定时器时钟 = APB1 */
+    /* APB时钟1分频时, 定时器时钟 = APB1 */
+    if (hclk1 == pclk1)
     {
         tim5_clk = pclk1;
     }
-    else /* APB时钟分频≥2,时, 定时器时钟 = APB1 * 2 */
+    /* APB时钟分频≥2,时, 定时器时钟 = APB1 * 2 */
+    else
     {
         tim5_clk = 2 * pclk1;
     }
@@ -41,7 +39,7 @@ void TIM5_Init(void)
 
     NVIC_InitTypeDef NVIC_InitStructure;
     NVIC_InitStructure.NVIC_IRQChannel = TIM5_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2; /* 该优先级(2)高于configMAX_SYSCALL_INTERRUPT_PRIORITY(5), 因此TIM5中断内禁止调用任何FreeRTOS API, 只能做计数等简单操作 */
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2; // 该优先级(2)高于configMAX_SYSCALL_INTERRUPT_PRIORITY(5), 因此TIM5中断内禁止调用任何FreeRTOS API, 只能做计数等简单操作
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; // 使能TIM5_IRQn
     NVIC_Init(&NVIC_InitStructure);
@@ -49,11 +47,7 @@ void TIM5_Init(void)
     TIM_Cmd(TIM5, ENABLE);
 }
 
-/**
- * @brief TIM5更新中断服务函数: 每1ms触发一次
- * @param None
- * @return None
- */
+/* TIM5更新中断服务函数: 每1ms触发一次 */
 void TIM5_IRQHandler(void)
 {
     if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET)
@@ -74,11 +68,9 @@ uint64_t TIM5_Get_ms(void)
 
 /**
  * @brief 获取TIM5微秒计数器(单调递增)
- *
  * TIM5以1MHz计数(CNT: 0~999), 更新中断在回绕时对TIM5_ms+1。
  * 先读CNT再读ms, ms在采样期间变化则重读; 当CNT很小时复检ms是否已进位,
  * 避免回绕瞬间(中断尚未+1)读到偏小值。
- *
  * @return uint64_t 自TIM5_Init以来经过的微秒数
  */
 uint64_t TIM5_Get_us(void)
@@ -94,7 +86,8 @@ uint64_t TIM5_Get_us(void)
         uif = (TIM5->SR & TIM_SR_UIF) != 0; // 更新事件已发生但中断尚未处理
     } while (ms != TIM5_ms); /* ms在采样期间被中断更新则重读 */
 
-    if (cnt < 256U) /* CNT接近回绕起点, 复检ms是否已进位 */
+    /* CNT接近回绕起点, 复检ms是否已进位 */
+    if (cnt < 256U)
     {
         uint64_t ms2 = TIM5_ms;
         if (ms2 != ms)

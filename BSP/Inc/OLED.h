@@ -7,6 +7,7 @@
 #include "Timer.h"
 #include "App.h"
 #include "AT.h"
+#include "Asset.h"
 
 #define OLED_GPIO_PORT           GPIOB
 #define OLED_GPIO_SCL_PIN        GPIO_Pin_6

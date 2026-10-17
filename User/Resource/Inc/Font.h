@@ -35,7 +35,7 @@ typedef enum
     ASSET_FID_COUNT     /* 字库资源 ID 数量 */
 } Asset_FontId_t;
 
-#define ASSET_FID_NONE 0xFFU /* 该字体没有这一类字模 */
+#define ASSET_FID_NONE        0xFFU // 该字体没有这一类字模
 
 typedef struct
 {
@@ -49,20 +49,20 @@ typedef struct
 /* 各资源文件的字节数, 供烧录与开机自检使用 */
 #define ASSET_GLYPH_COUNT 3755U /* GB2312 一级字库字数 */
 
-#define ASSET_CN16_SIZE  (ASSET_GLYPH_COUNT * 32U) /* 120160 */
-#define ASSET_CN22_SIZE  (ASSET_GLYPH_COUNT * 66U) /* 247830 */
-#define ASSET_AS12_SIZE  (95U * 12U * 1U)          /* 12 号 ASCII */
-#define ASSET_AS16_SIZE  (95U * 16U * 1U)          /* 16 号 ASCII */
-#define ASSET_AS16B_SIZE (95U * 16U * 1U)          /* 16 号 ASCII(加粗) */
-#define ASSET_AS22_SIZE  (95U * 22U * 2U)          /* 22 号 ASCII */
-#define ASSET_AS22B_SIZE (95U * 22U * 2U)          /* 22 号 ASCII(加粗) */
-#define ASSET_AS32_SIZE  (95U * 32U * 2U)          /* 32 号 ASCII */
-#define ASSET_AS32B_SIZE (95U * 32U * 2U)          /* 32 号 ASCII(加粗) */
-#define ASSET_AS48_SIZE  (95U * 48U * 3U)          /* 48 号 ASCII */
-#define ASSET_AS48B_SIZE (95U * 48U * 3U)          /* 48 号 ASCII(加粗) */
+#define ASSET_CN16_SIZE          (ASSET_GLYPH_COUNT * 32U) // 120160
+#define ASSET_CN22_SIZE          (ASSET_GLYPH_COUNT * 66U) // 247830
+#define ASSET_AS12_SIZE          (95U * 12U * 1U)          // 12 号 ASCII
+#define ASSET_AS16_SIZE          (95U * 16U * 1U)          // 16 号 ASCII
+#define ASSET_AS16B_SIZE         (95U * 16U * 1U)          // 16 号 ASCII(加粗)
+#define ASSET_AS22_SIZE          (95U * 22U * 2U)          // 22 号 ASCII
+#define ASSET_AS22B_SIZE         (95U * 22U * 2U)          // 22 号 ASCII(加粗)
+#define ASSET_AS32_SIZE          (95U * 32U * 2U)          // 32 号 ASCII
+#define ASSET_AS32B_SIZE         (95U * 32U * 2U)          // 32 号 ASCII(加粗)
+#define ASSET_AS48_SIZE          (95U * 48U * 3U)          // 48 号 ASCII
+#define ASSET_AS48B_SIZE         (95U * 48U * 3U)          // 48 号 ASCII(加粗)
 
 /* ASCII 单字符点阵字节数 = ob * size */
-#define ASSET_ASCII_GLYPH_BYTES(sz) (((((sz) / 2U) + 7U) / 8U) * (sz))
+#define ASSET_ASCII_GLYPH_BYTES(sz)        (((((sz) / 2U) + 7U) / 8U) * (sz))
 
 /* 全部字模里的最大单字节数: 48 号 ASCII = 3 字节/行 * 48 行 = 144 */
 #define ASSET_GLYPH_BYTES_MAX (ASSET_ASCII_GLYPH_BYTES(48U))

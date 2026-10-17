@@ -1,25 +1,26 @@
 #include "Asset.h"
 
-/* ============================================================
+/* ================================================
  * 资源层的实现: 一个 littlefs 挂载 + 一把访问锁 + 两类数据
  *   只读资源: 字库(/font/ *.bin) 与图片(/img/ *.bin)
  *   运行数据: /data/<name>.bin
  * 原则: 任何一次文件系统访问都持 LittleFS_Lock(); 参数与越界
  *       校验做在进入 littlefs 之前; 失败一律返回负错误码并打日志。
- * ============================================================ */
+ * ================================================ */
 
-static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] = {
-    {"/font/cn16.bin", ASSET_CN16_SIZE},   /* ASSET_FID_CN16 */
-    {"/font/cn22.bin", ASSET_CN22_SIZE},   /* ASSET_FID_CN22 */
-    {"/font/as12.bin", ASSET_AS12_SIZE},   /* ASSET_FID_AS12 */
-    {"/font/as16.bin", ASSET_AS16_SIZE},   /* ASSET_FID_AS16 */
-    {"/font/as16b.bin", ASSET_AS16B_SIZE}, /* ASSET_FID_AS16B */
-    {"/font/as22.bin", ASSET_AS22_SIZE},   /* ASSET_FID_AS22 */
-    {"/font/as22b.bin", ASSET_AS22B_SIZE}, /* ASSET_FID_AS22B */
-    {"/font/as32.bin", ASSET_AS32_SIZE},   /* ASSET_FID_AS32 */
-    {"/font/as32b.bin", ASSET_AS32B_SIZE}, /* ASSET_FID_AS32B */
-    {"/font/as48.bin", ASSET_AS48_SIZE},   /* ASSET_FID_AS48 */
-    {"/font/as48b.bin", ASSET_AS48B_SIZE}, /* ASSET_FID_AS48B */
+static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] =
+    {
+        {"/font/cn16.bin", ASSET_CN16_SIZE},   // ASSET_FID_CN16
+        {"/font/cn22.bin", ASSET_CN22_SIZE},   // ASSET_FID_CN22
+        {"/font/as12.bin", ASSET_AS12_SIZE},   // ASSET_FID_AS12
+        {"/font/as16.bin", ASSET_AS16_SIZE},   // ASSET_FID_AS16
+        {"/font/as16b.bin", ASSET_AS16B_SIZE}, // ASSET_FID_AS16B
+        {"/font/as22.bin", ASSET_AS22_SIZE},   // ASSET_FID_AS22
+        {"/font/as22b.bin", ASSET_AS22B_SIZE}, // ASSET_FID_AS22B
+        {"/font/as32.bin", ASSET_AS32_SIZE},   // ASSET_FID_AS32
+        {"/font/as32b.bin", ASSET_AS32B_SIZE}, // ASSET_FID_AS32B
+        {"/font/as48.bin", ASSET_AS48_SIZE},   // ASSET_FID_AS48
+        {"/font/as48b.bin", ASSET_AS48B_SIZE}, // ASSET_FID_AS48B
 };
 
 static bool s_mounted = false; // littlefs 是否已挂载
@@ -33,9 +34,16 @@ static uint32_t s_pos[ASSET_FID_COUNT];    // 记录当前文件位置, 位置�
 
 static uint32_t s_imageMask = 0; // 图片自检结果位图(最多 32 张)
 
-/* ==================== 内部辅助 ==================== */
+/* ================ static 函数 ================ */
+static int Asset_MapErr(int err);
+static int Asset_MkdirLocked(const char *path);
+static void Asset_EnsureDirs(void);
+static void Asset_CloseFonts(void);
+static void Asset_OpenFonts(void);
+static void Asset_SelfCheck(void);
+static bool Asset_DataNameLegal(const char *name);
+static int Asset_DataPathAssemble(const char *name, char *out, uint32_t out_size);
 
-/** @brief littlefs 错误码 → 本模块错误码 */
 static int Asset_MapErr(int err)
 {
     switch (err)
@@ -56,37 +64,47 @@ static int Asset_MapErr(int err)
     }
 }
 
-/** @brief 创建目录(调用者必须已持有 LittleFS_Lock); 已存在视为成功 */
+/* 创建目录(调用者必须已持有 LittleFS_Lock); 已存在视为成功 */
 static int Asset_MkdirLocked(const char *path)
 {
     struct lfs_info info;
 
     /* 检查目录是否存在 */
     int err = lfs_stat(&g_lfs, path, &info);
+    /* 目录存在且是目录, 成功 */
     if (err == LFS_ERR_OK)
+    {
         return (info.type == LFS_TYPE_DIR) ? ASSET_OK : ASSET_ERR_PARAM;
+    }
+    /* 其他错误码, 直接返回 */
     if (err != LFS_ERR_NOENT)
+    {
         return Asset_MapErr(err);
+    }
 
     /* 创建目录 */
     err = lfs_mkdir(&g_lfs, path);
     if ((err != LFS_ERR_OK) && (err != LFS_ERR_EXIST))
+    {
         return Asset_MapErr(err);
+    }
 
     return ASSET_OK;
 }
 
-/** @brief 确保字库/图片/数据三个目录存在(格式化后目录会全丢, 需要能重建) */
+/* 确保字库/图片/数据三个目录存在(格式化后目录会全丢, 需要能重建) */
 static void Asset_EnsureDirs(void)
 {
     LittleFS_Lock();
+
     (void)Asset_MkdirLocked("/font");
     (void)Asset_MkdirLocked("/img");
     (void)Asset_MkdirLocked("/data");
+
     LittleFS_Unlock();
 }
 
-/** @brief 关闭全部常开字库句柄 */
+/* 关闭全部常开字库句柄 */
 static void Asset_CloseFonts(void)
 {
     LittleFS_Lock();
@@ -105,7 +123,7 @@ static void Asset_CloseFonts(void)
     LittleFS_Unlock();
 }
 
-/** @brief 打开全部字库文件并常开句柄 */
+/* 打开全部字库文件并常开句柄 */
 static void Asset_OpenFonts(void)
 {
     LittleFS_Lock();
@@ -144,19 +162,24 @@ static void Asset_SelfCheck(void)
     for (int i = 0; i < ASSET_FID_COUNT; i++)
     {
         int err = lfs_stat(&g_lfs, s_fontFiles[i].path, &info);
-        s_checked++;
+        s_checked++; // 记录已核对的字库文件数量
 
+        /* 文件有错误或大小不正确 */
         if ((err != LFS_ERR_OK) || (info.size != s_fontFiles[i].size))
         {
-            s_missing++;
+            s_missing++; // 记录错误字库的数量
+            /* 文件存在但大小不正确 */
             if (err == LFS_ERR_OK)
             {
                 printf("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
                        s_fontFiles[i].path, (unsigned long)info.size,
                        (unsigned long)s_fontFiles[i].size);
             }
+            /* 文件不存在 */
             else
+            {
                 printf("[ASSET] MISSING %s err=%d\r\n", s_fontFiles[i].path, err);
+            }
         }
     }
 
@@ -170,6 +193,7 @@ static void Asset_SelfCheck(void)
         int err = lfs_stat(&g_lfs, im->path, &info);
         s_checked++; // 记录已核对的图片文件数量
 
+        /* 文件有错误或大小不正确 */
         if ((err != LFS_ERR_OK) || (info.size != want))
         {
             s_missing++; // 记录错误图片的数量
@@ -185,16 +209,19 @@ static void Asset_SelfCheck(void)
         }
         /* 掩码只有 32 位, 超出范围的图片不记掩码 */
         else if (i < ASSET_IMAGE_MASK_BITS)
+        {
             s_imageMask |= (1UL << i);
+        }
     }
 
     LittleFS_Unlock();
 }
 
-/** @brief 运行数据名是否合法: 只允许字母/数字/'_'/'-', 长度 1..ASSET_DATA_NAME_MAX
+/** @brief 运行数据名是否合法: 只允许字母/数字/'_'/'-', 长度 1 ~ ASSET_DATA_NAME_MAX
  * @param name 数据名
- * @return true 合法, false 不合法 */
-static bool Asset_DataNameOk(const char *name)
+ * @return true 合法, false 不合法
+ */
+static bool Asset_DataNameLegal(const char *name)
 {
     if ((name == NULL) || (name[0] == '\0'))
         return false;
@@ -218,20 +245,25 @@ static bool Asset_DataNameOk(const char *name)
  * @param name 数据名
  * @param out 输出缓冲区
  * @param out_size 输出缓冲区大小
- * @return ASSET_OK 成功; 其他负数为错误码(参数错误/缓冲区太小) */
-static int Asset_DataPath(const char *name, char *out, uint32_t out_size)
+ * @return ASSET_OK 成功; 其他负数为错误码(参数错误/缓冲区太小)
+ */
+static int Asset_DataPathAssemble(const char *name, char *out, uint32_t out_size)
 {
-    if (!Asset_DataNameOk(name))
+    if (!Asset_DataNameLegal(name))
         return ASSET_ERR_PARAM;
 
     int n = snprintf(out, out_size, "/data/%s.bin", name);
     if ((n <= 0) || ((uint32_t)n >= out_size))
+    {
         return ASSET_ERR_PARAM;
+    }
 
     return ASSET_OK;
 }
 
-/* ==================== 初始化与状态 ==================== */
+/* ================ public函数 ================ */
+
+/* ================ 初始化与状态 ================ */
 
 /**
  * @brief 初始化资源层: W25Q64 -> 挂载 -> 常开字库句柄 -> 自检 -> 建目录
@@ -244,7 +276,9 @@ int Asset_Init(void)
 {
     /* 重复调用时先放掉旧句柄, 避免 littlefs 句柄泄漏 */
     if (s_mounted)
+    {
         Asset_CloseFonts();
+    }
 
     /* 初始化状态 */
     s_mounted = false;
@@ -267,6 +301,7 @@ int Asset_Init(void)
         return ASSET_ERR_IO;
     }
     printf("[ASSET] W25Q64 jedec = 0x%06lX\r\n", (unsigned long)jedec);
+
     /* 2. 文件系统: 只挂载(幂等), 失败不格式化 */
     int err = LittleFS_Mount();
     if (err != LFS_ERR_OK)
@@ -278,16 +313,16 @@ int Asset_Init(void)
     s_mounted = true; // 标记为已挂载
     printf("[ASSET] littlefs mounted: %lu blocks x %lu B\r\n",
            (unsigned long)g_lfs_config.block_count, (unsigned long)g_lfs_config.block_size);
+
     /* 3. 目录: 字库与图片目录由烧录固件创建, 这里只是补齐缺失的 */
     Asset_EnsureDirs();
+
     /* 4. 常开字库句柄 + 资源自检 */
     Asset_OpenFonts();
     Asset_SelfCheck();
     printf("[ASSET] selfcheck: checked=%lu, missing=%lu\r\n",
            (unsigned long)s_checked, (unsigned long)s_missing);
-
-    /* 全部缺失是最常见的情形: 资源从未烧录进 W25Q64。
-     * 注意 littlefs 挂载成功不代表资源存在 —— 空的旧文件系统同样能挂载。 */
+    /* 全部缺失是最常见的情形: 资源从未烧录进 W25Q64 */
     if ((s_missing > 0U) && (s_missing == s_checked))
     {
         printf("[ASSET] HINT: no resources on flash, flash the provision firmware first\r\n");
@@ -296,19 +331,19 @@ int Asset_Init(void)
     return (s_missing == 0U) ? ASSET_OK : ASSET_ERR_MISSING;
 }
 
-/** @brief 文件系统是否已挂载可用(资源缺失也算可用, 见 Asset_MissingCount) */
+/* 文件系统是否已挂载可用(资源缺失也算可用, 见 Asset_MissingCount) */
 bool Asset_Ready(void)
 {
     return s_mounted && LittleFS_IsMounted();
 }
 
-/** @brief 自检发现的问题项数(文件缺失或大小不符) */
+/* 自检发现的问题项数(文件缺失或大小不符) */
 uint32_t Asset_MissingCount(void)
 {
     return s_missing;
 }
 
-/** @brief 自检核对过的资源项总数 */
+/* 自检核对过的资源项总数 */
 uint32_t Asset_CheckedCount(void)
 {
     return s_checked;
@@ -325,7 +360,9 @@ uint32_t Asset_CheckedCount(void)
 int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes)
 {
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
 
     /* 查询已占用块数 */
     LittleFS_Lock();
@@ -333,22 +370,26 @@ int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes)
     LittleFS_Unlock();
 
     if (used_blocks < 0)
+    {
         return ASSET_ERR_IO;
+    }
 
     uint32_t block_size = (uint32_t)g_lfs_config.block_size; // 每个块的大小
 
     if (total_bytes != NULL)
+    {
         *total_bytes = block_size * (uint32_t)g_lfs_config.block_count; // 总容量字节数
+    }
     if (used_bytes != NULL)
+    {
         *used_bytes = (uint32_t)used_blocks * block_size; // 已占用字节数
+    }
 
     return ASSET_OK;
 }
 
-/* ==================== 只读资源: 字库 ==================== */
-
 /**
- * @brief 从字库资源文件读取字体数据
+ * @brief 从字库资源文件读取字体数据,只读
  * @param fid 资源文件 ID(见 Asset_FontId_t)
  * @param off 文件内字节偏移
  * @param buf 输出缓冲区
@@ -359,15 +400,22 @@ int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes)
 int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
 {
     if ((fid >= ASSET_FID_COUNT) || (buf == NULL) || (len == 0U))
+    {
         return ASSET_ERR_PARAM;
+    }
     if ((!Asset_Ready()) || (!s_open[fid]))
+    {
         return ASSET_ERR_STATE;
+    }
     /* 越界保护: 先比 off 再比 len, 避免 off + len 溢出 */
-    if ((off > s_fontFiles[fid].size) || (len > (s_fontFiles[fid].size - off)))
+    if ((off > s_fontFiles[fid].size) || ((len + off) > (s_fontFiles[fid].size)))
+    {
         return ASSET_ERR_RANGE;
+    }
 
     LittleFS_Lock();
 
+    /* 当位置不匹配时需要 seek */
     if (s_pos[fid] != off)
     {
         if (lfs_file_seek(&g_lfs, &s_file[fid], (lfs_off_t)off, LFS_SEEK_SET) < 0)
@@ -376,22 +424,19 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
             return ASSET_ERR_IO;
         }
     }
-
+    /* 读取数据 */
     if (lfs_file_read(&g_lfs, &s_file[fid], buf, len) != (lfs_ssize_t)len)
     {
         s_pos[fid] = ASSET_POS_INVALID; // 句柄位置已不可信, 下次强制 seek
         LittleFS_Unlock();
         return ASSET_ERR_IO;
     }
-
-    s_pos[fid] = off + len; // 更新句柄位置
+    s_pos[fid] = off + len; // 成功读取后,更新句柄位置
 
     LittleFS_Unlock();
 
     return ASSET_OK;
 }
-
-/* ==================== 只读资源: 图片 ==================== */
 
 /**
  * @brief 该图片是否已通过开机自检(存在且大小与描述一致)
@@ -401,7 +446,9 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
 bool Asset_ImageOk(const Image_t *img)
 {
     if (img == NULL)
+    {
         return false;
+    }
 
     for (uint32_t i = 0; i < g_AllImageCount; i++)
     {
@@ -409,7 +456,9 @@ bool Asset_ImageOk(const Image_t *img)
         {
             /* 掩码只有 32 位: 超出范围的图片无法用掩码表示, 一律当作不可用 */
             if (i >= ASSET_IMAGE_MASK_BITS)
+            {
                 return false;
+            }
             return ((s_imageMask >> i) & 1U) != 0U;
         }
     }
@@ -426,11 +475,15 @@ bool Asset_ImageOk(const Image_t *img)
 int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
 {
     if ((path == NULL) || (path[0] != '/') || (w == NULL) || (h == NULL))
+    {
         return ASSET_ERR_PARAM;
+    }
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
 
-    uint8_t header[ASSET_IMAGE_HEADER_SIZE];
+    uint8_t header[ASSET_IMAGE_HEADER_SIZE]; // 图片文件头
 
     LittleFS_Lock();
 
@@ -445,7 +498,6 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
         }
         return Asset_MapErr(err);
     }
-
     /* 从临时打开的图片文件读取文件头 */
     lfs_ssize_t rd = lfs_file_read(&g_lfs, &file, header, sizeof(header)); // rd 为实际读取的字节数
     (void)lfs_file_close(&g_lfs, &file);
@@ -483,9 +535,13 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
 int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
 {
     if ((img == NULL) || (f == NULL))
+    {
         return ASSET_ERR_PARAM;
+    }
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
 
     LittleFS_Lock();
 
@@ -496,7 +552,6 @@ int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
         printf("[ASSET] open %s failed, err = %d\r\n", img->path, err);
         return Asset_MapErr(err);
     }
-
     /* 跳过 4 字节文件头(width/height 编译期已知, 不必读出来) */
     if (lfs_file_seek(&g_lfs, f, (lfs_off_t)ASSET_IMAGE_HEADER_SIZE, LFS_SEEK_SET) < 0)
     {
@@ -520,9 +575,13 @@ int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
 int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len)
 {
     if ((f == NULL) || (buf == NULL) || (len == 0U))
+    {
         return ASSET_ERR_PARAM;
+    }
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
 
     LittleFS_Lock();
 
@@ -537,7 +596,7 @@ int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len)
     return ASSET_OK;
 }
 
-/** @brief 关闭图片文件句柄 */
+/* 关闭图片文件句柄 */
 void Asset_ImageClose(lfs_file_t *f)
 {
     if (s_mounted && (f != NULL))
@@ -548,7 +607,7 @@ void Asset_ImageClose(lfs_file_t *f)
     }
 }
 
-/* ==================== 运行数据: /data/<name>.bin ==================== */
+/* ================ 运行数据: /data/<name>.bin ================ */
 
 /**
  * @brief 保存运行数据(覆盖写, 不存在则创建)
@@ -563,13 +622,19 @@ int Asset_SaveData(const char *name, const void *buf, uint32_t len)
     char path[ASSET_DATA_PATH_MAX]; // 数据文件路径
 
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
     if ((buf == NULL) || (len == 0U))
+    {
         return ASSET_ERR_PARAM;
+    }
 
-    int ret = Asset_DataPath(name, path, sizeof(path));
+    int ret = Asset_DataPathAssemble(name, path, sizeof(path));
     if (ret != ASSET_OK)
+    {
         return ret;
+    }
 
     LittleFS_Lock();
 
@@ -582,9 +647,13 @@ int Asset_SaveData(const char *name, const void *buf, uint32_t len)
 
         /* 检查写入是否成功 */
         if (written != (lfs_ssize_t)len)
+        {
             err = (written < 0) ? (int)written : LFS_ERR_IO;
+        }
         else if (close_err != LFS_ERR_OK)
+        {
             err = close_err;
+        }
     }
 
     LittleFS_Unlock();
@@ -603,20 +672,26 @@ int Asset_SaveData(const char *name, const void *buf, uint32_t len)
  * @param name     数据名
  * @param buf      输出缓冲区
  * @param buf_size 缓冲区大小
- * @return >= 0 实际读取字节数; 负数为错误码(放不下时为 ASSET_ERR_SPACE)
+ * @return 实际读取字节数; 负数为错误码(放不下时为 ASSET_ERR_SPACE)
  */
 int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
 {
     char path[ASSET_DATA_PATH_MAX]; // 数据文件路径
 
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
     if (buf == NULL)
+    {
         return ASSET_ERR_PARAM;
+    }
 
-    int ret = Asset_DataPath(name, path, sizeof(path));
+    int ret = Asset_DataPathAssemble(name, path, sizeof(path));
     if (ret != ASSET_OK)
+    {
         return ret;
+    }
 
     LittleFS_Lock();
 
@@ -625,7 +700,7 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
     if (err != LFS_ERR_OK)
     {
         LittleFS_Unlock();
-        return Asset_MapErr(err); // 不存在是正常情况(还没存过), 不刷日志
+        return Asset_MapErr(err);
     }
 
     lfs_soff_t size = lfs_file_size(&g_lfs, &file); // 获取文件大小
@@ -670,34 +745,44 @@ int Asset_DataSize(const char *name, uint32_t *size)
     struct lfs_info info;
 
     if (size == NULL)
+    {
         return ASSET_ERR_PARAM;
+    }
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
 
-    int ret = Asset_DataPath(name, path, sizeof(path));
+    int ret = Asset_DataPathAssemble(name, path, sizeof(path));
     if (ret != ASSET_OK)
+    {
         return ret;
+    }
 
     LittleFS_Lock();
     int err = lfs_stat(&g_lfs, path, &info); // 获取文件信息
     LittleFS_Unlock();
 
     if (err != LFS_ERR_OK)
+    {
         return Asset_MapErr(err);
+    }
 
     *size = (uint32_t)info.size;
 
     return ASSET_OK;
 }
 
-/** @brief 该运行数据是否存在 */
+/* 该运行数据是否存在 */
 bool Asset_HasData(const char *name)
 {
     char path[ASSET_DATA_PATH_MAX];
     struct lfs_info info;
 
-    if ((!Asset_Ready()) || (Asset_DataPath(name, path, sizeof(path)) != ASSET_OK))
+    if ((!Asset_Ready()) || (Asset_DataPathAssemble(name, path, sizeof(path)) != ASSET_OK))
+    {
         return false;
+    }
 
     LittleFS_Lock();
     int err = lfs_stat(&g_lfs, path, &info);
@@ -715,11 +800,15 @@ int Asset_DeleteData(const char *name)
     char path[ASSET_DATA_PATH_MAX];
 
     if (!Asset_Ready())
+    {
         return ASSET_ERR_STATE;
+    }
 
-    int ret = Asset_DataPath(name, path, sizeof(path));
+    int ret = Asset_DataPathAssemble(name, path, sizeof(path));
     if (ret != ASSET_OK)
+    {
         return ret;
+    }
 
     LittleFS_Lock();
     int err = lfs_remove(&g_lfs, path);

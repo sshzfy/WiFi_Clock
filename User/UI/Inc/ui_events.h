@@ -6,13 +6,12 @@
 #ifndef _UI_EVENTS_H
 #define _UI_EVENTS_H
 
-#include <stdbool.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-bool GetInfo(lv_event_t * e);
+void Get_WiFiInfo(lv_event_t * e);
+void Get_LocationInfo(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

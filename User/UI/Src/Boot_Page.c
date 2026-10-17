@@ -6,24 +6,17 @@ static char success_line_1[32] = {0};
 static char success_line_2[32] = {0};
 static char success_line_3[32] = {0};
 
-/**
- * @brief 绘制开机等待画面(纯显示, 不执行任何网络操作)
- * @param None
- * @return None
- */
+/* 绘制开机等待画面(纯显示, 不执行任何网络操作) */
 void Boot_Page_Wait(void)
 {
-    LCD_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect); // 绘制开机页面等待连接图片
+    LCD_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect);
 }
 
 /**
  * @brief 根据开机网络阶段结果绘制开机结果(纯显示)
- *
  * @param wifi_ok    开机WiFi初始化+连接是否完成
  * @param service_ok 开机SNTP+天气是否都成功
  * @return None
- * @note  没配置过凭据时不要显示成"断线": 那不是网络故障, 只是还没输入过
- *        WiFi 名称/密码, 文案要能直接告诉用户去点左上角的图标配网。
  */
 void Boot_Page_Show(bool wifi_ok, bool service_ok)
 {
@@ -40,9 +33,12 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         if (x_center < 0)
             x_center = 0;
 
-        LCD_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);                     // 填充白色背景,清除旧信息
-        LCD_Draw_Picture(100, 180, (const Image_t *)&Image_err);                        // 绘制错误图片
-        LCD_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 失败信息
+        /* 填充白色背景,清除旧信息
+         * 绘制错误图片
+         * 显示失败信息 */
+        LCD_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);
+        LCD_Draw_Picture(100, 180, (const Image_t *)&Image_err);
+        LCD_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B);
     }
     else if (!service_ok)
     {
@@ -52,9 +48,12 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         int str_width = str_len * (Font_16.size / 2);
         int x_center = (WIDTH - str_width) / 2;
 
-        LCD_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);                     // 填充白色背景,清除旧信息
-        LCD_Draw_Picture(100, 180, (const Image_t *)&Image_err);                        // 绘制错误图片
-        LCD_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 失败信息
+        /* 填充白色背景,清除旧信息
+         * 绘制错误图片
+         * 显示失败信息 */
+        LCD_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);
+        LCD_Draw_Picture(100, 180, (const Image_t *)&Image_err);
+        LCD_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B);
     }
     else
     {
@@ -83,9 +82,11 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         if (x3 < 0)
             x3 = 0;
 
-        LCD_Fill_Color(0, 200, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);                     // 填充白色背景,清除旧信息
-        LCD_Write_String(x1, 230, success_line_1, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 成功信息
-        LCD_Write_String(x2, 250, success_line_2, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 成功信息
-        LCD_Write_String(x3, 270, success_line_3, COLOR_BLACK, COLOR_WHITE, &Font_16B); // 成功信息
+        /* 填充白色背景,清除旧信息
+         * 成功信息 */
+        LCD_Fill_Color(0, 200, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);
+        LCD_Write_String(x1, 230, success_line_1, COLOR_BLACK, COLOR_WHITE, &Font_16B);
+        LCD_Write_String(x2, 250, success_line_2, COLOR_BLACK, COLOR_WHITE, &Font_16B);
+        LCD_Write_String(x3, 270, success_line_3, COLOR_BLACK, COLOR_WHITE, &Font_16B);
     }
 }

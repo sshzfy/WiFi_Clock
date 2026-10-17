@@ -14,10 +14,10 @@ void Usart1_RX_Flush(void);
 
 void Usart2_Debug_Init(void);
 
-/* USART3: 定位模块(ATGM336H)专用。模块出厂默认9600-8N1, 改过配置时只改这里 */
-#define USART3_BAUD 9600U
+// /* USART3: 定位模块(ATGM336H)专用。模块出厂默认9600-8N1 */
+// #define USART3_BAUD 9600U
 
-void Usart3_Init(void);
-int Usart3_RX_Read(void);
+// void Usart3_Init(void);
+// int Usart3_RX_Read(void);
 
 #endif /* __USART_H__ */

@@ -2,20 +2,24 @@
 // SquareLine Studio version: SquareLine Studio 1.6.2
 // LVGL version: 8.3.11
 // Project name: SquareLine_Project
+//
+// 注意: 本文件带手工实现(SquareLine 只生成空壳)。用 SquareLine 重新导出后,
+// 需要把下面两个函数的实现重新补回来。
 
 #include "ui.h"
 #include "App.h"
 #include "Task_Common.h"
 
 /**
- * @brief 读取键盘界面上的 WiFi 名称/密码并提交
+ * @brief 读取 WiFi 界面上的名称/密码并提交
  * @param e LVGL 事件(未使用)
- * @return true 输入有效且已提交; false 输入无效(SSID 为空), 界面应留在原地
- * @note  这里只更新 RAM 并通知 netTask: 写外部 Flash 与重连 AT 模组都
- *        交给 uiTask/netTask 做, 一是 Flash 写入要几十 ms 会卡住界面, 二是
- *        AT 模组的应答缓冲只有一份, 只能由 netTask 独占访问。
+ * @return None
+ * @note  这里只更新 RAM 并通知 netTask: 写外部 Flash 与重连 AT 模组都交给
+ *        uiTask/netTask 做 —— Flash 写入要几十 ms 会卡住界面, 而 AT 模组的
+ *        应答缓冲只有一份, 只能由 netTask 独占访问。
+ *        输入有效时顺手请求退回主界面; 无效则留在原地做提示。
  */
-bool GetInfo(lv_event_t *e)
+void Get_WiFiInfo(lv_event_t *e)
 {
 	(void)e;
 
@@ -29,7 +33,7 @@ bool GetInfo(lv_event_t *e)
 		lv_label_set_text(ui_Label1, "SSID required");
 		lv_obj_set_style_text_color(ui_Label1, lv_color_hex(0xCC0000), LV_PART_MAIN | LV_STATE_DEFAULT);
 		printf("[UI] WiFi SSID is empty, input ignored\r\n");
-		return false;
+		return;
 	}
 
 	WiFi_Config_Set(wifi_ssid, (wifi_password != NULL) ? wifi_password : "");
@@ -38,6 +42,34 @@ bool GetInfo(lv_event_t *e)
 		   g_ssid, (unsigned)strlen(g_password));
 
 	xEventGroupSetBits(Task_Events(), EV_WIFI_CRED);
+	xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
+}
 
-	return true;
+/**
+ * @brief 读取定位界面上的"省+市"并提交
+ * @param e LVGL 事件(未使用)
+ * @return None
+ * @note  与 WiFi 凭据同一套路: 只改 RAM, 由 uiTask 负责落盘到 /data/location.bin
+ */
+void Get_LocationInfo(lv_event_t *e)
+{
+	(void)e;
+
+	const char *location = lv_textarea_get_text(ui_TextArea4);
+
+	if (location == NULL || location[0] == '\0')
+	{
+		lv_label_set_text(ui_Label4, "location required");
+		lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xCC0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+		printf("[UI] location is empty, input ignored\r\n");
+		return;
+	}
+
+	Location_Config_Set(location);
+
+	printf("[UI] location submitted: %s\r\n", g_location);
+
+	/* 让 netTask 立刻按新定位取一次天气: 否则要等满一个天气周期(1h)才生效 */
+	xEventGroupSetBits(Task_Events(), EV_LOCATION_CRED);
+	xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
 }
