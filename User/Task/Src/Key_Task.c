@@ -1,7 +1,5 @@
 #include "Key_Task.h"
 
-/* ==================== Key Task ==================== */
-
 static TaskHandle_t s_key_task = NULL; // 按键任务句柄, 供中断回调通知
 
 /** @brief 按键中断回调(ISR上下文): 仅通知任务
@@ -13,8 +11,10 @@ static void Key_IRQ_Notify(void)
 
     if (s_key_task != NULL)
     {
-        vTaskNotifyGiveFromISR(s_key_task, &woken); /* 通知正在阻塞的任务,解除阻塞状态 */
-        portYIELD_FROM_ISR(woken);                  /* 请求一次上下文切换 */
+        /* 通知正在阻塞的任务,解除阻塞状态
+         * 并请求一次上下文切换 */
+        vTaskNotifyGiveFromISR(s_key_task, &woken);
+        portYIELD_FROM_ISR(woken);
     }
 }
 
@@ -32,32 +32,34 @@ static Key_Gesture_t Key_ClickGesture(uint8_t clicks)
     }
 }
 
+/** @brief 刷新所有数据（网络/时间日期/天气/室内温湿度）*/
 static void Key_FullRefresh(void)
 {
     xEventGroupSetBits(Task_Events(), EV_NET_UPDATE_NOW | EV_DHT22_UPDATE_NOW);
 }
 
-/** @brief 手势分发
- *  @note 目前只接单击(切换昼夜), 双击/三击/长按留作扩展点
- */
+/** @brief 手势分发 */
 void Key_Task_OnGesture(Key_Gesture_t gesture)
 {
     switch (gesture)
     {
-    case KEY_GESTURE_CLICK_1: /* TODO: 待分配 */
+        /* TODO: 待分配 */
+    case KEY_GESTURE_CLICK_1:
         break;
+        /* 刷新所有数据 */
     case KEY_GESTURE_CLICK_2:
     {
         DBG_PRINTF("[KEY]Refresh all data\r\n");
-        Key_FullRefresh(); /* 刷新所有数据 */
+        Key_FullRefresh();
         break;
     }
-    case KEY_GESTURE_CLICK_3: /* TODO: 待分配 */
+        /* TODO: 待分配 */
+    case KEY_GESTURE_CLICK_3:
         break;
+        /* 切换昼夜 */
     case KEY_GESTURE_LONG:
     {
-        /* 交光敏任务统一裁决: 昼夜状态机在它手里, 避免两个任务各自改状态 */
-        LightSensor_Task_RequestToggleNight();
+        LightSensor_Task_RequestToggleNight(); // 交光敏任务统一裁决: 昼夜状态机在它手里, 避免两个任务各自改状态
         break;
     }
     case KEY_GESTURE_NONE:
@@ -75,11 +77,14 @@ static void Key_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    uint8_t clicks = 0;
+    uint8_t clicks = 0; // 累计击数
 
     s_key_task = xTaskGetCurrentTaskHandle(); // 保存任务句柄, 用于中断回调
-    Key_RegisterCallback(Key_IRQ_Notify);     /* 注册中断回调函数 */
-    Key_Init();                               /* 初始化按键(PA0 + EXTI0) */
+
+    /* 注册中断回调函数 */
+    Key_RegisterCallback(Key_IRQ_Notify);
+    /* 初始化按键(PA0 + EXTI0) */
+    Key_Init();
 
     DBG_PRINTF("[KEY] Key_Task start\r\n");
     DBG_PRINTF("[KEY] task ready: pressed=%d\r\n", (int)Key_IsPressed());
@@ -96,7 +101,8 @@ static void Key_Task(void *pvParameters)
         {
             if (clicks > 0)
             {
-                Key_Task_OnGesture(Key_ClickGesture(clicks)); /* 连击窗口超时: 结算 */
+                /* 连击窗口超时: 结算 */
+                Key_Task_OnGesture(Key_ClickGesture(clicks));
                 clicks = 0;
             }
             continue;
@@ -104,9 +110,9 @@ static void Key_Task(void *pvParameters)
 
         /* 确认当前是否为按下状态 */
         if (!Key_IsPressed())
-            continue; // 边沿抖动或误触发: 不是真正的按下
+            continue;
 
-        /* 长按阈值内松开 → 短按; 超时 → 长按(按住即触发) */
+        /* 长按阈值内松开 → 短按; 超时 → 长按 */
         if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(KEY_LONG_PRESS_MS)) == 0)
         {
             Key_Task_OnGesture(KEY_GESTURE_LONG);
@@ -120,9 +126,10 @@ static void Key_Task(void *pvParameters)
         }
 
         clicks++;
+        /* 达到上限: 立即结算 */
         if (clicks >= KEY_CLICK_MAX)
         {
-            Key_Task_OnGesture(Key_ClickGesture(clicks)); /* 达到上限: 立即结算 */
+            Key_Task_OnGesture(Key_ClickGesture(clicks));
             clicks = 0;
         }
     }

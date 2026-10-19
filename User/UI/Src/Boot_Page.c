@@ -6,7 +6,7 @@ static char success_line_1[32] = {0};
 static char success_line_2[32] = {0};
 static char success_line_3[32] = {0};
 
-/* 绘制开机等待画面(纯显示, 不执行任何网络操作) */
+/** @brief 绘制开机等待画面 */
 void Boot_Page_Wait(void)
 {
     LCD_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect);
@@ -16,7 +16,6 @@ void Boot_Page_Wait(void)
  * @brief 根据开机网络阶段结果绘制开机结果(纯显示)
  * @param wifi_ok    开机WiFi初始化+连接是否完成
  * @param service_ok 开机SNTP+天气是否都成功
- * @return None
  */
 void Boot_Page_Show(bool wifi_ok, bool service_ok)
 {

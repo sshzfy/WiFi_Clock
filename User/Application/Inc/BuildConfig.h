@@ -29,10 +29,6 @@
  *       不占 Flash/RAM, 也不占用 PA2/PA3。
  *   1 = 调试固件。DBG_PRINTF() -> printf -> USART2(PA2=TX/PA3=RX),
  *       115200-8N1, 整行经 DMA 发送。
- *
- * 只影响 DBG_PRINTF 这类调试输出; snprintf/sprintf 等纯格式化
- * 函数不受影响, 功能代码保持原样。
- *
  * 注意: 资源烧录固件(RESOURCE_PROVISION=1)和裸机测试固件
  * (USE_FREERTOS=0)的进度也走 DBG_PRINTF, 需要串口日志时把
  * 这里改成 1 再编译。

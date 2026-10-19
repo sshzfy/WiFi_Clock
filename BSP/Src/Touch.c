@@ -281,9 +281,7 @@ bool Touch_Init(void)
                (int)calibration_params.bx, (int)calibration_params.by);
     }
     else
-    {
         DBG_PRINTF("[TOUCH] no calibration data, run Touch_Calibrate()\r\n");
-    }
 
     return true;
 }

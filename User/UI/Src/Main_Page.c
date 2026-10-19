@@ -99,9 +99,7 @@ static void Main_Page_Clock_Draw_HH(uint8_t hour)
     char str[3] = "--";
 
     if (Clock_IsSynced())
-    {
         sprintf(str, "%02u", hour);
-    }
 
     LCD_Fill_Color(CLOCK_HH_X, CLOCK_Y0, CLOCK_HH_X + CLOCK_HH_W - 1, CLOCK_Y0 + Font_48B.size - 1, MAIN_TOP_BACK_COLOR);
     LCD_Write_String(CLOCK_HH_X, CLOCK_Y0, str, COLOR_BLACK, MAIN_TOP_BACK_COLOR, &Font_48B);
@@ -129,16 +127,12 @@ static void Main_Page_Clock_Draw_MM(uint8_t minute)
 static void Main_Page_Clock_Colon_Draw(bool show)
 {
     if (show)
-    {
         LCD_Write_String(CLOCK_COLON_X, CLOCK_Y0, ":", COLOR_BLACK, MAIN_TOP_BACK_COLOR, &Font_48B);
-    }
     else
-    {
         LCD_Fill_Color(CLOCK_COLON_X, CLOCK_Y0, CLOCK_COLON_X + CLOCK_COLON_W - 1, CLOCK_Y0 + Font_48B.size - 1, MAIN_TOP_BACK_COLOR);
-    }
 }
 
-/* 完整绘制时钟行(HH + 冒号 + MM), 冒号按当前秒奇偶显示 */
+/** @brief 完整绘制时钟行(HH + 冒号 + MM), 冒号按当前秒奇偶显示 */
 static void Main_Page_Clock_Draw(void)
 {
     AT_Date_Info_t time;
@@ -160,7 +154,7 @@ static void Main_Page_Clock_Draw(void)
     }
 }
 
-/* 绘制日期行(日期+星期) */
+/** @brief 绘制日期行(日期+星期) */
 static void Main_Page_Date_Draw(void)
 {
     AT_Date_Info_t tmp;
@@ -173,9 +167,7 @@ static void Main_Page_Date_Draw(void)
 
         Clock_GetDateTime(&tmp);
         if (tmp.weekday >= 1 && tmp.weekday <= 7)
-        {
             weekday_name = weekdays[tmp.weekday - 1];
-        }
         sprintf(date_week_str, "%04u/%02u/%02u %s", tmp.year, tmp.month, tmp.day, weekday_name);
     }
 
@@ -189,7 +181,7 @@ static void Main_Page_Date_Draw(void)
     LCD_Write_String(x, 105, date_week_str, COLOR_BLACK, MAIN_TOP_BACK_COLOR, &Font_16B);
 }
 
-/* 绘制主页面顶部区域 */
+/** @brief 绘制主页面顶部区域 */
 static void Main_Page_Top(void)
 {
     uint16_t back_color = MAIN_TOP_BACK_COLOR;
@@ -222,13 +214,13 @@ static const Weather_Map_t *Weather_Get_Map(int code)
     return NULL;
 }
 
-/* 未知天气码: 返回默认项(晴天, 索引0), 避免NULL解引用 */
+/** @brief 未知天气码: 返回默认项(晴天, 索引0), 避免NULL解引用 */
 static const Weather_Map_t *Weather_Default(void)
 {
     return &weather_map[0];
 }
 
-/* 绘制天气图标和温度 */
+/** @brief 绘制天气图标和温度 */
 static void Main_Page_Weather(void)
 {
     /* 填充天气模块背景 */
@@ -248,9 +240,7 @@ static void Main_Page_Weather(void)
 
     const Weather_Map_t *weather_map = Weather_Get_Map(weather_info.weather_code);
     if (weather_map == NULL)
-    {
         weather_map = Weather_Default();
-    }
 
     LCD_Draw_Picture_AutoTransparent(modle_weather.x_start, modle_weather.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR); // 绘制天气图标
 
@@ -260,9 +250,7 @@ static void Main_Page_Weather(void)
     uint16_t weather_y = modle_weather.y_start + 33;
 
     if (text_len <= 2)
-    {
         LCD_Write_String(weather_x, weather_y, (char *)weather_text, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B); // 绘制天气状况文字
-    }
     else
     {
         char first_line[8] = {0};
@@ -285,7 +273,7 @@ static void Main_Page_Weather(void)
 
 /* ================ Main Page: 室内温湿度 ================ */
 
-/* 绘制室内温湿度 */
+/** @brief 绘制室内温湿度 */
 static void Main_Page_Room(void)
 {
     /* 填充室内温湿度模块背景 */
@@ -324,7 +312,7 @@ static void Main_Page_Room(void)
 
 /* ================ public 函数 ================ */
 
-/* 时钟刷新(主循环调用): 秒变只切换冒号, 分/时变才重绘对应数字 */
+/** @brief 时钟刷新(主循环调用): 秒变只切换冒号, 分/时变才重绘对应数字 */
 void Main_Page_Clock_Update(void)
 {
     static int last_second = -1;
@@ -371,16 +359,14 @@ void Main_Page_Clock_Update(void)
     }
 }
 
-/* 刷新天气模块显示(周期任务更新数据后调用) */
+/** @brief 刷新天气模块显示(周期任务更新数据后调用) */
 void Main_Page_Weather_Update(void)
 {
     /* 绘制天气图标 */
     const Weather_Map_t *weather_map = Weather_Get_Map(weather_info.weather_code);
     /* 未知天气码: 默认晴天 */
     if (weather_map == NULL)
-    {
         weather_map = Weather_Default();
-    }
     LCD_Draw_Picture_AutoTransparent(modle_weather.x_start, modle_weather.y_start + 33, weather_map->icon, MAIN_BOTTOM1_BACK_COLOR);
 
     /* 绘制天气状况文字 */
@@ -390,9 +376,7 @@ void Main_Page_Weather_Update(void)
     uint16_t weather_y = modle_weather.y_start + 33;
     LCD_Fill_Color(weather_x, weather_y, weather_x + Font_22B.size * 2 - 1, weather_y + Font_22B.size * 2 - 1, MAIN_BOTTOM1_BACK_COLOR); // 清除天气状况文字区域,避免上次数据残留
     if (text_len <= 2)
-    {
         LCD_Write_String(weather_x, weather_y, (char *)weather_text, COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
-    }
     else
     {
         char first_line[8] = {0};
@@ -413,7 +397,7 @@ void Main_Page_Weather_Update(void)
     LCD_Write_String(temperature_x, temperature_y + Font_22B.size, "C", COLOR_BLACK, MAIN_BOTTOM1_BACK_COLOR, &Font_22B);
 }
 
-/* 刷新房间温湿度模块显示(周期任务更新数据后调用) */
+/** @brief 刷新房间温湿度模块显示(周期任务更新数据后调用) */
 void Main_Page_Room_Update(void)
 {
     char temp_val[8] = {0};

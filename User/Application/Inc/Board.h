@@ -14,6 +14,6 @@
 
 void Board_Peripheral_Init(void);
 void Board_Init(void);
-void Test(void);
+// void Test(void);
 
 #endif /* __BOARD_H__ */

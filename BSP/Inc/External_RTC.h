@@ -5,6 +5,12 @@
 #include "stm32f4xx.h"
 #include "Timer.h"
 
+/* DS1302 硬件引脚 */
+#define DS1302_PORT                     GPIOE
+#define DS1302_RST_PIN                  GPIO_Pin_7
+#define DS1302_IO_PIN                   GPIO_Pin_8
+#define DS1302_CLK_PIN                  GPIO_Pin_9
+
 /* DS1302 寄存器地址 */
 #define DS1302_REG_SEC                  0x80 // 秒寄存器
 #define DS1302_REG_MIN                  0x82 // 分寄存器
@@ -15,12 +21,6 @@
 #define DS1302_REG_YEAR                 0x8C // 年寄存器
 #define DS1302_REG_WP                   0x8E // 写保护寄存器
 #define DS1302_REG_TRICKLK              0x90 // 涓流充电寄存器
-
-/* DS1302 硬件引脚 */
-#define DS1302_PORT                     GPIOE
-#define DS1302_RST_PIN                  GPIO_Pin_7
-#define DS1302_IO_PIN                   GPIO_Pin_8
-#define DS1302_CLK_PIN                  GPIO_Pin_9
 
 typedef struct
 {

@@ -21,7 +21,7 @@
 #define DHT22_ERR_ALL_ZERO        6 // 数据全0: 5字节全0时校验和也是0会骗过校验, 实为传感器没回数据
 
 /* 位判别阈值: 位"0"高电平26~28us, 位"1"高电平70us, 取两者中点40us,
- * 使位"0"侧裕量约14us、位"1"侧裕量约30us, 可容忍十几us的中断延迟抖动 */
+ * 可容忍十几us的中断延迟抖动 */
 #define DHT22_BIT_THRESHOLD_US      40U 
 
 typedef struct

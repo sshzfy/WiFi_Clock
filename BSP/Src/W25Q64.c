@@ -219,9 +219,7 @@ void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
     W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
     W25Q64_SpiReadWriteByte(addr & 0xFF);
     while (len--)
-    {
         *buf++ = W25Q64_SpiReadWriteByte(0xFF);
-    }
     W25Q64_CS_High();
 }
 
@@ -248,9 +246,7 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
         W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
         W25Q64_SpiReadWriteByte(addr & 0xFF);
         for (uint32_t i = 0; i < write_len; i++) // 逐字节写入
-        {
             W25Q64_SpiReadWriteByte(buf[i]);
-        }
         W25Q64_CS_High(); // 拉高片选，芯片内部开始编程
 
         /* 等待编程完成 */

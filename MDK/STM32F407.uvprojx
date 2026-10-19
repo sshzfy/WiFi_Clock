@@ -466,6 +466,26 @@
               <FilePath>..\User\UI\Src\Main_Page.c</FilePath>
             </File>
             <File>
+              <FileName>UI_Mode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\UI\Src\UI_Mode.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Day.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\UI\Src\UI_Day.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Night.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\UI\Src\UI_Night.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Input.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\UI\Src\UI_Input.c</FilePath>
+            </File>
+            <File>
               <FileName>ui.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\UI\Src\ui.c</FilePath>

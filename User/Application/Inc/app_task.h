@@ -12,8 +12,8 @@
  * 每个任务只暴露自己的 *_Task_Start() / 必要的跨任务请求接口:
  *
  *   app_task.c        (本文件)  装配层: 启动UI任务, 等待开网完成
- *   UI_Task.c         (prio 3)  LCD唯一写者。板级初始化→开机等待画面→
- *                               创建net/sensor任务→开机结果→主页面→事件驱动刷新
+ *   UI_Task.c         (prio 3)  LCD唯一写者。板级初始化→开机等待画面→创建net/sensor任务→
+ *                               开机结果→主页面首绘→事件循环(昼夜切换经 UI_Mode 执行)
  *   Net_Task.c        (prio 2)  独占USART1/AT。开机连网+SNTP+天气; 之后按周期
  *                               WiFi保活/SNTP/天气更新, 数据就绪后通知uiTask
  *   DHT22_Task.c      (prio 4)  DHT22温湿度周期采集, 更新后通知uiTask。

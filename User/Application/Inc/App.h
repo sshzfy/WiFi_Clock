@@ -38,6 +38,7 @@
 #define WIFI_SLEEP_MODE_IDLE        1U    // 空闲(夜间无网络活动)档位
 #define WIFI_SLEEP_MODE_FULL        0U    // 全速(白天需要快速响应)档位
 
+/* WiFi 凭据结构体 */
 typedef struct
 {
     uint32_t magic;   // WIFI_CFG_MAGIC
@@ -47,6 +48,7 @@ typedef struct
     char password[WIFI_PASS_MAX_LEN + 1U];
 } WiFi_Cfg_t;
 
+/* 定位信息结构体 */
 typedef struct
 {
     uint32_t magic;   // LOCATION_CFG_MAGIC
