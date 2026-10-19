@@ -73,6 +73,9 @@ static void UI_Task(void *pvParameters)
     LightSensor_Task_Start();
     Key_Task_Start();
 
+    /* 任务全部建齐后启用内存监测(开关见 BuildConfig.h 的 MONITOR_TASK_ENABLE) */
+    Task_Monitor_Start();
+
     for (;;)
     {
         EventBits_t bits = xEventGroupWaitBits(Task_Events(), UI_TASK_EVENTS,

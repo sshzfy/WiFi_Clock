@@ -8,7 +8,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 主控 | STM32F407VETx（Cortex-M4F @168MHz，512KB Flash，128KB SRAM + 64KB CCM） |
-| 操作系统 | FreeRTOS V10.4.3 LTS Patch 3：5 个应用任务、tick 1kHz、heap_4、42KB 堆 |
+| 操作系统 | FreeRTOS V10.4.3 LTS Patch 3：5 个常驻应用任务 + 可选 monitor、tick 1kHz、heap_4、42KB 堆 |
 | 文件系统 | littlefs v2.11，挂载在 W25Q64（8MB SPI Flash） |
 | 联网 | ESP32-C3-MINI-1（AT 固件 v4.1.1.0），USART1 @115200 |
 | 显示 | ST7789V 240×320 彩屏（SPI3 + DMA）/ SSD1306 128×64 OLED（软件 I2C） |
@@ -16,8 +16,6 @@
 | 工具链 | Keil MDK + ARMCC V5.06 update 5（AC5）/ C99 |
 | 外置资源 | 11 个字库 + 32 张图片 = 858778 B（≈839KB），全部在 W25Q64；MCU 内点阵/像素数据 **0 字节** |
 | 调试输出 | 默认 `DEBUG_SUPPORT=0` 关闭；打开后走 USART2（PA2/PA3） |
-
-本文档合并了远程仓库的详细架构说明与当前代码的修正；具体数值以源码为准。
 
 ---
 
@@ -31,10 +29,6 @@
 | 系统时钟 | 168MHz（HSE 25MHz，PLL_M=25 / PLL_N=336 / PLL_P=2） |
 | 总线时钟 | AHB 168MHz · APB1 42MHz · APB2 84MHz |
 | 中断分组 | `NVIC_PriorityGroup_4`（4 位抢占、0 位子优先级） |
-
-> 参与时钟树计算的是 `Core/stm32f4xx.h` 里的 `HSE_VALUE`（当前 `25000000`）；Keil 工程中的
-> `CLOCK(12000000)` 只影响调试器的 Xtal 显示。换晶振必须同步修改 `HSE_VALUE` 与 `PLL_M`，
-> 否则串口波特率、TIM5 计时与 SPI 速率会整体偏移。
 
 ### 1.2 引脚分配
 
@@ -111,15 +105,12 @@ Project4/
 ├── User/
 │   ├── Application/             main / Board / App / app_task / Provision / bare_test / stm32f4xx_it
 │   ├── Task/                    UI_Task / Net_Task / DHT22_Task / LightSensor_Task / Key_Task +
-│   │                            Task_Common / Task_Config
+│   │                            Task_Common / Task_Monitor / Task_Config
 │   ├── UI/                      UI_Mode / UI_Day / UI_Night / UI_Input / Boot_Page / Main_Page /
 │   │                            ui.c / ui_events.c / ui_helpers.c / screens/
 │   └── Resource/                Font.h / Image.h + 字库/图片源码
 └── Documents/                   本说明、器件手册、工具
 ```
-
-> 任务层在 `User/Task/`，不是项目根的 `Task/`；旧文档里的 `Third_Lib/`、`User/Src/`、
-> `Resource/` 等路径已经不存在。
 
 ### 2.3 模块职责
 
@@ -157,9 +148,7 @@ Project4/
 | `DHT22_Task.c/.h` | `dht22` 任务：单总线温湿度周期采集 |
 | `LightSensor_Task.c/.h` | `light_sensor` 任务：光照去抖、昼夜状态机、统一裁决切换请求 |
 | `Key_Task.c/.h` | `key` 任务：PA0 手势状态机（单击/双击/三击/长按） |
-
-> `Task_Monitor.c` 源码仍在磁盘，但已从 Keil 工程移除，`UI_Task` 也不再启动它；
-> 当前固件只有 5 个应用任务，不会打印内存监测报告。
+| `Task_Monitor.c/.h` | 内存监测任务（可选）：周期打印堆用量与各任务栈峰值，开关见 `BuildConfig.h` 的 `MONITOR_TASK_ENABLE` |
 
 **板级驱动（`BSP/Src`）**
 
@@ -206,39 +195,16 @@ Project4/
 | `Net_Task` / `"net"` | 2 | 1KB | **独占 USART1/AT**：WiFi、SNTP、天气；1s 心跳推进三个周期计数器 | 1s |
 | `LightSensor_Task` / `"light_sensor"` | 2 | 512B | 光照判定、2s 去抖、发起昼夜切换并等 ACK | 事件驱动 + 1s 兜底 |
 | `Key_Task` / `"key"` | 2 | 512B | PA0 手势状态机（单击/双击/三击/长按） | 事件驱动 |
-
-`main()` 只创建 `ui`；`ui` 在开机流程中创建 `dht22` 与 `net`，等 `EV_NET_READY`（≤60s）
-并显示结果页后，才创建 `light_sensor` 与 `key`——这样**昼夜切换只可能发生在开机流程之后**。
-`UI_BOOT_NET_TIMEOUT_MS` 给到 60s，是为了覆盖 AT 初始化重试 + `CWJAP`（最长 10s）+
-SNTP（最长约 15s）+ 天气 HTTP，以及未配置凭据时等待模组自动重连（最多 8s）。
+| `Monitor_Task` / `"monitor"` | 1 | 512B | 内存监测（可选，`MONITOR_TASK_ENABLE=1` 时创建）：堆用量与各任务栈峰值，夜间静默 | 5s / 夜间 60s |
 
 **优先级不是随手定的**：`DHT22` 高于 `UI`，因为单总线对微秒级时序敏感；`net` 降到 2，
 因为一次 AT 事务最长 10s，优先级过高会把显示饿死。`net` / `light_sensor` / `key` 同为 2，
 且 `configUSE_TIME_SLICING = 0`（同级不轮转），因此三者都必须能主动阻塞。
+`monitor` 固定为最低的 1：它只读任务快照并打印，任何实时任务都能抢占它。
 
 ### 3.2 事件位
 
 统一定义在 `User/Task/Inc/Task_Common.h`，全部为 `1UL << n`：
-
-| 位 | 名称 | 置位者 → 消费者 | 含义 |
-| --- | --- | --- | --- |
-| bit0 | `EV_WEATHER` | `Net_Task` → `UI_Task` | 天气已更新 |
-| bit1 | `EV_DHT22` | `DHT22_Task` → `UI_Task` | 室内温湿度已更新 |
-| bit2 | `EV_NET_READY` | `Net_Task` → `UI_Task` | 开机网络阶段结束（无论成败） |
-| bit3 | `EV_WIFI` | `Net_Task` → `UI_Task` | WiFi 状态变化 |
-| bit4 | `EV_LOWERPOWER` | `LightSensor_Task` → `UI_Task` | 请求进入夜间 |
-| bit5 | `EV_LOWPOWER_ACK` | `UI_Task` → `LightSensor_Task` | 昼夜切换执行完毕 |
-| bit6 | `EV_WAKEUP` | `LightSensor_Task` → `UI_Task` | 请求回到白天 |
-| bit7 | `EV_NET_UPDATE_NOW` | `UI_Mode` → `Net_Task` | 退出夜间后立即补网络更新 |
-| bit8 | `EV_DHT22_UPDATE_NOW` | `UI_Mode` → `DHT22_Task` | 退出夜间后立即补温湿度采集 |
-| bit9 | `EV_WIFI_KB` | `UI_Input`（触摸判定） → `UI_Input` | 点了 WiFi 图标，调出配网界面 |
-| bit10 | `EV_MAIN_SCREEN` | 输入界面回调 → `UI_Input` | 确认/取消，退回主界面 |
-| bit11 | `EV_WIFI_CRED` | `UI_Input`（界面回调） → `Net_Task` | 提交了新的 WiFi 凭据，请重连 |
-| bit12 | `EV_LOCATION_KB` | `UI_Input`（触摸判定） → `UI_Input` | 点了定位图标，调出定位输入界面 |
-| bit13 | `EV_LOCATION_CRED` | `UI_Input`（界面回调） → `Net_Task` | 提交了新的定位信息，立即按新定位取天气 |
-
-> 旧代码里的 `EV_KEYBOARD` 已改名为 `EV_WIFI_KB`。
-> **bit7 与 bit8 必须分开**：`xEventGroupWaitBits` 是清除式等待，共用一个位时先被唤醒的会把位清掉。
 
 ### 3.3 同步手段
 
@@ -249,38 +215,7 @@ SNTP（最长约 15s）+ 天气 HTTP，以及未配置凭据时等待模组自�
 | 临界区 `taskENTER_CRITICAL()` | 软件时钟与共享结构体的整块赋值（`App.c`） |
 | 互斥量 | 调试串口整行输出、LCD/触摸共用的 SPI3 递归锁、littlefs 文件树递归锁 |
 
-未使用队列、信号量做业务数据传递，也未使用 `vTaskSuspend` 做同步；`configUSE_TIMERS = 0`。
-
-### 3.4 中断优先级与 FreeRTOS 约束
-
-| 中断源 | 抢占优先级 | 可否调用 FreeRTOS API | ISR 内实际动作 |
-| --- | --- | --- | --- |
-| PendSV / SysTick | 15 | — | 内核上下文切换 |
-| **TIM5**（1ms 时基） | **2** | ❌ **禁止** | 仅 `TIM5_ms++` |
-| USART1（AT 接收） | 5 | ✅ | 逐字节入 512B 环形缓冲，未调用 RTOS API |
-| EXTI0 / EXTI1 / ADC1 AWD | 5 | ✅ | `vTaskNotifyGiveFromISR` + `portYIELD_FROM_ISR` |
-| USART2 / DMA1_Stream5,6 | — | — | 未配置 NVIC，靠轮询完成标志 |
-
-`configMAX_SYSCALL_INTERRUPT_PRIORITY = 5 << 4`；TIM5 优先级 2，ISR 内禁止任何 RTOS 调用。
-
-### 3.5 FreeRTOS 关键配置
-
-| 配置 | 值 |
-| --- | --- |
-| `configTICK_RATE_HZ` | 1000（1ms 一个 tick） |
-| `configMAX_PRIORITIES` | 5（可用 0~4） |
-| `configUSE_TIME_SLICING` | 0（同优先级不轮转） |
-| `configUSE_TICKLESS_IDLE` | 0（未启用） |
-| `configTOTAL_HEAP_SIZE` | `1024 * 42` = **43008 B**（heap_4，所有任务栈/TCB/图片乒乓缓冲都从这里分配） |
-| `configMINIMAL_STACK_SIZE` | 128 word（IDLE 512B） |
-| `configCHECK_FOR_STACK_OVERFLOW` | 2 |
-| `configUSE_TRACE_FACILITY` | 1 |
-| `configUSE_TIMERS` / `configUSE_MUTEXES` / `configUSE_RECURSIVE_MUTEXES` | 0 / 1 / 1 |
-| `configUSE_EVENT_GROUPS` | 1 |
-| `configTASK_NOTIFICATION_ARRAY_ENTRIES` | 3 |
-| `configSUPPORT_DYNAMIC_ALLOCATION` / `STATIC` | 1 / 0 |
-
-### 3.6 数据流
+### 3.4 数据流
 
 ```text
 ESP32-C3 ──USART1──▶ AT.c ──▶ wifi_info ──▶ 顶部状态条 / 开机结果页
@@ -340,11 +275,6 @@ PA0 长按也走同一入口：`Key_Task` 只调用 `LightSensor_Task_RequestTog
 
 主页面（时钟/日期/天气/室内温湿度）仍是**裸绘**的，LVGL 只接管“点了左上角图标之后”的输入界面：
 
-| 主页图标 | LVGL 屏幕 | 输入内容 | 事件位 | 存到 |
-| --- | --- | --- | --- | --- |
-| WiFi 图标 `(5,5)` 20×20 | `ui_WiFi` | SSID + 密码 | `EV_WIFI_KB` | `/data/wifi_cfg.bin` |
-| 定位图标 `(26,5)` 20×20 | `ui_location` | 省+市（一行文本） | `EV_LOCATION_KB` | `/data/location.bin` |
-
 两者共用同一块 SPI 屏，因此必须严格错开：
 
 1. 白天主循环按 `UI_TOUCH_POLL_MS`（50ms）轮询 `UI_Input_PollTouch()`，按 `UI_Input` 的热区表
@@ -361,21 +291,8 @@ PA0 长按也走同一入口：`Key_Task` 只调用 `LightSensor_Task_RequestTog
 5. `UI_Input_HandleEvent()` 处理 `EV_MAIN_SCREEN` 时关闭界面、把改动过的内容落盘、再由
    `UI_Mode` 重画主页面。按 X 取消不触发网络补更；只有确实提交了新内容才发对应事件。
 
-**主页面顶部状态条**（`UI_Day.c` 的 `UI_TopBar_Draw()`）：
-
-```text
-[WiFi][定位]                    [WiFi名,城市名]   ← 图标 (5,5) / (26,5)；信息右对齐到 x=235
-                    时钟从 y=45 开始
-```
-
-- 两个名字各最多 10 字符，整条最长 23 字符；超长由 `snprintf` 截断；宽度按 ASCII 字符算；
-- 中文城市名暂不支持：LVGL 输入是 UTF-8，而字库按 GB2312 查表，中文会显示为空白；
-- `Main_Page.c` 里的旧 `Main_Page_Net_Update()` 仍按双行画法在 y=7 / y=28 绘制；
-  `UI_TopBar_Draw()` 只清 y=5~24，因此 y=28 的定位文本可能残留（见已知限制）。
-
 **定位信息的下游用途**：`Service_Weather_Update()` 的定位优先级是“**用户输入 > 网络 IP**”：
-先用输入的省+市取一次天气；取不到或从未输入过，就回退到网络 IP（先查公网 IP，查不到再用
-字面量 `ip`，由服务端按请求来源 IP 定位）。输入内容按 UTF-8 逐字节百分号编码后拼进 URL。
+先用输入的(省+)市取一次天气；取不到或从未输入过，就回退到网络 IP。输入内容按 UTF-8 逐字节百分号编码后拼进 URL。
 
 ### 4.4 用 SquareLine 重新导出界面时的注意事项
 
@@ -426,137 +343,6 @@ PA0 长按也走同一入口：`Key_Task` 只调用 `LightSensor_Task_RequestTog
 
 **字模定位是 O(1) 的**，不查表：ASCII 用 `(ch - 0x20) * ob * size`，汉字用
 `((区码-0xB0)*94 + (位码-0xA1)) * cn_bytes`。点阵为横向取模、行优先，每字节 bit0 对应最左像素。
-
-### 5.1 资源层的读写接口（`Asset.c`）
-
-资源层只有 `Asset.c` 一个模块，管两类数据，共用同一次挂载与同一把递归互斥量
-`LittleFS_Lock()`——W25Q64 挂在 SPI1 上，一个任务擦 4KB 扇区要几十毫秒，
-不串行化必然读写交错、数据出错。
-
-**一、只读资源：字库与图片（烧录后只读）**
-
-| 接口 | 用途 |
-| --- | --- |
-| `Asset_ReadFont(fid, off, buf, len)` | 取字模：句柄常开、位置记忆，偏移由区位码/ASCII 码直接算出，O(1) |
-| `Asset_ImageOk(img)` | 该图片是否通过开机自检（存在且大小相符） |
-| `Asset_ImageOpen` / `Asset_ImageRead` / `Asset_ImageClose` | 图片分块流式读取，配 LCD 的乒乓 DMA |
-| `Asset_ImageInfo(path, &w, &h)` | 只读 4 字节文件头取宽高，不读像素 |
-
-正式固件**没有**运行期写字库/图片的接口：资源写坏屏上就是花屏或白屏，要换资源请重新烧录
-Provision 固件。
-
-**二、运行数据：`/data/<name>.bin`**
-
-| 接口 | 用途 |
-| --- | --- |
-| `Asset_SaveData(name, buf, len)` | 覆盖写（不存在则创建）；写时复制，中途掉电保留旧值 |
-| `Asset_LoadData(name, buf, buf_size)` | 整块读出，返回实际字节数；放不下报 `ASSET_ERR_SPACE` |
-| `Asset_DataSize` / `Asset_HasData` / `Asset_DeleteData` | 查大小 / 判存在 / 删除 |
-
-名字只允许字母、数字、`_`、`-`（最长 32），路径由资源层拼成 `/data/<name>.bin`——
-调用者无法越出 `/data` 写到字库或图片上。
-
-**三、约定**
-
-- 返回值统一为 `Asset_Err_t`：`0` 成功，负数为错误码；失败打 `[ASSET]` 日志；
-  `Asset_Init()` 另有 `ASSET_ERR_MISSING`——文件系统可用但字库/图片不全；
-- 挂载失败**绝不自动格式化**，只提示重新烧录；`Asset_Init()` 可重复调用；
-- 资源不可用时读接口安全返回失败，渲染层退化为填背景色；
-- 每次读/写都持锁；一张全屏图分多次读，两次读之间会放锁，但资源烧录后只读。
-
----
-
-## 6. 构建、烧录与运行
-
-### 6.1 构建模式
-
-`User/Application/Inc/BuildConfig.h` 的宏决定 `main()` 走哪条分支：
-
-| 宏组合 | 模式 | 行为 |
-| --- | --- | --- |
-| `RESOURCE_PROVISION = 1` | **资源烧录** | 只初始化 W25Q64 与串口 → `Provision_Run()`；不启动 RTOS、不初始化 LCD |
-| `USE_FREERTOS = 1`（默认） | **RTOS 运行** | `Board_Peripheral_Init()` → `App_Task_Init()` → `vTaskStartScheduler()` |
-| `USE_FREERTOS = 0` | **裸机测试** | 由 `BM_TEST_MODULE` 选择测试项；当前裸机入口仍有链接问题（见已知限制） |
-
-### 6.2 调试开关
-
-`DEBUG_SUPPORT` 默认 0：
-
-- `0`：`DBG_PRINTF()` 编译为空，USART2 不初始化，printf/DMA/调试互斥量不参与链接；
-- `1`：日志走 USART2（PA2=TX/PA3=RX，115200-8N1），整行经 DMA 发送。
-
-资源烧录和裸机测试的进度也走 `DBG_PRINTF`，需要串口日志时先改成 1。打开后代码体积会增大，
-具体以重新编译后的 `Program Size` 为准。
-
-### 6.3 资源烧录（首次使用必做）
-
-资源总量超过 512KB Flash，必须分三批编译烧录，每批只把该批数据编译进来：
-
-| 批次 | 内容 | 字节数 |
-| --- | --- | --- |
-| 1 | 汉字库 16 + 22 | 367990 |
-| 2 | 开机全屏图 + 主页全屏图 | 307208 |
-| 3 | 9 张 ASCII 表 + 30 张图标 | 183580 |
-
-每批把 `PROVISION_BATCH` 改成对应值、`RESOURCE_PROVISION=1` 后编译烧录。批次 1 会格式化
-文件系统，所以必须按 1 → 2 → 3 顺序；重跑批次 1 会清掉后两批。
-
-> 代码注释里仍能看到 `822 KB`、`183460`、`33 张图标`，这些是旧值/笔误；实际为
-> 858778 B、183580 B、32 张图（其中批次 3 是 30 张图标）。
-
-### 6.4 需要自行配置的参数
-
-| 参数 | 位置 | 说明 |
-| --- | --- | --- |
-| WiFi 凭据 | `User/Application/Inc/Secrets.h` 的 `WIFI_SSID` / `WIFI_PASSWORD` / `WIFI_MAC` | 2.4GHz WiFi；`WIFI_MAC` 填 `NULL` 表示不绑定 BSSID |
-| 心知天气 key | `Secrets.h` 的 `WEATHER_KEY` | 天气 URL 由它拼出 |
-| 天气定位 | 运行期从主页定位图标进入输入 | 优先使用；没输入或取不到时回退公网 IP |
-| `AMAP_KEY` | `Secrets.h` | 高德 Web 服务 key；逆地理编码预留，当前未使用 |
-| `HSE_VALUE` | `Core/stm32f4xx.h` | 必须与实际晶振一致 |
-
-`Secrets.h` 已被根目录 `.gitignore` 忽略，不会提交。仓库里只有这一份文件，没有
-`Secrets.example.h`；新环境需要按这些宏名自行创建或填写。源码只引用宏定义，不要写回明文凭据。
-
-### 6.5 编译与下载
-
-- Keil MDK（uVision 5），工程 `MDK/STM32F407.uvprojx`，编译器 ARMCC V5.06 update 5（AC5），C99；
-- 输出 `MDK/Output/STM32F407.axf`；工程默认不生成 `.hex`；
-- 器件包 `Keil.STM32F4xx_DFP 2.15.0`，目标 STM32F407VETx；
-- 调试串口只在 `DEBUG_SUPPORT=1` 时可用；
-- `KeilClear.bat` 会递归删除 `.map`、`.axf`、`.sct` 等构建产物，需要保留分析结果时先备份。
-
----
-
-## 7. 编码与维护约定
-
-- **源码编码**：UTF-8（无 BOM），每个文件内部行尾统一。例外：`User/Application/Src/main.c`、
-  `User/UI/Src/Main_Page.c`、`Core/system_stm32f4xx.c`、`User/Resource/Src/Font/Chinese_Font*.c`
-  是 **GB2312**——改动时不要用只认 UTF-8 的编辑器保存，也不要批量转码。
-- **中文界面字符串**必须按 GB2312 写入，否则 LCD 会把一个汉字拆成两个字节查表，显示空白或错字。
-- **注释用中文**，函数头用 `/** @brief ... */`，分节用 `/* ====== 标题 ====== */`。
-- **新增源文件**要同时加入 `MDK/STM32F407.uvprojx` 的对应分组，并确认头文件目录已在包含路径中。
-  任务层文件统一放 `User/Task/`（`Inc/` 放头、`Src/` 放源），每个任务一个 `.c` + 一个 `.h`，
-  `.h` 里只放 `*_Task_Start()` 与必要的跨任务请求接口，任务函数本身保持 `static`；
-  任务参数加到 `Task_Config.h`。
-- **文档与源码不一致时以源码为准**，并顺手修正文档。
-
----
-
-## 8. 已知限制
-
-| 类别 | 问题 |
-| --- | --- |
-| 构建 | 裸机模式当前会链接失败：`main.c` 的裸机分支仍调用 `Test()`，但 `Board.c` 里的 `Test()` 已注释；需要恢复 LED 测试函数或删掉该调用。 |
-| 构建 | `Task_Monitor.c` 仍在磁盘，但不在 Keil 工程里，`UI_Task` 也不启动它；内存报告不会输出，`Task_Config.h` 里的 monitor 参数暂时未使用。 |
-| 调试 | 默认 `DEBUG_SUPPORT=0`，正式固件没有串口日志；烧录资源或跑裸机测试时先改成 1。 |
-| 显示 | 中文定位显示空白：LVGL 输入是 UTF-8，主页面字库按 GB2312 查表；`Utf8_Gb2312.c` 尚未加入工程。临时可用英文城市名。 |
-| 显示 | 顶部条可能残留第二行：`Main_Page_Net_Update()` 仍在 y=28 画定位文本，`UI_TopBar_Draw()` 只清 y=5~24。 |
-| 正确性 | 光敏 AO 模式用了 `ADC_Channel_0`（应为 `ADC_Channel_10`）；当前使用 DO 模式，不受影响。 |
-| 正确性 | `Parse_Http_Response()` 不清零输出结构体，缺失字段会保留调用方的旧值。 |
-| 健壮性 | LCD SPI/DMA、W25Q64 字节读写是**无超时忙等**，硬件异常时会卡死；`UI_Input_Calibrate()` 里 `Touch_Init()` 失败还会 `for(;;);`。 |
-| 健壮性 | `TIM5_ms` 是 64 位 `volatile`，ISR 与任务间读写非原子（当前靠重读 + UIF 补偿规避）。 |
-| 冗余 | `Image_Main_Page`（153604 B）已烧录并参与自检，但界面没有绘制它；`Asset_ImageOk()` 的 32 位掩码当前正好覆盖 32 张图，加第 33 张前需要扩展。 |
-| 文档 | `BuildConfig.h` / `Provision.c` 的资源注释仍是旧值（822 KB、183460、33 张图标）。 |
 
 ---
 

@@ -46,8 +46,9 @@
 #define KEY_CLICK_MAX              (3U)    // 最多识别到三击, 达到即立即结算
 #define KEY_RELEASE_POLL_MS        (20UL)  // 长按触发后等待松开的轮询步长
 
-/* ================ 内存监测任务(Task_Monitor.c) ================ */
-#define MONITOR_TASK_ENABLE        (1)         // 1=启用监测任务, 0=关闭
+/* ================ 内存监测任务(Task_Monitor.c) ================
+ * 启用开关不在这里: 见 BuildConfig.h 的 MONITOR_TASK_ENABLE(默认关闭)。
+ * 下面只是启用后的任务参数。 */
 #define MONITOR_TASK_PRIORITY      1           // 最低可用优先级, 只打印不参与实时路径
 #define MONITOR_TASK_STACK_SIZE    128         // word: 含 printf 格式化余量
 #define MONITOR_PERIOD_MS          (5000UL)    // 正常状态的报告周期

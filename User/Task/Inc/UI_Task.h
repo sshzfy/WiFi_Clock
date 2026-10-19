@@ -12,6 +12,7 @@
 #include "Net_Task.h"
 #include "LightSensor_Task.h"
 #include "Key_Task.h"
+#include "Task_Monitor.h"
 #include "UI_Mode.h"
 #include "UI_Input.h"
 

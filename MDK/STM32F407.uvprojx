@@ -541,6 +541,11 @@
               <FilePath>..\User\Task\Src\Task_Common.c</FilePath>
             </File>
             <File>
+              <FileName>Task_Monitor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Task\Src\Task_Monitor.c</FilePath>
+            </File>
+            <File>
               <FileName>UI_Task.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\Task\Src\UI_Task.c</FilePath>
