@@ -34,8 +34,8 @@ void Board_Peripheral_Init(void)
 
 void Board_Init(void)
 {
-    /* 测试LED,正常烧录时应亮起 */
-    Test();
+    // /* 测试LED,正常烧录时应亮起 */
+    // Test();
     /* 初始化TIM5,用于RTC时间基准 */
     TIM5_Init();
     /* 初始化USART2: 先开调试口, 后面的初始化日志才看得到 */
@@ -58,26 +58,26 @@ void Board_Init(void)
     OLED_Display_Off();
 }
 
-static void Test_LED_GPIO_init(void)
-{
-    GPIO_InitTypeDef GPIO_InitStructure;
+// static void Test_LED_GPIO_init(void)
+// {
+//     GPIO_InitTypeDef GPIO_InitStructure;
 
-#if (USE_FREERTOS == 1)
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_High_Speed;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
-#else
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-#endif
-}
+// #if (USE_FREERTOS == 1)
+//     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+//     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+//     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+//     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+//     GPIO_InitStructure.GPIO_Speed = GPIO_High_Speed;
+//     GPIO_Init(GPIOC, &GPIO_InitStructure);
+// #else
+//     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+//     GPIO_Init(GPIOB, &GPIO_InitStructure);
+// #endif
+// }
 
-void Test(void)
-{
-    Test_LED_GPIO_init();
-    GPIO_ResetBits(GPIOC, GPIO_Pin_5);
-    GPIO_ResetBits(GPIOB, GPIO_Pin_2);
-}
+// void Test(void)
+// {
+//     Test_LED_GPIO_init();
+//     GPIO_ResetBits(GPIOC, GPIO_Pin_5);
+//     GPIO_ResetBits(GPIOB, GPIO_Pin_2);
+// }

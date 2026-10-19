@@ -1,15 +1,11 @@
 #include "Task_Common.h"
 
 static EventGroupHandle_t s_evt = NULL; // 共享事件组: 仅被等待的bit置位才会唤醒 uiTask
+volatile bool g_lowpower = false;       // 低功耗模式(夜间进入: 网络活动与温湿度采集停止)
 
-volatile bool g_lowpower = false; // 低功耗模式(夜间进入: 网络活动与温湿度采集停止)
-
-/** @brief 创建共享事件组(幂等), 由 UI_Task 入口第一行调用
- *  @note  放在任务上下文创建, 与拆分前行为一致; 必须先于任何生产者任务启动
- */
+/** @brief 创建共享事件组, 由 UI_Task 入口第一行调用 */
 void Task_Common_Init(void)
 {
-    /* 幂等: 重复调用不会重建事件组, 避免丢失已置位的事件 */
     if (s_evt != NULL)
         return;
 

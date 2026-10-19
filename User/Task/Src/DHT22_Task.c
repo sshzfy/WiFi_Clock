@@ -1,7 +1,5 @@
 #include "DHT22_Task.h"
 
-/* ==================== DHT22 Task(周期采集) ==================== */
-
 static void DHT22_Task(void *pvParameters)
 {
     (void)pvParameters;
@@ -28,10 +26,9 @@ static void DHT22_Task(void *pvParameters)
         if (APP_IS_LOWPOWER() && !force)
             continue;
 
-        if (Service_Room_Update()) /* DHT22 读取, 成功失败都会刷新room_info */
-        {
+        /* DHT22 读取, 成功失败都会刷新room_info */
+        if (Service_Room_Update())
             xEventGroupSetBits(Task_Events(), EV_DHT22);
-        }
     }
 }
 

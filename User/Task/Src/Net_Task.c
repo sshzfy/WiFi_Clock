@@ -1,7 +1,5 @@
 #include "Net_Task.h"
 
-/* ==================== netTask ==================== */
-
 /* 开机网络阶段结果(仅uiTask在EV_NET_READY后读取) */
 static NetBoot_t s_boot = {0};
 
@@ -24,7 +22,7 @@ static void Net_Task(void *pvParameters)
     s_boot.wifi_ok = Wireless_Init(); // 此处 s_boot.wifi_ok 表示初始化无线网络是否成功
     if (s_boot.wifi_ok)
         s_boot.wifi_ok = Service_WiFi_Connect(); // 此处 s_boot.wifi_ok 表示连接WiFi是否成功
-    wifi_up = s_boot.wifi_ok;                    // 是否连接成功
+    wifi_up = s_boot.wifi_ok;
 
     /* 开机阶段: SNTP + 天气(需WiFi) */
     if (wifi_up)
@@ -46,8 +44,8 @@ static void Net_Task(void *pvParameters)
     {
         /* 1s 心跳; 同时等待"退出低功耗立即补更"与"键盘提交了新凭据/新定位"三个请求 */
         EventBits_t bits = xEventGroupWaitBits(Task_Events(),
-                                              EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED,
-                                              pdTRUE, pdFALSE, pdMS_TO_TICKS(1000));
+                                               EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED,
+                                               pdTRUE, pdFALSE, pdMS_TO_TICKS(1000));
 
         /* 低功耗状态变化 → 同步模组的Wi-Fi省电档位。
          * 必须放在补更之前: 退出夜间时先让模组恢复全速, 再执行 WiFi/SNTP/天气 */

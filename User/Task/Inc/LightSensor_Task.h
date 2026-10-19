@@ -6,7 +6,6 @@
 #include "Task_Common.h"
 #include "Task_Config.h"
 #include "Light_Sensor.h"
-#include "UI_Task.h"
 
 void LightSensor_Task_Start(void);
 void LightSensor_Task_RequestToggleNight(void);

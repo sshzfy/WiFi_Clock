@@ -133,6 +133,7 @@ Project4/
 | `App.c` | 服务层：WiFi / SNTP / 天气 / 温湿度 / 软件时钟；共享数据的整块赋值 |
 | `app_task.c` | 任务装配层：只负责创建 `ui` 任务；任务实现见下行 |
 | `Page.h` + `Boot_Page.c` / `Main_Page.c` | 界面绘制与页面布局常量（`Page.h` 是界面的公共头）；主页面与开机页是**裸绘**的 |
+| `UI_Mode.c/.h` + `UI_Day.c/.h` + `UI_Night.c/.h` + `UI_Input.c/.h` | 界面层：昼夜模式门面（切换时序与主循环节拍）、白天 LCD 主页面与顶部条、夜间 OLED 时钟、LVGL 输入界面（含触摸校准与左上角热区） |
 | `ui.c` / `ui_events.c` + `screens/ui_WiFi.c` / `screens/ui_location.c` | SquareLine 生成的 LVGL 输入界面（配网 / 定位）与事件实现；只有这两屏交给 LVGL 渲染（见 4.3、4.4） |
 | `ui_helpers.c` | SquareLine 的控件辅助函数；**保留工程裁剪版**——新版会引用本工程未启用的控件导致链接失败 |
 | `Provision.c` | 资源烧录：把源码内备份的字库/图片写入 W25Q64 |
@@ -145,7 +146,7 @@ Project4/
 | --- | --- |
 | `Task_Common.c/.h` | 共享底座：事件组 `Task_Events()` 的创建与获取、低功耗标志 `g_lowpower` |
 | `Task_Config.h` | 任务参数集中配置：优先级、栈大小、各周期、去抖与按键时序 |
-| `UI_Task.c/.h` | `ui` 任务：板级初始化、开机画面与结果页、事件循环刷新；昼夜进出的**执行者** |
+| `UI_Task.c/.h` | `ui` 任务入口：板级初始化、开机画面与结果页、事件等待与分派；昼夜切换的 ACK |
 | `Net_Task.c/.h` | `net` 任务：AT/WiFi/SNTP/天气，对外只暴露启动与开机结果读取 |
 | `DHT22_Task.c/.h` | `dht22` 任务：单总线温湿度周期采集 |
 | `LightSensor_Task.c/.h` | `light_sensor` 任务：光照去抖与昼夜状态机；对外暴露"请求切换昼夜" |
@@ -183,7 +184,7 @@ Project4/
 
 ### 2.4 关键约定
 
-1. **LCD 只由 `UI_Task` 写**。其他任务只更新数据并置事件位，避免多任务同时操作 SPI3 造成撕裂。
+1. **LCD 只由 `ui` 任务写**（`UI_Day` / `UI_Input` 都在该任务内）。其他任务只更新数据并置事件位，避免多任务同时操作 SPI3 造成撕裂。
 2. **USART1（AT）只由 `Net_Task` 使用**。AT 是"请求—等待"模式，第二个使用者必然导致串扰。
 3. **共享数据整块替换**。`wifi_info`、`weather_info`、`room_info` 与软件时钟都在临界区内
    整体赋值，消费者读不到半写状态。
@@ -203,7 +204,7 @@ Project4/
 
 | 任务 | 优先级 | 栈 | 职责 | 循环节拍 |
 | --- | --- | --- | --- | --- |
-| `UI_Task` / `"ui"` | 3 | 6KB | `Task_Common_Init()` 建事件组、`Board_Init()`、开机流程、**LCD 唯一写者**、昼夜切换执行者、**LVGL 键盘界面的宿主**（LVGL 的 `lv_timer_handler()` 与触摸读取都在这个任务里） | 白天 50ms（触摸轮询）/ 夜间 2000ms / 键盘界面 10ms |
+| `UI_Task` / `"ui"` | 3 | 6KB | `Task_Common_Init()` 建事件组、`Board_Init()`、开机流程、**LCD 唯一写者**；昼夜切换经 `UI_Mode` 执行、**LVGL 键盘界面由 `UI_Input` 承载**（`lv_timer_handler()` 与触摸读取都在这个任务里） | 白天 50ms（触摸轮询）/ 夜间 2000ms / 键盘界面 10ms |
 | `DHT22_Task` / `"dht22"` | 4 | 2KB | 单总线温湿度采集，成功后置 `EV_DHT22` | 5min |
 | `Net_Task` / `"net"` | 2 | 4KB | **独占 USART1/AT**：联网、SNTP、天气；1s 心跳推进三个周期计数器 | 1s |
 | `LightSensor_Task` / `"light_sensor"` | 2 | 2KB | 光照判定、2s 去抖、发起昼夜切换并等 ACK | 事件驱动 + 1s 兜底 |
@@ -233,13 +234,13 @@ Project4/
 | bit4 | `EV_LOWERPOWER` | `LightSensor_Task` → `UI_Task` | 请求进入夜间 |
 | bit5 | `EV_LOWPOWER_ACK` | `UI_Task` → `LightSensor_Task` | 昼夜切换执行完毕 |
 | bit6 | `EV_WAKEUP` | `LightSensor_Task` → `UI_Task` | 请求回到白天 |
-| bit7 | `EV_NET_UPDATE_NOW` | `UI_Task` → `Net_Task` | 退出夜间后立即补网络更新 |
-| bit8 | `EV_DHT22_UPDATE_NOW` | `UI_Task` → `DHT22_Task` | 退出夜间后立即补温湿度采集 |
-| bit9 | `EV_KEYBOARD` | `UI_Task`（触摸判定） → `UI_Task` | 点了 WiFi 图标，调出配网界面 |
-| bit10 | `EV_MAIN_SCREEN` | 输入界面回调 → `UI_Task` | 确认/取消，退回主界面 |
-| bit11 | `EV_WIFI_CRED` | `UI_Task`（界面回调） → `Net_Task` | 提交了新的 WiFi 凭据，请重连 |
-| bit12 | `EV_LOCATION_KB` | `UI_Task`（触摸判定） → `UI_Task` | 点了定位图标，调出定位输入界面 |
-| bit13 | `EV_LOCATION_CRED` | `UI_Task`（界面回调） → `Net_Task` | 提交了新的定位信息，立即按新定位取天气 |
+| bit7 | `EV_NET_UPDATE_NOW` | `UI_Mode` → `Net_Task` | 退出夜间后立即补网络更新 |
+| bit8 | `EV_DHT22_UPDATE_NOW` | `UI_Mode` → `DHT22_Task` | 退出夜间后立即补温湿度采集 |
+| bit9 | `EV_KEYBOARD` | `UI_Input`（触摸判定） → `UI_Input` | 点了 WiFi 图标，调出配网界面 |
+| bit10 | `EV_MAIN_SCREEN` | 输入界面回调 → `UI_Input` | 确认/取消，退回主界面 |
+| bit11 | `EV_WIFI_CRED` | `UI_Input`（界面回调） → `Net_Task` | 提交了新的 WiFi 凭据，请重连 |
+| bit12 | `EV_LOCATION_KB` | `UI_Input`（触摸判定） → `UI_Input` | 点了定位图标，调出定位输入界面 |
+| bit13 | `EV_LOCATION_CRED` | `UI_Input`（界面回调） → `Net_Task` | 提交了新的定位信息，立即按新定位取天气 |
 
 > **bit7 与 bit8 必须分开**。`xEventGroupWaitBits` 是清除式等待，两个任务共用一个位时，
 > 先被唤醒的会把位清掉，另一个永远收不到通知。
@@ -299,13 +300,13 @@ ESP32-C3 ──USART1──▶ AT.c ──▶ wifi_info ──▶ 顶部状态�
 
 DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡片
 
-光敏 EXTI1 ──通知──▶ LightSensor_Task（2s 去抖）──▶ 事件组 ──▶ UI_Task 切屏
+光敏 EXTI1 ──通知──▶ LightSensor_Task（2s 去抖）──▶ 事件组 ──▶ UI_Mode 切屏
 按键 EXTI0 ──通知──▶ Key_Task（手势识别）──▶ 单击请求 ──▶ LightSensor_Task（统一裁决）
 
 夜间的三个时间点：
   进入夜间前  软件时钟 ──▶ DS1302_SetTime()（写后回读校验）
   夜间        DS1302_ReadTime() ──成功──▶ OLED 显示；失败则回退软件时钟
-  退出夜间    UI_Task ──▶ EV_NET_UPDATE_NOW / EV_DHT22_UPDATE_NOW ──▶ 立即补更
+  退出夜间    UI_Mode（ui 任务）──▶ EV_NET_UPDATE_NOW / EV_DHT22_UPDATE_NOW ──▶ 立即补更
 
 资源（字库/图片，全部来自 W25Q64）：
   W25Q64 ──SPI1 21MHz──▶ Asset 层 ──┬─▶ 字模：区位码直接算偏移，O(1)
@@ -330,7 +331,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 采用"**请求—执行—ACK**"握手，避免两个任务各自改状态：
 
 1. `LightSensor_Task` 判定光照变化并去抖 2s 后置 `EV_LOWERPOWER` / `EV_WAKEUP`；
-2. `UI_Task` 是唯一执行者：关彩屏与背光、只留 OLED、冻结网络与温湿度周期计数、
+2. `UI_Mode`（由 `ui` 任务调用）是唯一执行者：关彩屏与背光、只留 OLED、冻结网络与温湿度周期计数、
    让 ESP32-C3 进入 Modem-sleep；
 3. 执行完置 `EV_LOWPOWER_ACK`，`LightSensor_Task` 收到后才允许下一次判定；
 4. 退出夜间时先唤醒模组，再用 **bit7 / bit8 两个独立事件位**通知两个任务立即补更。
@@ -349,10 +350,10 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 
 两者共用同一块 SPI 屏，因此必须严格错开：
 
-1. 白天主循环按 `UI_TOUCH_POLL_MS`（50ms）轮询 `Detect_TouchRange()`，按上表的坐标判定点到哪个
+1. 白天主循环按 `UI_TOUCH_POLL_MS`（50ms）轮询 `UI_Input_PollTouch()`，按上表的坐标判定点到哪个
    图标，命中就置对应事件位；轮询节拍必须明显小于一次点击的持续时间（约 100~200ms），
    否则整段点击会落在两次采样之间，表现成"点了没反应"；
-2. `UI_Task` 收到后调 `UI_Keyboard_Open(屏幕)`：首次进入时 `lv_init()` →
+2. `UI_Input_HandleEvent()` 收到后调 `UI_Input_Open(屏幕)`：首次进入时 `lv_init()` →
    `lv_port_disp_init()` → `lv_port_indev_init()` → `ui_init()`，之后每次只是
    `lv_disp_load_scr(目标屏幕)` + 复位输入状态 + 强制整屏重绘；
 3. 输入界面激活期间主循环改成 **10ms** 心跳，每拍喂一次 `lv_tick_inc()` 并调
@@ -362,13 +363,13 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
    `AT_Connect_WiFi()` 重连，无需等 10min 的周期检查。输入为空时**不提交也不退出**，把标签
    改成红色提示留在原地（静默退回主页会让人以为确认键坏了）。软键盘的"✓"把 `READY` 发给
    键盘对象、"回车"发给输入框，所以两处都接了同一个提交函数；
-5. `UI_Task` 处理 `EV_MAIN_SCREEN` 时关闭界面、把改动过的内容落盘、再整屏重画主页面。
+5. `UI_Input_HandleEvent()` 处理 `EV_MAIN_SCREEN` 时关闭界面、把改动过的内容落盘、再整屏重画主页面。
    **退出界面本身不触发网络补更**，只有"确实提交了新内容"才通知 netTask：WiFi 凭据走
    `EV_WIFI_CRED`（重连 + 补 SNTP/天气），定位信息走 `EV_LOCATION_CRED`（只补一次天气）。
    按 X 取消则本来就不该有网络动作；`EV_NET_UPDATE_NOW` 专指"退出夜间立即补更"，
    借来当"回主界面顺便刷一下"会让 netTask 打出 LowPower 相关日志、语义对不上。
 
-**主页面顶部状态条**（一行式，由 `UI_Task.c` 的 `UI_TopBar_Draw()` 绘制）：
+**主页面顶部状态条**（一行式，由 `UI_Day.c` 的 `UI_TopBar_Draw()` 绘制）：
 
 ```
 [WiFi][定位]                    [WiFi名,城市名]   ← 图标 (5,5) / (26,5)；信息右对齐到 x=235
@@ -376,7 +377,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 ```
 
 - 左上角并排两个 20×20 图标：WiFi 在 `(5,5)`、定位在 `(26,5)`，与触摸热区
-  （`UI_Task.h` 的 `TOUCH_X_WIFI` / `TOUCH_X_LOC`）一一对应；
+  （`UI_Input.c` 的 `TOUCH_X_WIFI` / `TOUCH_X_LOC`）一一对应；
 - 右上角一条信息，格式 `[WiFi名,城市名]`，**两个名字各自最多 10 字符**（整条最长 23 字符
   = 184 像素，右对齐到 x=235，左边不会压到定位图标），超长由 `snprintf` 截断；宽度按
   ASCII 字符算（16 号字单字符宽 = `Font_16B.size / 2`），**中文暂不支持**——城市名是中文时
@@ -403,7 +404,7 @@ DHT22 ──▶ DHT22_ReadData ──▶ room_info ──▶ 室内温湿度卡�
 | 输入框必须带 `LV_OBJ_FLAG_CLICK_FOCUSABLE` | 否则点击不产生 `LV_EVENT_FOCUSED`，键盘永远不会显示 |
 | 每次进入界面前 `lv_indev_reset(NULL, NULL)` | 上一轮残留的按下/焦点状态会让这次的 `LV_EVENT_FOCUSED` 不再发出 |
 | 两个屏幕都只建一次、反复复用 | 每次 `ui_init()` 都会再分配一个主题与整套控件，24KB 堆会被逐步吃光 |
-| 落盘放在 `UI_Task` 里而不是 LVGL 事件回调里 | littlefs 写入要几十 ms，放在回调里会卡住界面交互 |
+| 落盘放在 `UI_Input_HandleEvent()` 里而不是 LVGL 事件回调里 | littlefs 写入要几十 ms，放在回调里会卡住界面交互 |
 | `ui_helpers.c` 保留工程裁剪版，不要直接用 SquareLine 的新版 | 新版带arc/dropdown/img/slider/spinbox 等辅助函数，而本工程为省 Flash 关掉了这些控件，会链接失败（见 4.4） |
 
 ### 4.4 用 SquareLine 重新导出界面时的注意事项

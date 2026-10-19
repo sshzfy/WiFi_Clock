@@ -1,15 +1,6 @@
 #ifndef __TASK_COMMON_H__
 #define __TASK_COMMON_H__
 
-/* ============================================================
- * 任务层共享底座
- * ------------------------------------------------------------
- * 拆分任务后, 只有两类东西真正被多个任务同时使用, 统一放在这里:
- *   1) 事件组(g_evt)      —— 生产者置位, uiTask 唯一消费者
- *   2) 低功耗标志          —— uiTask 写, netTask/dht22Task 读
- * 其余状态(昼夜模式、句柄、LCD/OLED 开关等)都收进各自任务文件, 不对外暴露。
- * ============================================================ */
-
 #include "main.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -25,7 +16,7 @@
 #define EV_WAKEUP                      (1UL << 6) // 从低功耗模式唤醒
 #define EV_NET_UPDATE_NOW              (1UL << 7) // 立即更新网络状态, 包括WiFi连接状态、SNTP时间、天气
 #define EV_DHT22_UPDATE_NOW            (1UL << 8) // 立即更新DHT22传感器状态
-#define EV_KEYBOARD                    (1UL << 9)  // 点了WiFi图标, 刷WiFi配网界面
+#define EV_WIFI_KB                     (1UL << 9)  // 点了WiFi图标, 刷WiFi配网界面
 #define EV_MAIN_SCREEN                 (1UL << 10) // 刷新主界面
 #define EV_WIFI_CRED                   (1UL << 11) // 键盘提交了新的WiFi凭据, 保存并重连
 #define EV_LOCATION_KB                 (1UL << 12) // 点了定位图标, 刷定位输入界面

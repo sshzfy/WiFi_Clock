@@ -8,10 +8,6 @@
 #include "App.h"
 #include "AT.h"
 
-/* ================ 开机网络阶段结果 ================
- * 由 netTask 在 EV_NET_READY 置位前写好, 之后只读。
- * 原先定义在 app_task.h 中, 现收进本模块, 避免污染全局命名空间。
- */
 typedef struct
 {
     volatile bool wifi_ok;    // 开机WiFi初始化+连接是否完成(成功或失败)

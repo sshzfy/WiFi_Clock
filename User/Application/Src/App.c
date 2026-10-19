@@ -22,7 +22,7 @@ const char *weekdays[] =
 static char weather_url[WEATHER_URL_SIZE] =
     "https://api.seniverse.com/v3/weather/now.json"
     "?key=" WEATHER_KEY "&location=" WEATHER_IP_LOCATION "&language=en&unit=c"; // 中文: 把 language=en 换成 language=zh-Hans 即可(location 由公网IP动态填入)
-static char weather_ip[16] = {0};                                               // 最近一次成功解析到的公网IP(仅netTask访问)
+static char weather_ip[16] = {0};                                               // 最近一次成功解析到的公网IP
 const char *http_response = NULL;                                               // HTTP 响应缓冲区
 
 /* ================ 软件时钟(基于TIM5) ================
@@ -31,7 +31,7 @@ const char *http_response = NULL;                                               
  * ================================*/
 static bool clock_synced = false; // 是否同步
 static uint64_t clock_epoch;      // 同步时刻的"Unix时间戳"(SNTP本地时间按UTC算法)
-static uint64_t clock_sync_ms;    // 同步时刻的 TIM5_Get_ms()
+static uint64_t clock_sync_ms;    // 同步时刻的 ms
 
 static int64_t Clock_DaysFromCivil(int y, unsigned m, unsigned d)
 {
@@ -60,7 +60,6 @@ static void Clock_CivilFromDays(int64_t z, int *y, unsigned *m, unsigned *d)
 /**
  * @brief 用SNTP本地时间校准软件时钟
  * @param date_info SNTP解析出的本地时间
- * @return None
  */
 void Clock_Sync(AT_Date_Info_t *date_info)
 {
@@ -96,7 +95,6 @@ bool Clock_IsSynced(void)
 /**
  * @brief 获取当前本地时间
  * @param time_out 输出时间结构体
- * @return None
  */
 void Clock_GetDateTime(AT_Date_Info_t *time_out)
 {
@@ -139,13 +137,19 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
 /* ================ WiFi 凭据(键盘输入 → 掉电保存) ================ */
 static volatile bool s_wifi_cfg_dirty = false; // 内存里的凭据还没落盘(键盘刚提交过) —— 只由 uiTask 读写
 
-/* 是否已经拿到过 WiFi 凭据 */
+/**
+ * @brief 是否已经拿到 WiFi 凭据
+ * @return true 已拿到
+ */
 bool WiFi_Config_IsSet(void)
 {
     return (g_ssid[0] != '\0');
 }
 
-/* 内存里的凭据是否还没落盘 */
+/**
+ * @brief 内存里的凭据是否还没落盘
+ * @return true 未落盘
+ */
 bool WiFi_Config_IsDirty(void)
 {
     return s_wifi_cfg_dirty;
@@ -185,8 +189,6 @@ void WiFi_Config_Set(const char *ssid, const char *password)
 /**
  * @brief 把当前凭据写入外部 Flash
  * @return true 写入成功
- * @note  只在 uiTask 里调用(退出键盘界面时)。放在那里而不是 LVGL 的事件回调里,
- *        是因为 littlefs 的写时复制要擦一个块, 耗时可到几十 ms, 会卡住界面交互。
  */
 bool WiFi_Config_Save(void)
 {
@@ -253,20 +255,26 @@ void WiFi_Config_Load(void)
 /* ================ 定位信息(定位界面输入 → 掉电保存) ================ */
 static volatile bool s_location_cfg_dirty = false; // 内存里的定位信息还没落盘 —— 只由 uiTask 读写
 
-/* 是否已经设置过定位信息 */
+/**
+ * @brief 是否已经设置过定位信息
+ * @return true 已设置
+ */
 bool Location_Config_IsSet(void)
 {
     return (g_location[0] != '\0');
 }
 
-/* 内存里的定位信息是否还没落盘 */
+/**
+ * @brief 内存里的定位信息是否还没落盘
+ * @return true 未落盘
+ */
 bool Location_Config_IsDirty(void)
 {
     return s_location_cfg_dirty;
 }
 
 /**
- * @brief 更新内存中的定位信息(不写 Flash, 由 uiTask 稍后落盘)
+ * @brief 更新内存中的定位信息(不写 Flash, 由 uiTask 落盘)
  * @param location 省+市, 不允许为 NULL
  */
 void Location_Config_Set(const char *location)
@@ -347,7 +355,10 @@ void Location_Config_Load(void)
 
 /* ================ WiFi 初始化 ================ */
 
-/* 初始化无线网络, 包括AT命令和WiFi */
+/**
+ * @brief 初始化无线网络, 包括AT命令和WiFi
+ * @return true 初始化成功
+ */
 bool Wireless_Init(void)
 {
     bool at_ok = false;
@@ -362,8 +373,8 @@ bool Wireless_Init(void)
         }
 
         DBG_PRINTF("[NET] AT init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
-               (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
-               (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
+                   (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
+                   (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
 
         /* 第一次失败后才动用 AT+RESTORE: 正常开机不会走到这里, 只有模组确实不应答
          * (配置损坏、停在不正常状态等)时才"擦配置 + 重启"
@@ -374,7 +385,7 @@ bool Wireless_Init(void)
 
             if (!AT_Factory_Reset())
                 DBG_PRINTF("[NET] factory reset FAILED, rx len=%u: %s\r\n",
-                       (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
+                           (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
         }
 
         if (retry < WIRELESS_INIT_RETRY)
@@ -398,8 +409,8 @@ bool Wireless_Init(void)
         }
 
         DBG_PRINTF("[NET] WiFi init FAILED, retry=%u/%u, rx len=%u: %s\r\n",
-               (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
-               (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
+                   (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
+                   (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
 
         if (retry < WIRELESS_INIT_RETRY)
             vTaskDelay(pdMS_TO_TICKS(WIRELESS_INIT_GAP_MS));
@@ -455,7 +466,10 @@ static bool Service_WiFi_WaitConnected(uint32_t timeout_ms)
     return false;
 }
 
-/* 连接WiFi并刷新wifi_info */
+/**
+ * @brief 连接WiFi并刷新wifi_info
+ * @return true 连接成功
+ */
 bool Service_WiFi_Connect(void)
 {
     AT_WiFi_Info_t tmp;
@@ -490,7 +504,7 @@ bool Service_WiFi_Connect(void)
     if (ok && wifi_info.connected)
     {
         DBG_PRINTF("[NET] WiFi connected: ssid=%s bssid=%s channel=%d rssi=%d\r\n",
-               wifi_info.ssid, wifi_info.bssid, wifi_info.channel, wifi_info.rssi);
+                   wifi_info.ssid, wifi_info.bssid, wifi_info.channel, wifi_info.rssi);
     }
     else
     {
@@ -506,8 +520,6 @@ bool Service_WiFi_Connect(void)
  * @brief 切换ESP32-C3的Wi-Fi省电档位
  * @param enable true=进入省电(夜间), false=恢复全速(白天)
  * @return true 设置成功
- * @note  只改变RF的开关占空比, Wi-Fi连接保持, 因此退出夜间无需重新连接;
- *        设置失败时调用方保持原状态, 下个周期会自动重试
  */
 bool Service_WiFi_Sleep(bool enable)
 {
@@ -592,7 +604,10 @@ int Service_WiFi_Update(void)
     return -1;
 }
 
-/* SNTP时间同步 */
+/**
+ * @brief SNTP时间同步
+ * @return true 同步成功
+ */
 bool Service_Time_Sync(void)
 {
     AT_Date_Info_t t;
@@ -605,7 +620,7 @@ bool Service_Time_Sync(void)
             date_info = t;
             Clock_Sync(&date_info);
             DBG_PRINTF("[NET] SNTP sync OK: %04u-%02u-%02u %02u:%02u:%02u\r\n",
-                   t.year, t.month, t.day, t.hour, t.minute, t.second);
+                       t.year, t.month, t.day, t.hour, t.minute, t.second);
             return true;
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -764,7 +779,7 @@ bool Service_Weather_Update(void)
     taskEXIT_CRITICAL();
 
     DBG_PRINTF("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
-           weather_info.weather, weather_info.weather_code, weather_info.temperature);
+               weather_info.weather, weather_info.weather_code, weather_info.temperature);
 
     return true;
 }
@@ -799,7 +814,10 @@ bool Service_Weather_Update(void)
 //     return true;
 // }
 
-/* 房间温湿度更新(每20min, DHT22) */
+/**
+ * @brief 房间温湿度更新(每20min, DHT22)
+ * @return true 成功
+ */
 bool Service_Room_Update(void)
 {
     static bool dht22_inited = false;

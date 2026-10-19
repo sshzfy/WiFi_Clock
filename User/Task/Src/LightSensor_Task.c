@@ -6,10 +6,8 @@ static volatile bool s_key_toggle_night = false; // 按键请求: 切换昼夜(�
 static bool s_night = false;                     // 当前昼夜模式(初值与UI默认的白天一致)
 static bool s_baseline_dark = false;             // 自动判定基线 = 当前已生效的光照状态
 
-/* ==================== Light Sensor Task ==================== */
-
 /** @brief 光敏中断回调(ISR上下文): 仅通知任务, 去抖在任务内完成
- *  @note 仅通知任务, 不处理中断逻辑, 任务内会去抖并根据状态切换uiTask的显示
+ *  @note 仅通知任务, 不处理中断逻辑
  */
 static void Light_IRQ_Notify(void)
 {
@@ -17,17 +15,20 @@ static void Light_IRQ_Notify(void)
 
     if (s_light_task != NULL)
     {
-        vTaskNotifyGiveFromISR(s_light_task, &woken); /* 通知正在阻塞的任务,解除阻塞状态 */
-        portYIELD_FROM_ISR(woken);                    /* 请求一次上下文切换 */
+        /* 通知正在阻塞的任务,解除阻塞状态
+         * 并请求一次上下文切换 */
+        vTaskNotifyGiveFromISR(s_light_task, &woken);
+        portYIELD_FROM_ISR(woken);
     }
 }
 
-/** @brief 提交一次昼夜切换: 置事件位通知 UI, 并等待 UI 确认
- */
+/** @brief 提交一次昼夜切换: 置事件位通知 UI, 并等待 UI 确认 */
 static void App_Apply_Night(bool night)
 {
-    xEventGroupSetBits(Task_Events(), night ? EV_LOWERPOWER : EV_WAKEUP);                      /* 通知UI切换昼夜 */
-    xEventGroupWaitBits(Task_Events(), EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000)); /* 等待UI确认 */
+    /* 通知UI切换昼夜
+     * 并等待UI确认 */
+    xEventGroupSetBits(Task_Events(), night ? EV_LOWERPOWER : EV_WAKEUP);
+    xEventGroupWaitBits(Task_Events(), EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000));
 }
 
 /** @brief 处理按键的"手动切换昼夜"请求
@@ -37,7 +38,8 @@ static void App_Apply_Night(bool night)
  */
 static bool Light_HandleKey(void)
 {
-    if (!s_key_toggle_night) /* 无按键请求 */
+    /* 无按键请求 */
+    if (!s_key_toggle_night)
         return false;
 
     s_key_toggle_night = false;              // 清除请求标志
@@ -54,9 +56,12 @@ static void LightSensor_Task(void *pvParameters)
 
     DBG_PRINTF("[LIGHT] LightSensor_Task start\r\n");
 
-    s_light_task = xTaskGetCurrentTaskHandle();      // 保存当前任务句柄, 用于中断回调
-    Light_Sensor_RegisterCallback(Light_IRQ_Notify); /* 注册中断回调函数 */
-    Light_Sensor_Init();                             /* 初始化光敏传感器 */
+    s_light_task = xTaskGetCurrentTaskHandle(); // 保存当前任务句柄, 用于中断回调
+
+    /* 注册中断回调函数 */
+    Light_Sensor_RegisterCallback(Light_IRQ_Notify);
+    /* 初始化光敏传感器 */
+    Light_Sensor_Init();
 
     /* 丢弃就绪前遗留的按键请求, 避免它把下面的"基线取反"误当成环境光变化的依据 */
     s_key_toggle_night = false;
@@ -65,7 +70,7 @@ static void LightSensor_Task(void *pvParameters)
     s_baseline_dark = !Light_Sensor_IsDark(); // 第一次上电值为 true, 使第4步的"与基线相同则跳过"不成立
 
     DBG_PRINTF("[LIGHT] task ready: DO_state=%d dark=%d\r\n",
-           (int)Light_Sensor_DO_State, (int)Light_Sensor_IsDark());
+               (int)Light_Sensor_DO_State, (int)Light_Sensor_IsDark());
 
     for (;;)
     {
@@ -110,7 +115,7 @@ static void LightSensor_Task(void *pvParameters)
 
         s_baseline_dark = dark; // 更新自动判定基线
         DBG_PRINTF("[LIGHT] auto: level=%s, mode=%s\r\n",
-               dark ? "dark" : "bright", s_night ? "night" : "day");
+                   dark ? "dark" : "bright", s_night ? "night" : "day");
 
         if (dark != s_night) /* 当前光照状态和当前昼夜模式不同 */
         {
