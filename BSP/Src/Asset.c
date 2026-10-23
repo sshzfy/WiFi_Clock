@@ -1,13 +1,5 @@
 #include "Asset.h"
 
-/* ================================================
- * 资源层的实现: 一个 littlefs 挂载 + 一把访问锁 + 两类数据
- *   只读资源: 字库(/font/ *.bin) 与图片(/img/ *.bin)
- *   运行数据: /data/<name>.bin
- * 原则: 任何一次文件系统访问都持 LittleFS_Lock(); 参数与越界
- *       校验做在进入 littlefs 之前; 失败一律返回负错误码并打日志。
- * ================================================ */
-
 static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] =
     {
         {"/font/cn16.bin", ASSET_CN16_SIZE},   // ASSET_FID_CN16

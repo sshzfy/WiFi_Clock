@@ -55,8 +55,6 @@
 
 /* Run time and task stats gathering related definitions. */
 #define configGENERATE_RUN_TIME_STATS                       0
-/* 1 = 提供 TaskStatus_t / uxTaskGetSystemState()，内存监测任务(Task_Monitor.c)
- * 靠它一次性取回所有任务的名称/优先级/状态/栈水位。关闭会导致监测功能编译失败。 */
 #define configUSE_TRACE_FACILITY                            1
 #define configUSE_STATS_FORMATTING_FUNCTIONS                0
 
@@ -70,14 +68,6 @@
 #define configTIMER_QUEUE_LENGTH                            10
 #define configTIMER_TASK_STACK_DEPTH                        configMINIMAL_STACK_SIZE
 
-/* Interrupt nesting behaviour configuration.
- * 约定(中断优先级数值越小越优先, 使用NVIC_PriorityGroup_4):
- *   - configKERNEL_INTERRUPT_PRIORITY(15): PendSV/SysTick, 内核最低优先
- *   - configMAX_SYSCALL_INTERRUPT_PRIORITY(5): 优先级数值 >= 5 的中断内
- *     才允许调用 FreeRTOS API(如 xTaskNotifyFromISR)
- *   - TIM5 中断优先级=2(<5), 其ISR内禁止调用任何FreeRTOS API(仅做计数)
- *   - USART1 中断优先级=5, 可在ISR内调用 FreeRTOS API
- */
 #define configKERNEL_INTERRUPT_PRIORITY         (15 << 4)
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY    (5 << 4)
 #define configMAX_API_CALL_INTERRUPT_PRIORITY   (5 << 4)

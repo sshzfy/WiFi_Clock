@@ -12,7 +12,7 @@ void Board_Peripheral_Init(void)
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);
     /* 使能USART1时钟,传输AT命令
      * 使能USART2时钟,用于调试输出
-     * 使能USART3时钟,用于ATGM336H定位模块 */
+     * 使能USART3时钟,用于ATGM336H定位模块(未使用)  */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
@@ -52,9 +52,7 @@ void Board_Init(void)
     LCD_Init();
     /* 初始化资源层: W25Q64 + littlefs, 字库/图片只读 + 运行数据读写 */
     Asset_Init();
-    
     OLED_Init();
-    /* 白天由LCD显示, OLED保持关闭 */
     OLED_Display_Off();
 }
 

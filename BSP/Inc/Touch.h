@@ -30,8 +30,8 @@
 #define TOUCH_IRQ_PIN        GPIO_Pin_1
 
 /* 参数定义 */
-#define TOUCH_WIDTH                  240U // 触摸屏宽度, 与 LCD 一致
-#define TOUCH_HEIGHT                 320U // 触摸屏高度, 与 LCD 一致
+#define TOUCH_WIDTH                  240U
+#define TOUCH_HEIGHT                 320U
 #define TOUCH_MAX_SAMPLES            10U  // 每次取坐标的采样次数(至少 3 次才能去掉最大最小值)
 #define TOUCH_SAMPLE_SPAN_MAX        300U // 一次采样里(最大-最小)的允许跨度, 超出判为滑动/干扰
 #define TOUCH_CMD_GAP_US             2U   // 两条转换命令之间的间隔, 给通道切换后的内部采集留时间
@@ -51,8 +51,7 @@
 #define TOUCH_CAL_MAGIC          0x544F5543U // 'TOUC': 判断文件内容是不是本驱动写的
 #define TOUCH_CAL_VERSION        1U          // 布局版本: 结构一改就 +1, 旧数据自动作废
 
-/* 触摸屏控制字: S=1, A2:A0 通道, MODE=0(12位), SER/DFR=0(差分), PD1:PD0=00
- * 这两个是 XPT2046 手册里的通道号(101 / 001), 不代表屏幕的横竖方向 */
+/* 触摸屏控制字 */
 #define TOUCH_CMD_X        0xD0U // 通道 101
 #define TOUCH_CMD_Y        0x90U // 通道 001
 

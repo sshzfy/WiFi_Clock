@@ -3,11 +3,12 @@
 static uint8_t s_oled_glyph[ASSET_GLYPH_BYTES_MAX]; // 单字模缓冲: 全部字模里最大 144 字节(48号ASCII = 3 字节/行 * 48 行)
 static uint8_t s_oled_zeros[OLED_WIDTH];            // 清屏用的全零页: 一次 I2C 事务写满一整页(128 列)
 
-Soft_I2C_t oled_i2c = {
-    .SCL_Port = OLED_GPIO_PORT,
-    .SDA_Port = OLED_GPIO_PORT,
-    .SCL_Pin = OLED_GPIO_SCL_PIN,
-    .SDA_Pin = OLED_GPIO_SDA_PIN,
+Soft_I2C_t oled_i2c =
+    {
+        .SCL_Port = OLED_GPIO_PORT,
+        .SDA_Port = OLED_GPIO_PORT,
+        .SCL_Pin = OLED_GPIO_SCL_PIN,
+        .SDA_Pin = OLED_GPIO_SDA_PIN,
 };
 
 /* ================ static 函数 ================ */

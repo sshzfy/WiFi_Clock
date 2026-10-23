@@ -10,11 +10,11 @@
 #define W25Q64_BUSY_TIMEOUT        0x08000000U // 忙等待超时(轮询次数上限), 防止芯片异常/未焊接时死等
 
 /* 定义W25Q64 Flash的GPIO引脚配置 */
-#define W25Q64_GPIO_PORT        GPIOA      // 选择GPIOA端口(SPI1)
-#define W25Q64_CS_PIN           GPIO_Pin_4 // 选择CS引脚为GPIOA_4
-#define W25Q64_CLK_PIN          GPIO_Pin_5 // 选择时钟引脚为GPIOA_5
-#define W25Q64_MISO_PIN         GPIO_Pin_6 // 选择MISO引脚为GPIOA_6
-#define W25Q64_MOSI_PIN         GPIO_Pin_7 // 选择MOSI引脚为GPIOA_7
+#define W25Q64_GPIO_PORT        GPIOA
+#define W25Q64_CS_PIN           GPIO_Pin_4
+#define W25Q64_CLK_PIN          GPIO_Pin_5
+#define W25Q64_MISO_PIN         GPIO_Pin_6
+#define W25Q64_MOSI_PIN         GPIO_Pin_7
 
 /* 芯片容量与结构参数 */
 #define W25Q64_FLASH_SIZE          (8U * 1024U * 1024U)                     // 总容量 8MB

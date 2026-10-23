@@ -24,14 +24,9 @@
  * 串口调试打印总开关
  * ------------------------------------------------------------
  * DEBUG_SUPPORT:
- *   0 = 正式固件。DBG_PRINTF() 编译为空, USART2 不初始化,
- *       printf / fputc / DMA / 调试互斥量都不参与链接,
- *       不占 Flash/RAM, 也不占用 PA2/PA3。
+ *   0 = 正式固件。DBG_PRINTF() 编译为空, USART2 不初始化
  *   1 = 调试固件。DBG_PRINTF() -> printf -> USART2(PA2=TX/PA3=RX),
- *       115200-8N1, 整行经 DMA 发送。
- * 注意: 资源烧录固件(RESOURCE_PROVISION=1)和裸机测试固件
- * (USE_FREERTOS=0)的进度也走 DBG_PRINTF, 需要串口日志时把
- * 这里改成 1 再编译。
+ *       115200-8N1, 整行经 DMA 发送
  * ============================================================ */
 
 #define DEBUG_SUPPORT        0
@@ -80,7 +75,7 @@
 #define RESOURCE_PROVISION          0
 #define PROVISION_BATCH             1
 
-/* 烧录固件必然需要数据本体, 这里自动联动, 避免两个开关不一致 */
+/* 烧录固件必然需要数据本体, 自动联动, 避免两个开关不一致 */
 #if (RESOURCE_PROVISION == 1)
 #undef  RESOURCE_DATA_IN_ROM
 #define RESOURCE_DATA_IN_ROM        1

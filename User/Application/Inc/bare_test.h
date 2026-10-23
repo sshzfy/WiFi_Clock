@@ -31,8 +31,6 @@ typedef enum
     BM_TEST_MODULE_TOUCH = 8,    // LCD + 触摸屏测试(含五点校准)
 } BM_TEST_MODULE_t;
 
-/* Run the bare-metal module test selected by BM_TEST_MODULE (BuildConfig.h).
- * Each test owns an endless loop and must be called after clock + TIM5 init. */
 void BareMetal_Module_Test(void);
 
 #endif /* USE_FREERTOS == 0 */

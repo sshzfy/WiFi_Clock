@@ -1,14 +1,3 @@
-/*
- * 资源烧录固件实现
- *
- * 本文件只在 RESOURCE_PROVISION == 1 时参与编译, 用于把备份在源码里的
- * 字库与图片写入 W25Q64 的 littlefs 文件系统。正式固件不含任何资源数据。
- *
- * 资源总量约 822KB 超过 512KB Flash, 必须按 PROVISION_BATCH 分三批烧录:
- *   1 = 汉字库 16 + 22        (367990 字节)
- *   2 = 开机图 + 主页图       (307200 字节)
- *   3 = 9 张 ASCII 表 + 图标  (183460 字节)
- */
 #include "Provision.h"
 
 #if (RESOURCE_PROVISION == 1)
