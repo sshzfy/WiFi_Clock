@@ -1,9 +1,9 @@
 #include "Task_Common.h"
 
-static EventGroupHandle_t s_evt = NULL; // å…±äº«äº‹ä»¶ç»„: ä»…è¢«ç­‰å¾…çš„bitç½®ä½æ‰ä¼šå”¤é†’ uiTask
-volatile bool g_lowpower = false;       // ä½åŠŸè€—æ¨¡å¼(å¤œé—´è¿›å…¥: ç½‘ç»œæ´»åŠ¨ä¸æ¸©æ¹¿åº¦é‡‡é›†åœæ­¢)
+static EventGroupHandle_t s_evt = NULL; // ¹²ÏíÊÂ¼ş×é: ½ö±»µÈ´ıµÄbitÖÃÎ»²Å»á»½ĞÑ uiTask
+volatile bool g_lowpower = false;       // µÍ¹¦ºÄÄ£Ê½(Ò¹¼ä½øÈë: ÍøÂç»î¶¯ÓëÎÂÊª¶È²É¼¯Í£Ö¹)
 
-/** @brief åˆ›å»ºå…±äº«äº‹ä»¶ç»„, ç”± UI_Task å…¥å£ç¬¬ä¸€è¡Œè°ƒç”¨ */
+/** @brief ´´½¨¹²ÏíÊÂ¼ş×é, ÓÉ UI_Task Èë¿ÚµÚÒ»ĞĞµ÷ÓÃ */
 void Task_Common_Init(void)
 {
     if (s_evt != NULL)
@@ -15,8 +15,8 @@ void Task_Common_Init(void)
     taskEXIT_CRITICAL();
 }
 
-/** @brief å–å…±äº«äº‹ä»¶ç»„å¥æŸ„(æ›¿ä»£åŸå…ˆçš„å…¨å±€å˜é‡ g_evt)
- *  @return äº‹ä»¶ç»„å¥æŸ„, æœªåˆå§‹åŒ–æ—¶ä¸º NULL
+/** @brief È¡¹²ÏíÊÂ¼ş×é¾ä±ú(Ìæ´úÔ­ÏÈµÄÈ«¾Ö±äÁ¿ g_evt)
+ *  @return ÊÂ¼ş×é¾ä±ú, Î´³õÊ¼»¯Ê±Îª NULL
  */
 EventGroupHandle_t Task_Events(void)
 {

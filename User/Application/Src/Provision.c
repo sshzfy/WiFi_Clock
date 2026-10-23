@@ -11,7 +11,7 @@
 #include "Image.h"
 #include <stdio.h>
 
-/* å­—åº“èµ„æºé¡¹: è£¸æ•°æ®ç›´æ¥å†™å…¥ */
+/* ×Ö¿â×ÊÔ´Ïî: ÂãÊı¾İÖ±½ÓĞ´Èë */
 typedef struct
 {
     const char *path;
@@ -19,14 +19,14 @@ typedef struct
     uint32_t size;
 } Provision_Font_t;
 
-/* å›¾ç‰‡èµ„æºé¡¹: Image_t æä¾›è·¯å¾„ä¸å®½é«˜, data æä¾›åŸå§‹åƒç´ æ•°æ® */
+/* Í¼Æ¬×ÊÔ´Ïî: Image_t Ìá¹©Â·¾¶Óë¿í¸ß, data Ìá¹©Ô­Ê¼ÏñËØÊı¾İ */
 typedef struct
 {
     const Image_t *img;
     const unsigned char *data;
 } Provision_Image_t;
 
-/* æ¯ä¸ªæ‰¹æ¬¡åªå®šä¹‰è‡ªå·±çœŸæ­£éœ€è¦çš„è¡¨, é¿å…å‡ºç°æ— äººå¼•ç”¨çš„å ä½æ•°ç»„ */
+/* Ã¿¸öÅú´ÎÖ»¶¨Òå×Ô¼ºÕæÕıĞèÒªµÄ±í, ±ÜÃâ³öÏÖÎŞÈËÒıÓÃµÄÕ¼Î»Êı×é */
 #if (PROVISION_BATCH == 1)
 
 static const Provision_Font_t s_fonts[] = {
@@ -92,8 +92,8 @@ static const Provision_Image_t s_images[] = {
 #error "PROVISION_BATCH must be 1, 2 or 3"
 #endif
 
-/* æœ¬æ‰¹æ˜¯å¦åŒ…å«å­—åº“/å›¾ç‰‡ã€‚ç”¨ç‹¬ç«‹çš„å¸ƒå°”å®è€Œä¸æ˜¯ç›´æ¥åˆ¤æ–­ count,
- * å› ä¸º #if æ— æ³•å¯¹ sizeof æ±‚å€¼ã€‚ */
+/* ±¾ÅúÊÇ·ñ°üº¬×Ö¿â/Í¼Æ¬¡£ÓÃ¶ÀÁ¢µÄ²¼¶ûºê¶ø²»ÊÇÖ±½ÓÅĞ¶Ï count,
+ * ÒòÎª #if ÎŞ·¨¶Ô sizeof ÇóÖµ¡£ */
 #if (PROVISION_BATCH == 1) || (PROVISION_BATCH == 3)
 #define PROV_HAS_FONTS  1
 #define s_fontCount     ((uint32_t)(sizeof(s_fonts) / sizeof(s_fonts[0])))
@@ -112,8 +112,8 @@ static const Provision_Image_t s_images[] = {
 
 #if (PROV_HAS_IMAGES)
 /**
- * @brief å†™ä¸€ä¸ªå›¾ç‰‡æ–‡ä»¶: 4 å­—èŠ‚å¤§ç«¯å¤´(å®½/é«˜) + åŸå§‹ RGB565 åƒç´ 
- * @note ä¸ LFS_Operation çš„ SaveImage ä¿æŒåŒä¸€æ ¼å¼, Asset è‡ªæ£€æ‰èƒ½å¯¹ä¸Šå¤§å°
+ * @brief Ğ´Ò»¸öÍ¼Æ¬ÎÄ¼ş: 4 ×Ö½Ú´ó¶ËÍ·(¿í/¸ß) + Ô­Ê¼ RGB565 ÏñËØ
+ * @note Óë LFS_Operation µÄ SaveImage ±£³ÖÍ¬Ò»¸ñÊ½, Asset ×Ô¼ì²ÅÄÜ¶ÔÉÏ´óĞ¡
  */
 static int Provision_SaveImage(const char *path, const unsigned char *data, uint16_t w, uint16_t h)
 {
@@ -171,12 +171,12 @@ void Provision_Run(void)
     int err;
 
 #if (PROVISION_BATCH == 1)
-    /* æ‰¹æ¬¡ 1 æ˜¯èµ·å§‹æ‰¹æ¬¡: ç›´æ¥é‡å»ºæ–‡ä»¶ç³»ç»Ÿ, æ¸…æ‰ bare_test ç­‰é—ç•™çš„æ—§æ–‡ä»¶,
-     * ä¿è¯èµ„æºé›†åˆå¹²å‡€å¯é¢„æµ‹ã€‚æ³¨æ„: é‡è·‘æ‰¹æ¬¡ 1 ä¼šæ¸…ç©ºå·²å†™å…¥çš„æ‰¹æ¬¡ 2ã€3ã€‚ */
+    /* Åú´Î 1 ÊÇÆğÊ¼Åú´Î: Ö±½ÓÖØ½¨ÎÄ¼şÏµÍ³, Çåµô bare_test µÈÒÅÁôµÄ¾ÉÎÄ¼ş,
+     * ±£Ö¤×ÊÔ´¼¯ºÏ¸É¾»¿ÉÔ¤²â¡£×¢Òâ: ÖØÅÜÅú´Î 1 »áÇå¿ÕÒÑĞ´ÈëµÄÅú´Î 2¡¢3¡£ */
     DBG_PRINTF("[PROV] batch 1: format filesystem first\r\n");
     err = LittleFS_Format();
 #else
-    /* æ‰¹æ¬¡ 2ã€3 è¿½åŠ åˆ°å·²æœ‰æ–‡ä»¶ç³»ç»Ÿ; åªæœ‰æŒ‚è½½å¤±è´¥æ—¶æ‰è‡ªåŠ¨æ ¼å¼åŒ–ã€‚ */
+    /* Åú´Î 2¡¢3 ×·¼Óµ½ÒÑÓĞÎÄ¼şÏµÍ³; Ö»ÓĞ¹ÒÔØÊ§°ÜÊ±²Å×Ô¶¯¸ñÊ½»¯¡£ */
     err = LittleFS_Init();
 #endif
     if (err != 0)
@@ -190,7 +190,7 @@ void Provision_Run(void)
     (void)lfs_mkdir(&g_lfs, "/img");
 
 #if (PROV_HAS_FONTS)
-    /* å­—åº“ */
+    /* ×Ö¿â */
     for (uint32_t i = 0; i < s_fontCount; i++)
     {
         const Provision_Font_t *it = &s_fonts[i];
@@ -211,7 +211,7 @@ void Provision_Run(void)
 #endif
 
 #if (PROV_HAS_IMAGES)
-    /* å›¾ç‰‡ */
+    /* Í¼Æ¬ */
     for (uint32_t i = 0; i < s_imageCount; i++)
     {
         const Provision_Image_t *it = &s_images[i];

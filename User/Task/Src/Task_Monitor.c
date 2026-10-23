@@ -6,13 +6,13 @@
 #if (MONITOR_TASK_ENABLE == 1)
 
 /* ============================================================
- * ä»»åŠ¡å†…å­˜ç›‘æµ‹(åªè¯»)
+ * ÈÎÎñÄÚ´æ¼à²â(Ö»¶Á)
  * ------------------------------------------------------------
- * è¾“å‡ºä¸¤å—å†…å®¹:
- *   å † â€”â€” æ€»é‡ / å½“å‰å·²ç”¨ / å½“å‰ç©ºé—² / å†å²æœ€å°ç©ºé—²(å³å³°å€¼å ç”¨);
- *   æ ˆ â€”â€” æ¯ä¸ªä»»åŠ¡çš„å†å²æœ€å°å‰©ä½™(high water mark)ä¸æ®æ­¤æ¨ç®—çš„æœ€åä½¿ç”¨ç‡ã€‚
- * æ ˆæ€»å¤§å° FreeRTOS ä¸ä¿å­˜, æ‰€ä»¥ä¸‹é¢ç”¨ä¸€å¼ "ä»»åŠ¡å â†’ åˆ›å»ºæ—¶æ ˆå­—æ•°"çš„
- * å¯¹ç…§è¡¨åæ¨ä½¿ç”¨ç‡; è¡¨é‡Œæ²¡æœ‰çš„ä»»åŠ¡åªæŠ¥å‰©ä½™é‡(è¡¨æ ¼é‡Œæ˜¾ç¤º "-")ã€‚
+ * Êä³öÁ½¿éÄÚÈİ:
+ *   ¶Ñ ¡ª¡ª ×ÜÁ¿ / µ±Ç°ÒÑÓÃ / µ±Ç°¿ÕÏĞ / ÀúÊ·×îĞ¡¿ÕÏĞ(¼´·åÖµÕ¼ÓÃ);
+ *   Õ» ¡ª¡ª Ã¿¸öÈÎÎñµÄÀúÊ·×îĞ¡Ê£Óà(high water mark)Óë¾İ´ËÍÆËãµÄ×î»µÊ¹ÓÃÂÊ¡£
+ * Õ»×Ü´óĞ¡ FreeRTOS ²»±£´æ, ËùÒÔÏÂÃæÓÃÒ»ÕÅ"ÈÎÎñÃû ¡ú ´´½¨Ê±Õ»×ÖÊı"µÄ
+ * ¶ÔÕÕ±í·´ÍÆÊ¹ÓÃÂÊ; ±íÀïÃ»ÓĞµÄÈÎÎñÖ»±¨Ê£ÓàÁ¿(±í¸ñÀïÏÔÊ¾ "-")¡£
  * ============================================================ */
 
 static const Monitor_Stack_Map_t s_stack_map[] =
@@ -22,13 +22,13 @@ static const Monitor_Stack_Map_t s_stack_map[] =
         {"dht22", DHT22_TASK_STACK_SIZE},               // DHT22_Task.c
         {"light_sensor", LIGHT_SENSOR_TASK_STACK_SIZE}, // LightSensor_Task.c
         {"key", KEY_TASK_STACK_SIZE},                   // Key_Task.c
-        {"monitor", MONITOR_TASK_STACK_SIZE},           // æœ¬æ–‡ä»¶
-        {"IDLE", configMINIMAL_STACK_SIZE},             // å†…æ ¸ç©ºé—²ä»»åŠ¡
+        {"monitor", MONITOR_TASK_STACK_SIZE},           // ±¾ÎÄ¼ş
+        {"IDLE", configMINIMAL_STACK_SIZE},             // ÄÚºË¿ÕÏĞÈÎÎñ
 };
 
-static volatile bool s_printing = false; // é˜²é‡å…¥: å‘¨æœŸæŠ¥å‘Šä¸æ‰‹åŠ¨è§¦å‘åŒæ—¶å‘ç”Ÿæ—¶, åæ¥è€…ç›´æ¥ä¸¢å¼ƒ, é¿å…ä¸¤ä»½è¾“å‡ºäº¤å‰
+static volatile bool s_printing = false; // ·ÀÖØÈë: ÖÜÆÚ±¨¸æÓëÊÖ¶¯´¥·¢Í¬Ê±·¢ÉúÊ±, ºóÀ´ÕßÖ±½Ó¶ªÆú, ±ÜÃâÁ½·İÊä³ö½»²æ
 
-/* ä»»åŠ¡çŠ¶æ€æšä¸¾è½¬å¯è¯»æ–‡æœ¬ */
+/* ÈÎÎñ×´Ì¬Ã¶¾Ù×ª¿É¶ÁÎÄ±¾ */
 static const char *Monitor_StateText(eTaskState state)
 {
     switch (state)
@@ -48,8 +48,8 @@ static const char *Monitor_StateText(eTaskState state)
     }
 }
 
-/** @brief æŒ‰ä»»åŠ¡åæŸ¥åˆ›å»ºæ—¶çš„æ ˆå­—æ•°
- *  @return æ ˆå­—æ•°(word); 0 è¡¨ç¤ºè¡¨é‡Œæ²¡æœ‰è¯¥ä»»åŠ¡
+/** @brief °´ÈÎÎñÃû²é´´½¨Ê±µÄÕ»×ÖÊı
+ *  @return Õ»×ÖÊı(word); 0 ±íÊ¾±íÀïÃ»ÓĞ¸ÃÈÎÎñ
  */
 static uint16_t Monitor_StackWords(const char *name)
 {
@@ -89,8 +89,8 @@ void Task_Monitor_Print(void)
     heap_total = (uint32_t)(configTOTAL_HEAP_SIZE);
     heap_free = (uint32_t)xPortGetFreeHeapSize();
     heap_low = (uint32_t)xPortGetMinimumEverFreeHeapSize();
-    heap_used = heap_total - heap_free; // å½“å‰å·²ç”¨
-    heap_peak = heap_total - heap_low;  // å†å²å³°å€¼å ç”¨
+    heap_used = heap_total - heap_free; // µ±Ç°ÒÑÓÃ
+    heap_peak = heap_total - heap_low;  // ÀúÊ··åÖµÕ¼ÓÃ
 
     DBG_PRINTF("\r\n[MEM] ============== FreeRTOS memory report ==============\r\n");
     DBG_PRINTF("[MEM] uptime %u s | tasks %u | snapshot %u\r\n",
@@ -100,7 +100,7 @@ void Task_Monitor_Print(void)
 
     if ((snapshot == 0U) && (task_count != 0U))
     {
-        /* æ•°ç»„æ‰å°: ä»»åŠ¡æ•°å·²è¶…è¿‡ MONITOR_MAX_TASKS, åŠ å¤§å®ƒå³å¯ */
+        /* Êı×éµôĞ¡: ÈÎÎñÊıÒÑ³¬¹ı MONITOR_MAX_TASKS, ¼Ó´óËü¼´¿É */
         DBG_PRINTF("[MEM] WARN: snapshot failed, raise MONITOR_MAX_TASKS (>= %u)\r\n",
                (unsigned)task_count);
     }
@@ -115,17 +115,17 @@ void Task_Monitor_Print(void)
            (unsigned)((heap_total != 0U) ? (heap_peak * 100U / heap_total) : 0U),
            (unsigned)heap_low);
 
-    /* æ ˆå•ä½ç»Ÿä¸€æ¢æˆå­—èŠ‚: word æ•° Ã— 4, ä¾¿äºç›´æ¥å’Œå †å¯¹æ¯” */
+    /* Õ»µ¥Î»Í³Ò»»»³É×Ö½Ú: word Êı ¡Á 4, ±ãÓÚÖ±½ÓºÍ¶Ñ¶Ô±È */
     DBG_PRINTF("[MEM] name             prio state      stack   peak    rem   use%%\r\n");
 
     for (i = 0U; i < snapshot; i++)
     {
         uint16_t words = Monitor_StackWords(s_status[i].pcTaskName);
-        uint16_t rem_w = (uint16_t)s_status[i].usStackHighWaterMark; // å†å²æœ€å°å‰©ä½™(word)
+        uint16_t rem_w = (uint16_t)s_status[i].usStackHighWaterMark; // ÀúÊ·×îĞ¡Ê£Óà(word)
 
         if (words != 0U)
         {
-            uint16_t peak_w = (words > rem_w) ? (uint16_t)(words - rem_w) : 0U; // æœ€åå·²ç”¨
+            uint16_t peak_w = (words > rem_w) ? (uint16_t)(words - rem_w) : 0U; // ×î»µÒÑÓÃ
             uint32_t use_pct = ((uint32_t)peak_w * 100U) / words;
 
             stack_words_sum += words;
@@ -140,7 +140,7 @@ void Task_Monitor_Print(void)
         }
         else
         {
-            /* æœªç™»è®°çš„ä»»åŠ¡: åªçŸ¥é“è¿˜å‰©å¤šå°‘, ä¸çŸ¥é“å½“åˆç”³è¯·äº†å¤šå°‘ */
+            /* Î´µÇ¼ÇµÄÈÎÎñ: Ö»ÖªµÀ»¹Ê£¶àÉÙ, ²»ÖªµÀµ±³õÉêÇëÁË¶àÉÙ */
             DBG_PRINTF("[MEM] %-16s %4u %-8s      -      - %6u     -\r\n",
                    s_status[i].pcTaskName,
                    (unsigned)s_status[i].uxCurrentPriority,
@@ -149,7 +149,7 @@ void Task_Monitor_Print(void)
         }
     }
 
-    /* ä»»åŠ¡æ ˆå…¨éƒ¨æ¥è‡ªè¿™ 42KB å †, åˆè®¡èƒ½ç›´æ¥çœ‹å‡ºå †è¢«ä»»åŠ¡æ ˆåƒæ‰äº†å¤šå°‘ */
+    /* ÈÎÎñÕ»È«²¿À´×ÔÕâ 42KB ¶Ñ, ºÏ¼ÆÄÜÖ±½Ó¿´³ö¶Ñ±»ÈÎÎñÕ»³ÔµôÁË¶àÉÙ */
     DBG_PRINTF("[MEM] task stacks : %u B (%u%% of heap)\r\n",
            (unsigned)(stack_words_sum * WORD_BYTES),
            (unsigned)((heap_total != 0U) ? (stack_words_sum * WORD_BYTES * 100U / heap_total) : 0U));
@@ -158,19 +158,19 @@ void Task_Monitor_Print(void)
     s_printing = false;
 }
 
-/* ç›‘æµ‹ä»»åŠ¡ä¸»å¾ªç¯: å‘¨æœŸæŠ¥å‘Š, å¤œé—´é™é»˜ */
+/* ¼à²âÈÎÎñÖ÷Ñ­»·: ÖÜÆÚ±¨¸æ, Ò¹¼ä¾²Ä¬ */
 static void Monitor_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    /* å¼€æœºé˜¶æ®µä»»åŠ¡è¿˜æ²¡å»ºé½, æ—©æŠ¥çš„æ•°å­—æ²¡æœ‰å‚è€ƒä»·å€¼, å…ˆé™ç½®ä¸€æ®µæ—¶é—´ */
+    /* ¿ª»ú½×¶ÎÈÎÎñ»¹Ã»½¨Æë, Ôç±¨µÄÊı×ÖÃ»ÓĞ²Î¿¼¼ÛÖµ, ÏÈ¾²ÖÃÒ»¶ÎÊ±¼ä */
     vTaskDelay(pdMS_TO_TICKS(MONITOR_FIRST_DELAY_MS));
 
     for (;;)
     {
         if (APP_IS_LOWPOWER())
         {
-            /* å¤œé—´ä¸æ‰“å°: ä¸²å£æ´»åŠ¨ä¼šæŠŠåŠŸè€—æ‹‰èµ·æ¥, åªéœ€ä½é¢‘å›æ¥æ£€æŸ¥ä¸€æ¬¡ */
+            /* Ò¹¼ä²»´òÓ¡: ´®¿Ú»î¶¯»á°Ñ¹¦ºÄÀ­ÆğÀ´, Ö»ĞèµÍÆµ»ØÀ´¼ì²éÒ»´Î */
             vTaskDelay(pdMS_TO_TICKS(MONITOR_LP_PERIOD_MS));
             continue;
         }
@@ -185,7 +185,7 @@ void Task_Monitor_Start(void)
     xTaskCreate(Monitor_Task, "monitor", MONITOR_TASK_STACK_SIZE, NULL, MONITOR_TASK_PRIORITY, NULL);
 }
 
-#else /* MONITOR_TASK_ENABLE == 0: ç¼–è¯‘æœŸå‰”é™¤, ä¸å»ºä»»åŠ¡ä¹Ÿä¸å å † */
+#else /* MONITOR_TASK_ENABLE == 0: ±àÒëÆÚÌŞ³ı, ²»½¨ÈÎÎñÒ²²»Õ¼¶Ñ */
 
 void Task_Monitor_Start(void)
 {

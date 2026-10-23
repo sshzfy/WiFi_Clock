@@ -481,7 +481,7 @@ static void lv_arc_event(const lv_obj_class_t * class_p, lv_event_t * e)
         angle -= arc->rotation;
         angle -= arc->bg_angle_start;  /*Make the angle relative to the start angle*/
 
-        /* If we click near the bg_angle_start the angle will be close to 360째 instead of an small angle */
+        /* If we click near the bg_angle_start the angle will be close to 360▲ instead of an small angle */
         if(angle < 0) angle += 360;
 
         const uint32_t circumference = (uint32_t)((2U * r * 314U) / 100U);  /* Equivalent to: 2r * 3.14, avoiding floats */
@@ -497,7 +497,7 @@ static void lv_arc_event(const lv_obj_class_t * class_p, lv_event_t * e)
         int16_t last_angle_rel = arc->last_angle - arc->bg_angle_start;
         int16_t delta_angle = angle - last_angle_rel;
 
-        /*Do not allow big jumps (jumps bigger than 280째).
+        /*Do not allow big jumps (jumps bigger than 280▲).
          *It's mainly to avoid jumping to the opposite end if the "dead" range between min. and max. is crossed.
          *Check which end was closer on the last valid press (arc->min_close) and prefer that end*/
         if(LV_ABS(delta_angle) > 280) {
@@ -905,8 +905,8 @@ static lv_coord_t knob_get_extra_size(lv_obj_t * obj)
  *
  * A tolerance (extra room) also should be taken into consideration.
  *
- * E.g. Arc with start angle of 0째 and end angle of 90째, the background is only visible in
- * that range, from 90째 to 360째 the background is invisible. Click in 150째 should not update
+ * E.g. Arc with start angle of 0▲ and end angle of 90▲, the background is only visible in
+ * that range, from 90▲ to 360▲ the background is invisible. Click in 150▲ should not update
  * the arc value, click within the arc angle range should.
  *
  * IMPORTANT NOTE: angle is always relative to bg_angle_start, e.g. if bg_angle_start is 30
@@ -962,8 +962,8 @@ static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const uint32_t angle, 
     else { /* Case handled below */ }
 
     /* Legends:
-     * 0째 = angle 0
-     * 360째 = angle 360
+     * 0▲ = angle 0
+     * 360▲ = angle 360
      * T: Tolerance
      * A: Angle
      * S: Arc background start angle
@@ -971,7 +971,7 @@ static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const uint32_t angle, 
      *
      * Start angle is bigger or equal to tolerance */
     if((smaller_angle >= tolerance_deg)
-       /* (360째 - T) --- A --- 360째 */
+       /* (360▲ - T) --- A --- 360▲ */
        && ((angle >= (360U - tolerance_deg)) && (angle <= 360U))) {
 
         arc->min_close = 1;
@@ -980,14 +980,14 @@ static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const uint32_t angle, 
     }
     /* Tolerance is bigger than bg start angle */
     else if((smaller_angle < tolerance_deg)
-            /* (360째 - (T - S)) --- A --- 360째 */
+            /* (360▲ - (T - S)) --- A --- 360▲ */
             && (((360U - (tolerance_deg - smaller_angle)) <= angle)) && (angle <= 360U)) {
 
         arc->min_close = 1;
         arc->in_out = CLICK_OUTSIDE_BG_ANGLES;
         return true;
     }
-    /* 360째 is bigger than background end angle + tolerance */
+    /* 360▲ is bigger than background end angle + tolerance */
     else if((360U >= (bigger_angle + tolerance_deg))
             /* E --- A --- (E + T) */
             && ((bigger_angle <= (angle + smaller_angle)) &&
@@ -997,8 +997,8 @@ static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const uint32_t angle, 
         arc->in_out = CLICK_OUTSIDE_BG_ANGLES;
         return true;
     }
-    /* Background end angle + tolerance is bigger than 360째 and bg_start_angle + tolerance is not near 0째 + ((bg_end_angle + tolerance) - 360째)
-     * Here we can assume background is not near 0째 because of the first two initial checks */
+    /* Background end angle + tolerance is bigger than 360▲ and bg_start_angle + tolerance is not near 0▲ + ((bg_end_angle + tolerance) - 360▲)
+     * Here we can assume background is not near 0▲ because of the first two initial checks */
     else if((360U < (bigger_angle + tolerance_deg))
             && (angle <= 0U + ((bigger_angle + tolerance_deg) - 360U)) && (angle > bigger_angle)) {
 

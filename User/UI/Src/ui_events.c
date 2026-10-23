@@ -3,8 +3,8 @@
 // LVGL version: 8.3.11
 // Project name: SquareLine_Project
 //
-// æ³¨æ„: æœ¬æ–‡ä»¶å¸¦æ‰‹å·¥å®ç°(SquareLine åªç”Ÿæˆç©ºå£³)ã€‚ç”¨ SquareLine é‡æ–°å¯¼å‡ºå,
-// éœ€è¦æŠŠä¸‹é¢ä¸¤ä¸ªå‡½æ•°çš„å®ç°é‡æ–°è¡¥å›æ¥ã€‚
+// ×¢Òâ: ±¾ÎÄ¼ş´øÊÖ¹¤ÊµÏÖ(SquareLine Ö»Éú³É¿Õ¿Ç)¡£ÓÃ SquareLine ÖØĞÂµ¼³öºó,
+// ĞèÒª°ÑÏÂÃæÁ½¸öº¯ÊıµÄÊµÏÖÖØĞÂ²¹»ØÀ´¡£
 
 #include "ui.h"
 #include "BuildConfig.h"
@@ -12,13 +12,13 @@
 #include "Task_Common.h"
 
 /**
- * @brief è¯»å– WiFi ç•Œé¢ä¸Šçš„åç§°/å¯†ç å¹¶æäº¤
- * @param e LVGL äº‹ä»¶(æœªä½¿ç”¨)
+ * @brief ¶ÁÈ¡ WiFi ½çÃæÉÏµÄÃû³Æ/ÃÜÂë²¢Ìá½»
+ * @param e LVGL ÊÂ¼ş(Î´Ê¹ÓÃ)
  * @return None
- * @note  è¿™é‡Œåªæ›´æ–° RAM å¹¶é€šçŸ¥ netTask: å†™å¤–éƒ¨ Flash ä¸é‡è¿ AT æ¨¡ç»„éƒ½äº¤ç»™
- *        uiTask/netTask åš â€”â€” Flash å†™å…¥è¦å‡ å ms ä¼šå¡ä½ç•Œé¢, è€Œ AT æ¨¡ç»„çš„
- *        åº”ç­”ç¼“å†²åªæœ‰ä¸€ä»½, åªèƒ½ç”± netTask ç‹¬å è®¿é—®ã€‚
- *        è¾“å…¥æœ‰æ•ˆæ—¶é¡ºæ‰‹è¯·æ±‚é€€å›ä¸»ç•Œé¢; æ— æ•ˆåˆ™ç•™åœ¨åŸåœ°åšæç¤ºã€‚
+ * @note  ÕâÀïÖ»¸üĞÂ RAM ²¢Í¨Öª netTask: Ğ´Íâ²¿ Flash ÓëÖØÁ¬ AT Ä£×é¶¼½»¸ø
+ *        uiTask/netTask ×ö ¡ª¡ª Flash Ğ´ÈëÒª¼¸Ê® ms »á¿¨×¡½çÃæ, ¶ø AT Ä£×éµÄ
+ *        Ó¦´ğ»º³åÖ»ÓĞÒ»·İ, Ö»ÄÜÓÉ netTask ¶ÀÕ¼·ÃÎÊ¡£
+ *        ÊäÈëÓĞĞ§Ê±Ë³ÊÖÇëÇóÍË»ØÖ÷½çÃæ; ÎŞĞ§ÔòÁôÔÚÔ­µØ×öÌáÊ¾¡£
  */
 void Get_WiFiInfo(lv_event_t *e)
 {
@@ -29,8 +29,8 @@ void Get_WiFiInfo(lv_event_t *e)
 
 	if (wifi_ssid == NULL || wifi_ssid[0] == '\0')
 	{
-		/* ç©º SSID æäº¤ä¸äº†: ç›´æ¥åœ¨ç•Œé¢ä¸Šç»™ä¸ªæç¤ºå¹¶ç•™åœ¨é”®ç›˜ç•Œé¢,
-		 * ä¸è¦é™é»˜é€€å›ä¸»é¡µ(ç”¨æˆ·ä¼šä»¥ä¸º"ç¡®è®¤é”®åäº†") */
+		/* ¿Õ SSID Ìá½»²»ÁË: Ö±½ÓÔÚ½çÃæÉÏ¸ø¸öÌáÊ¾²¢ÁôÔÚ¼üÅÌ½çÃæ,
+		 * ²»Òª¾²Ä¬ÍË»ØÖ÷Ò³(ÓÃ»§»áÒÔÎª"È·ÈÏ¼ü»µÁË") */
 		lv_label_set_text(ui_Label1, "SSID required");
 		lv_obj_set_style_text_color(ui_Label1, lv_color_hex(0xCC0000), LV_PART_MAIN | LV_STATE_DEFAULT);
 		DBG_PRINTF("[UI] WiFi SSID is empty, input ignored\r\n");
@@ -47,10 +47,10 @@ void Get_WiFiInfo(lv_event_t *e)
 }
 
 /**
- * @brief è¯»å–å®šä½ç•Œé¢ä¸Šçš„"çœ+å¸‚"å¹¶æäº¤
- * @param e LVGL äº‹ä»¶(æœªä½¿ç”¨)
+ * @brief ¶ÁÈ¡¶¨Î»½çÃæÉÏµÄ"Ê¡+ÊĞ"²¢Ìá½»
+ * @param e LVGL ÊÂ¼ş(Î´Ê¹ÓÃ)
  * @return None
- * @note  ä¸ WiFi å‡­æ®åŒä¸€å¥—è·¯: åªæ”¹ RAM, ç”± uiTask è´Ÿè´£è½ç›˜åˆ° /data/location.bin
+ * @note  Óë WiFi Æ¾¾İÍ¬Ò»Ì×Â·: Ö»¸Ä RAM, ÓÉ uiTask ¸ºÔğÂäÅÌµ½ /data/location.bin
  */
 void Get_LocationInfo(lv_event_t *e)
 {
@@ -70,7 +70,7 @@ void Get_LocationInfo(lv_event_t *e)
 
 	DBG_PRINTF("[UI] location submitted: %s\r\n", g_location);
 
-	/* è®© netTask ç«‹åˆ»æŒ‰æ–°å®šä½å–ä¸€æ¬¡å¤©æ°”: å¦åˆ™è¦ç­‰æ»¡ä¸€ä¸ªå¤©æ°”å‘¨æœŸ(1h)æ‰ç”Ÿæ•ˆ */
+	/* ÈÃ netTask Á¢¿Ì°´ĞÂ¶¨Î»È¡Ò»´ÎÌìÆø: ·ñÔòÒªµÈÂúÒ»¸öÌìÆøÖÜÆÚ(1h)²ÅÉúĞ§ */
 	xEventGroupSetBits(Task_Events(), EV_LOCATION_CRED);
 	xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
 }

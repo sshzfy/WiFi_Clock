@@ -1,10 +1,10 @@
 #include "Light_Sensor.h"
 
-volatile Light_Sensor_DO_State_t Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // å…‰æ•ä¼ æ„Ÿå™¨DOé»˜è®¤çŠ¶æ€ï¼ˆä½ç”µå¹³ï¼Œäº®çŠ¶æ€ï¼‰ï¼Œè¯¥å˜é‡åœ¨ISRä¸­ä¿®æ”¹ï¼Œéœ€è¦volatileä¿®é¥°
-static Light_Sensor_IRQ_Callback_t s_irq_cb = NULL;                                 // ISR â†’ RTOS å±‚å›è°ƒ(ç”± app_task æ³¨å†Œ, å¯ä¸º NULL): ISR å†…ä»…åšé€šçŸ¥
+volatile Light_Sensor_DO_State_t Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // ¹âÃô´«¸ĞÆ÷DOÄ¬ÈÏ×´Ì¬£¨µÍµçÆ½£¬ÁÁ×´Ì¬£©£¬¸Ã±äÁ¿ÔÚISRÖĞĞŞ¸Ä£¬ĞèÒªvolatileĞŞÊÎ
+static Light_Sensor_IRQ_Callback_t s_irq_cb = NULL;                                 // ISR ¡ú RTOS ²ã»Øµ÷(ÓÉ app_task ×¢²á, ¿ÉÎª NULL): ISR ÄÚ½ö×öÍ¨Öª
 
-/** @brief æ³¨å†Œå…‰æ•ä¼ æ„Ÿå™¨ä¸­æ–­å›è°ƒå‡½æ•°
- * @param cb ä¸­æ–­å›è°ƒå‡½æ•°æŒ‡é’ˆ, ç”¨äºåœ¨ISRä¸­é€šçŸ¥ä»»åŠ¡
+/** @brief ×¢²á¹âÃô´«¸ĞÆ÷ÖĞ¶Ï»Øµ÷º¯Êı
+ * @param cb ÖĞ¶Ï»Øµ÷º¯ÊıÖ¸Õë, ÓÃÓÚÔÚISRÖĞÍ¨ÖªÈÎÎñ
  */
 void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t callback)
 {
@@ -18,8 +18,8 @@ static inline void Light_Sensor_Notify(void)
 }
 
 #if AO_DO_SWITCH == 1
-/* ==================== AO: ADC + æ¨¡æ‹Ÿçœ‹é—¨ç‹—(AWD)ä¸­æ–­ ==================== */
-static volatile bool ao_dark = false; // AWDé”å­˜çš„æ˜¼å¤œçŠ¶æ€
+/* ==================== AO: ADC + Ä£Äâ¿´ÃÅ¹·(AWD)ÖĞ¶Ï ==================== */
+static volatile bool ao_dark = false; // AWDËø´æµÄÖçÒ¹×´Ì¬
 
 static void Light_Sensor_AO_GPIO_Init(void)
 {
@@ -36,21 +36,21 @@ static void Light_Sensor_AO_GPIO_Init(void)
 }
 
 /**
- * @brief æŒ‰æ–¹å‘è£…è®¢AWDé˜ˆå€¼çª—å£, ä½¿è½¬æ¢å€¼è¶Šç•Œ(ç¦»å¼€çª—å£)æ—¶è§¦å‘ä¸­æ–­
- *        F4 AWDè¯­ä¹‰: å€¼ < LTR æˆ– å€¼ > HTR æ—¶ç½®AWD
- * @param detect_dark true=è£…è®¢"æ£€æµ‹å˜æš—"çª—å£; false=è£…è®¢"æ£€æµ‹å˜äº®"çª—å£
+ * @brief °´·½Ïò×°¶©AWDãĞÖµ´°¿Ú, Ê¹×ª»»ÖµÔ½½ç(Àë¿ª´°¿Ú)Ê±´¥·¢ÖĞ¶Ï
+ *        F4 AWDÓïÒå: Öµ < LTR »ò Öµ > HTR Ê±ÖÃAWD
+ * @param detect_dark true=×°¶©"¼ì²â±ä°µ"´°¿Ú; false=×°¶©"¼ì²â±äÁÁ"´°¿Ú
  */
 static void Light_Sensor_AWD_Arm(bool detect_dark)
 {
-#if LIGHT_SENSOR_AO_DARK_HIGH /* æš— = ADCå€¼å¤§ */
-    if (detect_dark)          /* å˜æš—: å€¼ > DARK_TH â†’ [0, DARK_TH] */
+#if LIGHT_SENSOR_AO_DARK_HIGH /* °µ = ADCÖµ´ó */
+    if (detect_dark)          /* ±ä°µ: Öµ > DARK_TH ¡ú [0, DARK_TH] */
         ADC_AnalogWatchdogThresholdsConfig(ADC1, LIGHT_SENSOR_AO_DARK_TH, 0);
-    else /* å˜äº®: å€¼ < LIGHT_TH â†’ [LIGHT_TH, 4095] */
+    else /* ±äÁÁ: Öµ < LIGHT_TH ¡ú [LIGHT_TH, 4095] */
         ADC_AnalogWatchdogThresholdsConfig(ADC1, 4095, LIGHT_SENSOR_AO_LIGHT_TH);
-#else /* æš— = ADCå€¼å° */
-    if (detect_dark) /* å˜æš—: å€¼ < DARK_TH â†’ [DARK_TH, 4095] */
+#else /* °µ = ADCÖµĞ¡ */
+    if (detect_dark) /* ±ä°µ: Öµ < DARK_TH ¡ú [DARK_TH, 4095] */
         ADC_AnalogWatchdogThresholdsConfig(ADC1, 4095, LIGHT_SENSOR_AO_DARK_TH);
-    else /* å˜äº®: å€¼ > LIGHT_TH â†’ [0, LIGHT_TH] */
+    else /* ±äÁÁ: Öµ > LIGHT_TH ¡ú [0, LIGHT_TH] */
         ADC_AnalogWatchdogThresholdsConfig(ADC1, LIGHT_SENSOR_AO_LIGHT_TH, 0);
 #endif
 }
@@ -62,31 +62,31 @@ static void Light_Sensor_ADC_Init(void)
     NVIC_InitTypeDef NVIC_InitStruct;
     ADC_StructInit(&ADC_InitStruct);
 
-    ADC_CommonInitStruct.ADC_Mode = ADC_Mode_Independent;                     // ç‹¬ç«‹æ¨¡å¼
+    ADC_CommonInitStruct.ADC_Mode = ADC_Mode_Independent;                     // ¶ÀÁ¢Ä£Ê½
     ADC_CommonInitStruct.ADC_Prescaler = ADC_Prescaler_Div4;                  // 84M/4=21M
-    ADC_CommonInitStruct.ADC_DMAAccessMode = ADC_DMAAccessMode_Disabled;      // ä¸ä½¿èƒ½DMA
-    ADC_CommonInitStruct.ADC_TwoSamplingDelay = ADC_TwoSamplingDelay_5Cycles; // 5ä¸ªæ—¶é’Ÿå‘¨æœŸ
+    ADC_CommonInitStruct.ADC_DMAAccessMode = ADC_DMAAccessMode_Disabled;      // ²»Ê¹ÄÜDMA
+    ADC_CommonInitStruct.ADC_TwoSamplingDelay = ADC_TwoSamplingDelay_5Cycles; // 5¸öÊ±ÖÓÖÜÆÚ
     ADC_CommonInit(&ADC_CommonInitStruct);
 
-    ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;                      // 12ä½
-    ADC_InitStruct.ADC_ScanConvMode = DISABLE;                               // ä¸æ‰«æ
-    ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;                          // è¿ç»­è½¬æ¢(é…åˆAWD)
-    ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None; // æ— å¤–éƒ¨è§¦å‘
-    ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_CC1;       // éšæ„(æœªç”¨)
-    ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;                      // å³å¯¹é½
-    ADC_InitStruct.ADC_NbrOfConversion = 1;                                  // 1æ¬¡è½¬æ¢
+    ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;                      // 12Î»
+    ADC_InitStruct.ADC_ScanConvMode = DISABLE;                               // ²»É¨Ãè
+    ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;                          // Á¬Ğø×ª»»(ÅäºÏAWD)
+    ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None; // ÎŞÍâ²¿´¥·¢
+    ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_CC1;       // ËæÒâ(Î´ÓÃ)
+    ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;                      // ÓÒ¶ÔÆë
+    ADC_InitStruct.ADC_NbrOfConversion = 1;                                  // 1´Î×ª»»
     ADC_Init(ADC1, &ADC_InitStruct);
 
-    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_56Cycles); /* é€šé“0 */
+    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_56Cycles); /* Í¨µÀ0 */
 
-    /* æ¨¡æ‹Ÿçœ‹é—¨ç‹—: å•é€šé“(IN0); å…ˆè£…"å…ç–«çª—å£"[0,4095]é¿å…å¯åŠ¨ç¬é—´è¯¯è§¦å‘ */
+    /* Ä£Äâ¿´ÃÅ¹·: µ¥Í¨µÀ(IN0); ÏÈ×°"ÃâÒß´°¿Ú"[0,4095]±ÜÃâÆô¶¯Ë²¼äÎó´¥·¢ */
     ADC_AnalogWatchdogThresholdsConfig(ADC1, 4095, 0);
     ADC_AnalogWatchdogSingleChannelConfig(ADC1, ADC_Channel_0);
     ADC_AnalogWatchdogCmd(ADC1, ADC_AnalogWatchdog_SingleRegEnable);
     ADC_ITConfig(ADC1, ADC_IT_AWD, ENABLE);
 
     NVIC_InitStruct.NVIC_IRQChannel = ADC_IRQn;
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // å…è®¸FromISR
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // ÔÊĞíFromISR
     NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
@@ -97,12 +97,12 @@ static void Light_Sensor_ADC_Init(void)
 uint16_t Light_Sensor_Read(void)
 {
     while (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET)
-        ;                                /* è¿ç»­è½¬æ¢æ¨¡å¼: ç­‰ä¸€æ¬¡è½¬æ¢å®Œæˆ */
-    return ADC_GetConversionValue(ADC1); /* è¯»å–å¹¶æ¸…EOC */
+        ;                                /* Á¬Ğø×ª»»Ä£Ê½: µÈÒ»´Î×ª»»Íê³É */
+    return ADC_GetConversionValue(ADC1); /* ¶ÁÈ¡²¢ÇåEOC */
 }
 
 /**
- * @brief ADC çœ‹é—¨ç‹—ä¸­æ–­: é˜ˆå€¼è¶Šç•Œ â†’ é”å­˜çŠ¶æ€ + åå‘è£…è®¢ + é€šçŸ¥ä»»åŠ¡
+ * @brief ADC ¿´ÃÅ¹·ÖĞ¶Ï: ãĞÖµÔ½½ç ¡ú Ëø´æ×´Ì¬ + ·´Ïò×°¶© + Í¨ÖªÈÎÎñ
  */
 void ADC_IRQHandler(void)
 {
@@ -110,8 +110,8 @@ void ADC_IRQHandler(void)
     {
         ADC_ClearITPendingBit(ADC1, ADC_IT_AWD);
 
-        ao_dark = !ao_dark;             // è¶Šç•Œäº‹ä»¶å¯¹åº”çŠ¶æ€ç¿»è½¬
-        Light_Sensor_AWD_Arm(!ao_dark); /* åå‘è£…è®¢, é˜²æ­¢è¿ç»­è¶Šç•Œä¸­æ–­é£æš´ */
+        ao_dark = !ao_dark;             // Ô½½çÊÂ¼ş¶ÔÓ¦×´Ì¬·­×ª
+        Light_Sensor_AWD_Arm(!ao_dark); /* ·´Ïò×°¶©, ·ÀÖ¹Á¬ĞøÔ½½çÖĞ¶Ï·ç±© */
         Light_Sensor_Notify();
     }
 }
@@ -121,9 +121,9 @@ void Light_Sensor_Init(void)
     Light_Sensor_AO_GPIO_Init();
     Light_Sensor_ADC_Init();
 
-    ADC_SoftwareStartConv(ADC1); /* å¯åŠ¨è¿ç»­è½¬æ¢ */
+    ADC_SoftwareStartConv(ADC1); /* Æô¶¯Á¬Ğø×ª»» */
 
-    /* é‡‡æ ·ä¸€æ¬¡ç¡®å®šåˆå§‹çŠ¶æ€, å¹¶æŒ‰"åå‘"è£…è®¢AWD(é¿å…ç«‹å³è§¦å‘) */
+    /* ²ÉÑùÒ»´ÎÈ·¶¨³õÊ¼×´Ì¬, ²¢°´"·´Ïò"×°¶©AWD(±ÜÃâÁ¢¼´´¥·¢) */
     uint16_t v = Light_Sensor_Read();
 #if LIGHT_SENSOR_AO_DARK_HIGH
     ao_dark = (v > LIGHT_SENSOR_AO_DARK_TH);
@@ -134,7 +134,7 @@ void Light_Sensor_Init(void)
 }
 
 #else
-/* ==================== DO: EXTI1 ä¸­æ–­ ==================== */
+/* ==================== DO: EXTI1 ÖĞ¶Ï ==================== */
 static void Light_Sensor_DO_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -150,22 +150,22 @@ static void Light_Sensor_EXTI_Init(void)
 {
     EXTI_InitTypeDef EXTI_InitStruct;
     EXTI_StructInit(&EXTI_InitStruct);
-    /* ç«¯å£æºä¸å¼•è„šæºå–è‡ª Light_Sensor.h, ä¿è¯ä¸ DO å¼•è„šå®šä¹‰ä¸€è‡´ */
+    /* ¶Ë¿ÚÔ´ÓëÒı½ÅÔ´È¡×Ô Light_Sensor.h, ±£Ö¤Óë DO Òı½Å¶¨ÒåÒ»ÖÂ */
     SYSCFG_EXTILineConfig(LIGHT_SENSOR_DO_EXTI_PORT_SOURCE, LIGHT_SENSOR_DO_EXTI_PIN_SOURCE);
-    EXTI_InitStruct.EXTI_Line = LIGHT_SENSOR_DO_EXTI_LINE;      // 1å·ä¸­æ–­çº¿
-    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;            // ä¸­æ–­æ¨¡å¼
-    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling; // ä¸Šå‡æ²¿æˆ–ä¸‹é™æ²¿è§¦å‘
-    EXTI_InitStruct.EXTI_LineCmd = ENABLE;                      // ä½¿èƒ½ä¸­æ–­çº¿
+    EXTI_InitStruct.EXTI_Line = LIGHT_SENSOR_DO_EXTI_LINE;      // 1ºÅÖĞ¶ÏÏß
+    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;            // ÖĞ¶ÏÄ£Ê½
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling; // ÉÏÉıÑØ»òÏÂ½µÑØ´¥·¢
+    EXTI_InitStruct.EXTI_LineCmd = ENABLE;                      // Ê¹ÄÜÖĞ¶ÏÏß
     EXTI_Init(&EXTI_InitStruct);
 }
 
 static void Light_Sensor_NVIC_Init(void)
 {
     NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = LIGHT_SENSOR_DO_EXTI_IRQn; // 1å·ä¸­æ–­çº¿
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;       // =configMAX_SYSCALL: å…è®¸FromISR
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;              // 0çº§å­ä¼˜å…ˆçº§
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;                 // ä½¿èƒ½ä¸­æ–­çº¿
+    NVIC_InitStruct.NVIC_IRQChannel = LIGHT_SENSOR_DO_EXTI_IRQn; // 1ºÅÖĞ¶ÏÏß
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;       // =configMAX_SYSCALL: ÔÊĞíFromISR
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;              // 0¼¶×ÓÓÅÏÈ¼¶
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;                 // Ê¹ÄÜÖĞ¶ÏÏß
     NVIC_Init(&NVIC_InitStruct);
 }
 
@@ -174,7 +174,7 @@ void Light_Sensor_Init(void)
     Light_Sensor_DO_GPIO_Init();
     Light_Sensor_EXTI_Init();
     Light_Sensor_NVIC_Init();
-    /* ä¸Šç”µå…ˆè¯»ä¸€æ¬¡å¼•è„š, åˆå§‹åŒ–çŠ¶æ€(å¦åˆ™ä¸Šç”µå³æš—ä¸”æ— è·³å˜æ—¶ä¼šè¯¯åˆ¤ä¸ºäº®) */
+    /* ÉÏµçÏÈ¶ÁÒ»´ÎÒı½Å, ³õÊ¼»¯×´Ì¬(·ñÔòÉÏµç¼´°µÇÒÎŞÌø±äÊ±»áÎóÅĞÎªÁÁ) */
     Light_Sensor_DO_State = (GPIO_ReadInputDataBit(LIGHT_SENSOR_DO_GPIO_PORT, LIGHT_SENSOR_DO_GPIO_PIN) == Bit_RESET)
                                 ? LIGHT_SENSOR_DO_STATE_LOW
                                 : LIGHT_SENSOR_DO_STATE_HIGH;
@@ -192,13 +192,13 @@ void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
         EXTI_ClearITPendingBit(LIGHT_SENSOR_DO_EXTI_LINE);
         if (GPIO_ReadInputDataBit(LIGHT_SENSOR_DO_GPIO_PORT, LIGHT_SENSOR_DO_GPIO_PIN) == Bit_RESET)
         {
-            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // å…‰ç…§å¼ºåº¦è¾¾åˆ°è®¾å®šå€¼,DOè¾“å‡ºä½ç”µå¹³
+            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // ¹âÕÕÇ¿¶È´ïµ½Éè¶¨Öµ,DOÊä³öµÍµçÆ½
         }
         else
         {
-            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // å…‰ç…§å¼ºåº¦ä½äºè®¾å®šå€¼,DOè¾“å‡ºé«˜ç”µå¹³
+            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // ¹âÕÕÇ¿¶ÈµÍÓÚÉè¶¨Öµ,DOÊä³ö¸ßµçÆ½
         }
-        /* é€šçŸ¥ä»»åŠ¡(è¾¹æ²¿äº‹ä»¶) */
+        /* Í¨ÖªÈÎÎñ(±ßÑØÊÂ¼ş) */
         Light_Sensor_Notify();
     }
 }
@@ -206,10 +206,10 @@ void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
 #endif /* AO_DO_SWITCH */
 
 /**
- * @brief ç»Ÿä¸€åˆ¤å®šå½“å‰æ˜¯å¦å¤„äºâ€œæš—â€
- *        DO: å¼•è„šä¸ºé«˜(æœªè¾¾å…‰ç…§é˜ˆå€¼) = æš—
- *        AO: è¿”å›AWDé”å­˜çŠ¶æ€(æ— é‡‡æ ·, æ— è½®è¯¢)
- * @return true æš— / false äº®
+ * @brief Í³Ò»ÅĞ¶¨µ±Ç°ÊÇ·ñ´¦ÓÚ¡°°µ¡±
+ *        DO: Òı½ÅÎª¸ß(Î´´ï¹âÕÕãĞÖµ) = °µ
+ *        AO: ·µ»ØAWDËø´æ×´Ì¬(ÎŞ²ÉÑù, ÎŞÂÖÑ¯)
+ * @return true °µ / false ÁÁ
  */
 bool Light_Sensor_IsDark(void)
 {

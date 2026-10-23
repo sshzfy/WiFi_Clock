@@ -6,16 +6,16 @@ static char success_line_1[32] = {0};
 static char success_line_2[32] = {0};
 static char success_line_3[32] = {0};
 
-/** @brief ç»˜åˆ¶å¼€æœºç­‰å¾…ç”»é¢ */
+/** @brief »æÖÆ¿ª»úµÈ´ı»­Ãæ */
 void Boot_Page_Wait(void)
 {
     LCD_Draw_Picture(0, 0, (const Image_t *)&Boot_Page_Waitconnect);
 }
 
 /**
- * @brief æ ¹æ®å¼€æœºç½‘ç»œé˜¶æ®µç»“æœç»˜åˆ¶å¼€æœºç»“æœ(çº¯æ˜¾ç¤º)
- * @param wifi_ok    å¼€æœºWiFiåˆå§‹åŒ–+è¿æ¥æ˜¯å¦å®Œæˆ
- * @param service_ok å¼€æœºSNTP+å¤©æ°”æ˜¯å¦éƒ½æˆåŠŸ
+ * @brief ¸ù¾İ¿ª»úÍøÂç½×¶Î½á¹û»æÖÆ¿ª»ú½á¹û(´¿ÏÔÊ¾)
+ * @param wifi_ok    ¿ª»úWiFi³õÊ¼»¯+Á¬½ÓÊÇ·ñÍê³É
+ * @param service_ok ¿ª»úSNTP+ÌìÆøÊÇ·ñ¶¼³É¹¦
  */
 void Boot_Page_Show(bool wifi_ok, bool service_ok)
 {
@@ -32,9 +32,9 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         if (x_center < 0)
             x_center = 0;
 
-        /* å¡«å……ç™½è‰²èƒŒæ™¯,æ¸…é™¤æ—§ä¿¡æ¯
-         * ç»˜åˆ¶é”™è¯¯å›¾ç‰‡
-         * æ˜¾ç¤ºå¤±è´¥ä¿¡æ¯ */
+        /* Ìî³ä°×É«±³¾°,Çå³ı¾ÉĞÅÏ¢
+         * »æÖÆ´íÎóÍ¼Æ¬
+         * ÏÔÊ¾Ê§°ÜĞÅÏ¢ */
         LCD_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);
         LCD_Draw_Picture(100, 180, (const Image_t *)&Image_err);
         LCD_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B);
@@ -47,9 +47,9 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         int str_width = str_len * (Font_16.size / 2);
         int x_center = (WIDTH - str_width) / 2;
 
-        /* å¡«å……ç™½è‰²èƒŒæ™¯,æ¸…é™¤æ—§ä¿¡æ¯
-         * ç»˜åˆ¶é”™è¯¯å›¾ç‰‡
-         * æ˜¾ç¤ºå¤±è´¥ä¿¡æ¯ */
+        /* Ìî³ä°×É«±³¾°,Çå³ı¾ÉĞÅÏ¢
+         * »æÖÆ´íÎóÍ¼Æ¬
+         * ÏÔÊ¾Ê§°ÜĞÅÏ¢ */
         LCD_Fill_Color(0, 170, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);
         LCD_Draw_Picture(100, 180, (const Image_t *)&Image_err);
         LCD_Write_String(x_center, 230, fail_msg, COLOR_BLACK, COLOR_WHITE, &Font_16B);
@@ -69,11 +69,11 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         int w2 = len2 * char_width;
         int w3 = len3 * char_width;
 
-        int x1 = (WIDTH - w1) / 2; // ç¬¬1è¡Œçš„èµ·å§‹X
-        int x2 = (WIDTH - w2) / 2; // ç¬¬2è¡Œçš„èµ·å§‹X
-        int x3 = (WIDTH - w3) / 2; // ç¬¬3è¡Œçš„èµ·å§‹X
+        int x1 = (WIDTH - w1) / 2; // µÚ1ĞĞµÄÆğÊ¼X
+        int x2 = (WIDTH - w2) / 2; // µÚ2ĞĞµÄÆğÊ¼X
+        int x3 = (WIDTH - w3) / 2; // µÚ3ĞĞµÄÆğÊ¼X
 
-        /* é˜²è´Ÿæ•°ä¿æŠ¤ */
+        /* ·À¸ºÊı±£»¤ */
         if (x1 < 0)
             x1 = 0;
         if (x2 < 0)
@@ -81,8 +81,8 @@ void Boot_Page_Show(bool wifi_ok, bool service_ok)
         if (x3 < 0)
             x3 = 0;
 
-        /* å¡«å……ç™½è‰²èƒŒæ™¯,æ¸…é™¤æ—§ä¿¡æ¯
-         * æˆåŠŸä¿¡æ¯ */
+        /* Ìî³ä°×É«±³¾°,Çå³ı¾ÉĞÅÏ¢
+         * ³É¹¦ĞÅÏ¢ */
         LCD_Fill_Color(0, 200, WIDTH - 1, HEIGHT - 1, COLOR_WHITE);
         LCD_Write_String(x1, 230, success_line_1, COLOR_BLACK, COLOR_WHITE, &Font_16B);
         LCD_Write_String(x2, 250, success_line_2, COLOR_BLACK, COLOR_WHITE, &Font_16B);

@@ -1,8 +1,8 @@
 #include "AT.h"
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // æ•°ç»„å…ƒç´ ä¸ªæ•°
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // Êı×éÔªËØ¸öÊı
 
-static char rx_buf[1024]; // æ¥æ”¶ç¼“å†²åŒº
+static char rx_buf[1024]; // ½ÓÊÕ»º³åÇø
 
 static const AT_ACK_Match_t AT_ACK_Match[] =
     {
@@ -12,7 +12,7 @@ static const AT_ACK_Match_t AT_ACK_Match[] =
         {AT_ACK_READY, "ready\r\n"},
 };
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static void AT_GPIO_Init(void);
 static void AT_USART_Init(void);
 static void AT_NVIC_Init(void);
@@ -26,20 +26,20 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
 static uint8_t Month2Num(const char *month_str);
 static uint8_t Weekday3Num(const char *weekday_str);
 
-/* ================ AT åˆå§‹åŒ–ç›¸å…³å‡½æ•° ================ */
+/* ================ AT ³õÊ¼»¯Ïà¹Øº¯Êı ================ */
 static void AT_GPIO_Init(void)
 {
-    /* åˆå§‹åŒ–GPIOA */
+    /* ³õÊ¼»¯GPIOA */
     GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource9, GPIO_AF_USART1);
     GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource10, GPIO_AF_USART1);
 
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_StructInit(&GPIO_InitStruct);
     GPIO_InitStruct.GPIO_Pin = AT_USART1_GPIO_PIN_TX | AT_USART1_GPIO_PIN_RX;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF; // å¤ç”¨æ¨¡å¼
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF; // ¸´ÓÃÄ£Ê½
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP; // æ¨æŒ½è¾“å‡º
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;   // ä¸Šæ‹‰
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP; // ÍÆÍìÊä³ö
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;   // ÉÏÀ­
     GPIO_Init(AT_USART1_GPIO_PORT, &GPIO_InitStruct);
 }
 
@@ -50,53 +50,53 @@ static void AT_USART_Init(void)
 
 static void AT_NVIC_Init(void)
 {
-    /* åˆå§‹åŒ–NVIC */
+    /* ³õÊ¼»¯NVIC */
     NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;         // ä½¿èƒ½USART1_IRQn
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // æŠ¢å ä¼˜å…ˆçº§
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;        // å­ä¼˜å…ˆçº§
+    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;         // Ê¹ÄÜUSART1_IRQn
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // ÇÀÕ¼ÓÅÏÈ¼¶
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;        // ×ÓÓÅÏÈ¼¶
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
 }
 
-/* ================ ATåº•å±‚é€šä¿¡ç›¸å…³å‡½æ•° ================ */
+/* ================ ATµ×²ãÍ¨ĞÅÏà¹Øº¯Êı ================ */
 
 /**
- * @brief é€šè¿‡Usartå‘ESP32å‘é€ATæŒ‡ä»¤
- * @param data æŒ‡ä»¤å­—ç¬¦ä¸²
+ * @brief Í¨¹ıUsartÏòESP32·¢ËÍATÖ¸Áî
+ * @param data Ö¸Áî×Ö·û´®
  */
 static void AT_Usart_Send(const char *data)
 {
     while (data && *data)
     {
-        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET) // ç­‰å¾…å‘é€ç¼“å†²åŒºä¸ºç©º
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET) // µÈ´ı·¢ËÍ»º³åÇøÎª¿Õ
             ;
-        USART_SendData(USART1, *data++);                            // å‘é€å­—ç¬¦
-        while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // ç­‰å¾…å‘é€å®Œæˆ
+        USART_SendData(USART1, *data++);                            // ·¢ËÍ×Ö·û
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // µÈ´ı·¢ËÍÍê³É
             ;
     }
 
-    /* è¡¥å……ATå‘½ä»¤æœ«å°¾çš„\r\nï¼ˆATå‘½ä»¤æ ¼å¼ï¼šAT+å‘½ä»¤\r\nï¼‰ */
+    /* ²¹³äATÃüÁîÄ©Î²µÄ\r\n£¨ATÃüÁî¸ñÊ½£ºAT+ÃüÁî\r\n£© */
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
         ;
     USART_SendData(USART1, '\r');
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // ç­‰å¾…å‘é€å®Œæˆ
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // µÈ´ı·¢ËÍÍê³É
         ;
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
         ;
     USART_SendData(USART1, '\n');
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // ç­‰å¾…å‘é€å®Œæˆ
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // µÈ´ı·¢ËÍÍê³É
         ;
 }
 
 /**
- * @brief åŒ¹é…ATæŒ‡ä»¤å›å¤
- * @param str å›å¤å­—ç¬¦ä¸²
- * @return AT_ACK_t å›å¤ç»“æœ
+ * @brief Æ¥ÅäATÖ¸Áî»Ø¸´
+ * @param str »Ø¸´×Ö·û´®
+ * @return AT_ACK_t »Ø¸´½á¹û
  */
 static AT_ACK_t AT_Match_Internal_ACK(const char *str)
 {
-    /* éå†AT_ACK_Matchæ•°ç»„, åŒ¹é…å›å¤å­—ç¬¦ä¸² */
+    /* ±éÀúAT_ACK_MatchÊı×é, Æ¥Åä»Ø¸´×Ö·û´® */
     for (uint32_t i = 0; i < ARRAY_SIZE(AT_ACK_Match); i++)
     {
         if (strcmp(str, AT_ACK_Match[i].string) == 0)
@@ -107,13 +107,13 @@ static AT_ACK_t AT_Match_Internal_ACK(const char *str)
 }
 
 /**
- * @brief é€šè¿‡Usartç­‰å¾…æ¥æ”¶ATæŒ‡ä»¤å›å¤
- * @param timeout è¶…æ—¶æ—¶é—´, å•ä½ms
- * @return AT_ACK_t å›å¤ç»“æœ
+ * @brief Í¨¹ıUsartµÈ´ı½ÓÊÕATÖ¸Áî»Ø¸´
+ * @param timeout ³¬Ê±Ê±¼ä, µ¥Î»ms
+ * @return AT_ACK_t »Ø¸´½á¹û
  */
 static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
 {
-    const char *line = rx_buf; // æŒ‡å‘å½“å‰è¡Œçš„æŒ‡é’ˆ
+    const char *line = rx_buf; // Ö¸Ïòµ±Ç°ĞĞµÄÖ¸Õë
     uint32_t rx_len = 0;
     rx_buf[0] = '\0';
 
@@ -121,16 +121,16 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
 
     while (rx_len < sizeof(rx_buf) - 1)
     {
-        /* ç­‰å¾…æ¥æ”¶æ•°æ® */
+        /* µÈ´ı½ÓÊÕÊı¾İ */
         while (Usart1_RX_Count() == 0)
         {
             if (TIM5_Get_ms() - start >= timeout)
                 return AT_ACK_NONE;
             if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
-                vTaskDelay(1); // è®©å‡ºCPU, å­—èŠ‚ç”±ä¸­æ–­ç¯å½¢ç¼“å†²ç¼“å­˜, ä¸ä¼šä¸¢å¤±
+                vTaskDelay(1); // ÈÃ³öCPU, ×Ö½ÚÓÉÖĞ¶Ï»·ĞÎ»º³å»º´æ, ²»»á¶ªÊ§
         }
 
-        /* è¯»å–æ¥æ”¶æ•°æ® */
+        /* ¶ÁÈ¡½ÓÊÕÊı¾İ */
         int ch = Usart1_RX_Read();
 
         if (ch < 0)
@@ -141,12 +141,12 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
 
         if (rx_buf[rx_len - 1] == '\n')
         {
-            AT_ACK_t ack = AT_Match_Internal_ACK(line); // åŒ¹é…å›å¤å­—ç¬¦ä¸²
+            AT_ACK_t ack = AT_Match_Internal_ACK(line); // Æ¥Åä»Ø¸´×Ö·û´®
 
             if (ack != AT_ACK_NONE)
                 return ack;
 
-            line = rx_buf + rx_len; // æŒ‡å‘ä¸‹ä¸€è¡Œ(æ¯è¡Œä»¥'\n'åˆ’åˆ†)
+            line = rx_buf + rx_len; // Ö¸ÏòÏÂÒ»ĞĞ(Ã¿ĞĞÒÔ'\n'»®·Ö)
         }
     }
 
@@ -154,9 +154,9 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
 }
 
 /**
- * @brief ç­‰å¾…ATæ¨¡å—å¼•å¯¼å®Œæˆ
- * @param timeout è¶…æ—¶æ—¶é—´, å•ä½ms
- * @return true æˆåŠŸ,false è¶…æ—¶
+ * @brief µÈ´ıATÄ£¿éÒıµ¼Íê³É
+ * @param timeout ³¬Ê±Ê±¼ä, µ¥Î»ms
+ * @return true ³É¹¦,false ³¬Ê±
  */
 static bool AT_Wait_Boot(uint32_t timeout)
 {
@@ -169,17 +169,17 @@ static bool AT_Wait_Boot(uint32_t timeout)
     return false;
 }
 
-/* ================ è§£æå‡½æ•° ================ */
+/* ================ ½âÎöº¯Êı ================ */
 
 /**
- * @brief è§£æCWSTATEå›å¤
- * @param response CWSTATEå›å¤å­—ç¬¦ä¸²
- * @param info WiFiä¿¡æ¯ç»“æ„ä½“æŒ‡é’ˆ
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief ½âÎöCWSTATE»Ø¸´
+ * @param response CWSTATE»Ø¸´×Ö·û´®
+ * @param info WiFiĞÅÏ¢½á¹¹ÌåÖ¸Õë
+ * @return true ³É¹¦,false Ê§°Ü
  */
 static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
 {
-    // å‘½ä»¤å’Œå‘½ä»¤å›å¤å†…å®¹ï¼š
+    // ÃüÁîºÍÃüÁî»Ø¸´ÄÚÈİ£º
     //     "AT+CWSTATE?\r\n"
     //     "+CWSTATE:2,\"Laptop -S\"\r\n"
     //     "\r\n"
@@ -189,9 +189,9 @@ static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
     if (response == NULL)
         return false;
 
-    int wifi_state; // 0=æ–­å¼€, 1=è¿æ¥ä¸­, 2=å·²è¿æ¥
+    int wifi_state; // 0=¶Ï¿ª, 1=Á¬½ÓÖĞ, 2=ÒÑÁ¬½Ó
 
-    /* è§£æwifi_stateå’Œssid */
+    /* ½âÎöwifi_stateºÍssid */
     if (sscanf(response, "+CWSTATE:%d,\"%63[^\"]\"", &wifi_state, info->ssid) != 2)
         return false;
 
@@ -201,14 +201,14 @@ static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
 }
 
 /**
- * @brief è§£æCWJAPå›å¤
- * @param response CWJAPå›å¤å­—ç¬¦ä¸²
- * @param info WiFiä¿¡æ¯ç»“æ„ä½“æŒ‡é’ˆ
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief ½âÎöCWJAP»Ø¸´
+ * @param response CWJAP»Ø¸´×Ö·û´®
+ * @param info WiFiĞÅÏ¢½á¹¹ÌåÖ¸Õë
+ * @return true ³É¹¦,false Ê§°Ü
  */
 static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
 {
-    // å‘½ä»¤å’Œå‘½ä»¤å›å¤å†…å®¹ï¼š
+    // ÃüÁîºÍÃüÁî»Ø¸´ÄÚÈİ£º
     //     "AT+CWJAP?\r\n"
     //     "+CWJAP:\"Laptop-S\",\"7e:b5:66:b3:56:55\",1,-59,0,1,3,0,1\r\n"
     //     "\r\n"
@@ -218,7 +218,7 @@ static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
     if (response == NULL)
         return false;
 
-    /* è§£æssid/bssid/channel/rssi */
+    /* ½âÎössid/bssid/channel/rssi */
     if (sscanf(response, "+CWJAP:\"%63[^\"]\",\"%17[^\"]\",%d,%d", info->ssid, info->bssid, &info->channel, &info->rssi) != 4)
         return false;
 
@@ -226,14 +226,14 @@ static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
 }
 
 /**
- * @brief è§£æCIPSNTPTIMEå›å¤
- * @param response CIPSNTPTIMEå›å¤å­—ç¬¦ä¸²
- * @param date_info æ—¥æœŸä¿¡æ¯ç»“æ„ä½“æŒ‡é’ˆ
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief ½âÎöCIPSNTPTIME»Ø¸´
+ * @param response CIPSNTPTIME»Ø¸´×Ö·û´®
+ * @param date_info ÈÕÆÚĞÅÏ¢½á¹¹ÌåÖ¸Õë
+ * @return true ³É¹¦,false Ê§°Ü
  */
 static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *date_info)
 {
-    // å‘½ä»¤å’Œå‘½ä»¤å›å¤å†…å®¹ï¼š
+    // ÃüÁîºÍÃüÁî»Ø¸´ÄÚÈİ£º
     //     "AT+CIPSNTPTIME?\r\n"
     //     "+CIPSNTPTIME:Tue Oct 19 17:47:56 2021\r\n"
     //     "OK\r\n";
@@ -245,7 +245,7 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
     char weekday_str[8];
     char month_str[4];
 
-    /* è§£ææ—¥æœŸæ—¶é—´ */
+    /* ½âÎöÈÕÆÚÊ±¼ä */
     if (sscanf(response, "+CIPSNTPTIME:%3s %3s %hhu %hhu:%hhu:%hhu %hu",
                weekday_str, month_str, &date_info->day, &date_info->hour, &date_info->minute, &date_info->second, &date_info->year) != 7)
         return false;
@@ -256,12 +256,12 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
     return true;
 }
 
-/* ================ SNTPç›¸å…³åº•å±‚å‡½æ•° ================ */
+/* ================ SNTPÏà¹Øµ×²ãº¯Êı ================ */
 
 /**
- * @brief æœˆä»½å­—ç¬¦ä¸²è½¬æ¢ä¸ºæœˆä»½æ•°å­—
- * @param month_str æœˆä»½å­—ç¬¦ä¸²
- * @return æœˆä»½æ•°å­—
+ * @brief ÔÂ·İ×Ö·û´®×ª»»ÎªÔÂ·İÊı×Ö
+ * @param month_str ÔÂ·İ×Ö·û´®
+ * @return ÔÂ·İÊı×Ö
  */
 static uint8_t Month2Num(const char *month_str)
 {
@@ -277,9 +277,9 @@ static uint8_t Month2Num(const char *month_str)
 }
 
 /**
- * @brief æ˜ŸæœŸå‡ å­—ç¬¦ä¸²è½¬æ¢ä¸ºæ˜ŸæœŸå‡ æ•°å­—
- * @param weekday_str æ˜ŸæœŸå‡ å­—ç¬¦ä¸²
- * @return æ˜ŸæœŸå‡ æ•°å­—
+ * @brief ĞÇÆÚ¼¸×Ö·û´®×ª»»ÎªĞÇÆÚ¼¸Êı×Ö
+ * @param weekday_str ĞÇÆÚ¼¸×Ö·û´®
+ * @return ĞÇÆÚ¼¸Êı×Ö
  */
 static uint8_t Weekday3Num(const char *weekday_str)
 {
@@ -293,23 +293,23 @@ static uint8_t Weekday3Num(const char *weekday_str)
     return 0;
 }
 
-// /* ================ HTTP é€†åœ°ç†ç¼–ç (ç»çº¬åº¦ â†’ çœ/å¸‚) ================ */
+// /* ================ HTTP ÄæµØÀí±àÂë(¾­Î³¶È ¡ú Ê¡/ÊĞ) ================ */
 
-// /* AMAP_KEY(é«˜å¾·"WebæœåŠ¡"ç±»å‹key, é€†åœ°ç†ç¼–ç ç”¨)åœ¨ User/Inc/Secrets.h(ä¸å…¥åº“) */
+// /* AMAP_KEY(¸ßµÂ"Web·şÎñ"ÀàĞÍkey, ÄæµØÀí±àÂëÓÃ)ÔÚ User/Inc/Secrets.h(²»Èë¿â) */
 
-// /* åªç”¨ base æ¡£: éœ€è¦çš„ formatted_address ä¸ addressComponent(çœ/å¸‚)éƒ½åœ¨é‡Œé¢ã€‚
-//  * all æ¡£ä¼šé¢å¤–å¸¦ä¸Š roads / roadinters / pois / aois, å“åº”å¯è¾¾æ•°åKB, è€Œ AT çš„
-//  * æ¥æ”¶ç¼“å†²(rx_buf)åªæœ‰1KB, å¿…ç„¶åœ¨ä¸­é€”è¢«æˆªæ–­ â€”â€” ä¸è¦å›¾çœäº‹æ”¹æˆ allã€‚ */
+// /* Ö»ÓÃ base µµ: ĞèÒªµÄ formatted_address Óë addressComponent(Ê¡/ÊĞ)¶¼ÔÚÀïÃæ¡£
+//  * all µµ»á¶îÍâ´øÉÏ roads / roadinters / pois / aois, ÏìÓ¦¿É´ïÊıÊ®KB, ¶ø AT µÄ
+//  * ½ÓÊÕ»º³å(rx_buf)Ö»ÓĞ1KB, ±ØÈ»ÔÚÖĞÍ¾±»½Ø¶Ï ¡ª¡ª ²»ÒªÍ¼Ê¡ÊÂ¸Ä³É all¡£ */
 // #define AMAP_REGEO_URL_FMT "https://restapi.amap.com/v3/geocode/regeo?key=%s&location=%.6f,%.6f&extensions=base"
 
 // /**
-//  * @brief ç”¨ç»çº¬åº¦åæŸ¥çœ/å¸‚(é«˜å¾·é€†åœ°ç†ç¼–ç )
-//  * @param latitude  çº¬åº¦(åè¿›åˆ¶åº¦, å—çº¬ä¸ºè´Ÿ)
-//  * @param longitude ç»åº¦(åè¿›åˆ¶åº¦, è¥¿ç»ä¸ºè´Ÿ)
-//  * @param info      è¾“å‡º: province / city, å‡ä¸ºUTF-8åŸæ–‡
-//  * @return true æˆåŠŸ(è‡³å°‘å–åˆ°çœæˆ–å¸‚)
-//  * @note  é«˜å¾·çš„ location å‚æ•°æ˜¯"ç»åº¦,çº¬åº¦", ä¸å…¥å‚é¡ºåºç›¸å, åˆ«å†™å;
-//  *        å¤±è´¥(åæ ‡æ— æ•ˆ/ç½‘ç»œé”™è¯¯/keyæ— æ•ˆ)æ—¶ info è¢«æ¸…é›¶, ç•Œé¢æ®æ­¤æ˜¾ç¤ºå ä½ç¬¦ã€‚
+//  * @brief ÓÃ¾­Î³¶È·´²éÊ¡/ÊĞ(¸ßµÂÄæµØÀí±àÂë)
+//  * @param latitude  Î³¶È(Ê®½øÖÆ¶È, ÄÏÎ³Îª¸º)
+//  * @param longitude ¾­¶È(Ê®½øÖÆ¶È, Î÷¾­Îª¸º)
+//  * @param info      Êä³ö: province / city, ¾ùÎªUTF-8Ô­ÎÄ
+//  * @return true ³É¹¦(ÖÁÉÙÈ¡µ½Ê¡»òÊĞ)
+//  * @note  ¸ßµÂµÄ location ²ÎÊıÊÇ"¾­¶È,Î³¶È", ÓëÈë²ÎË³ĞòÏà·´, ±ğĞ´·´;
+//  *        Ê§°Ü(×ø±êÎŞĞ§/ÍøÂç´íÎó/keyÎŞĞ§)Ê± info ±»ÇåÁã, ½çÃæ¾İ´ËÏÔÊ¾Õ¼Î»·û¡£
 //  */
 // bool AT_Get_Location(float latitude, float longitude, AT_Location_Info_t *info)
 // {
@@ -321,7 +321,7 @@ static uint8_t Weekday3Num(const char *weekday_str)
 
 //     memset(info, 0, sizeof(*info));
 
-//     /* åæ ‡éæ³•æˆ–å°šæœªå®šä½: (0,0) åœ¨å‡ å†…äºšæ¹¾, æ˜¯"è¿˜æ²¡æœ‰å®šä½"æœ€å¸¸è§çš„åˆå€¼ */
+//     /* ×ø±ê·Ç·¨»òÉĞÎ´¶¨Î»: (0,0) ÔÚ¼¸ÄÚÑÇÍå, ÊÇ"»¹Ã»ÓĞ¶¨Î»"×î³£¼ûµÄ³õÖµ */
 //     if (latitude < -90.0f || latitude > 90.0f ||
 //         longitude < -180.0f || longitude > 180.0f ||
 //         (latitude == 0.0f && longitude == 0.0f))
@@ -338,33 +338,33 @@ static uint8_t Weekday3Num(const char *weekday_str)
 
 // bool Parse_Http_Location_Response(const char *response, AT_Location_Info_t *info)
 // {
-//     // å‘½ä»¤å’Œå‘½ä»¤å›å¤å†…å®¹(èŠ‚é€‰, extensions=base):
+//     // ÃüÁîºÍÃüÁî»Ø¸´ÄÚÈİ(½ÚÑ¡, extensions=base):
 //     //     "AT+HTTPCLIENT=2,1,\"https://restapi.amap.com/v3/geocode/regeo?key=<key>&location=115.556428,37.339625&extensions=base\",,,2\r\n"
-//     //     "+HTTPCLIENT:486,{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\",\"regeocode\":{\"formatted_address\":\"æ²³åŒ—çœè¡¡æ°´å¸‚å†€å·åŒºå—åˆæ‘é•‡155ä¹¡é“\","
-//     //                      "\"addressComponent\":{\"city\":\"è¡¡æ°´å¸‚\",\"province\":\"æ²³åŒ—çœ\",\"adcode\":\"131103\",\"district\":\"å†€å·åŒº\","
+//     //     "+HTTPCLIENT:486,{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\",\"regeocode\":{\"formatted_address\":\"ºÓ±±Ê¡ºâË®ÊĞ¼½ÖİÇøÄÏÎç´åÕò155ÏçµÀ\","
+//     //                      "\"addressComponent\":{\"city\":\"ºâË®ÊĞ\",\"province\":\"ºÓ±±Ê¡\",\"adcode\":\"131103\",\"district\":\"¼½ÖİÇø\","
 //     //                                          \"towncode\":\"131103103000\",\"streetNumber\":{...},\"businessAreas\":[]}}}\r\n"
 //     //     "\r\n"
 //     //     "OK\r\n";
-//     // å¤±è´¥æ—¶æœåŠ¡ç«¯åªå›é”™è¯¯ç , å½¢å¦‚:
-//     //     {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}   â€”â€” æ²¡æœ‰ addressComponent
+//     // Ê§°ÜÊ±·şÎñ¶ËÖ»»Ø´íÎóÂë, ĞÎÈç:
+//     //     {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}   ¡ª¡ª Ã»ÓĞ addressComponent
 //     if (response == NULL || info == NULL)
 //         return false;
 
 //     memset(info, 0, sizeof(*info));
 
-//     /* ç›´æ¥æ‰¾ addressComponent: ä¸ä¾èµ– formatted_address æ˜¯å¦å­˜åœ¨, ä¹Ÿä¸ä¼šè¢«
-//      * regeocode é‡Œçš„å…¶å®ƒåŒåå­—æ®µå¸¦å */
+//     /* Ö±½ÓÕÒ addressComponent: ²»ÒÀÀµ formatted_address ÊÇ·ñ´æÔÚ, Ò²²»»á±»
+//      * regeocode ÀïµÄÆäËüÍ¬Ãû×Ö¶Î´øÆ« */
 //     const char *response_address = strstr(response, "\"addressComponent\":");
 //     if (response_address == NULL)
 //         return false;
 
-//     /* 1. çœä»½ */
+//     /* 1. Ê¡·İ */
 //     const char *response_province = strstr(response_address, "\"province\":");
 //     if (response_province != NULL)
 //         (void)sscanf(response_province, "\"province\":\"%31[^\"]\"", info->province);
 
-//     /* 2. åŸå¸‚: ç›´è¾–å¸‚åœ¨è¿™é‡Œæ˜¯ç©ºæ•°ç»„ "city":[], ä¸Šé¢çš„æ ¼å¼åŒ¹é…ä¸ä¸Š, äºæ˜¯ä¿æŒç©ºä¸²,
-//      *    ç•Œé¢ä¾¿åªæ˜¾ç¤ºçœä»½ã€‚æ³¨æ„ "\"city\":" ä¸ä¼šåŒ¹é…åˆ° "citycode"ã€‚ */
+//     /* 2. ³ÇÊĞ: Ö±Ï½ÊĞÔÚÕâÀïÊÇ¿ÕÊı×é "city":[], ÉÏÃæµÄ¸ñÊ½Æ¥Åä²»ÉÏ, ÓÚÊÇ±£³Ö¿Õ´®,
+//      *    ½çÃæ±ãÖ»ÏÔÊ¾Ê¡·İ¡£×¢Òâ "\"city\":" ²»»áÆ¥Åäµ½ "citycode"¡£ */
 //     const char *response_city = strstr(response_address, "\"city\":");
 //     if (response_city != NULL)
 //         (void)sscanf(response_city, "\"city\":\"%31[^\"]\"", info->city);
@@ -372,17 +372,17 @@ static uint8_t Weekday3Num(const char *weekday_str)
 //     return (info->province[0] != '\0') || (info->city[0] != '\0');
 // }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 bool AT_Init(void)
 {
-    /* å¤–è®¾åˆå§‹åŒ– */
+    /* ÍâÉè³õÊ¼»¯ */
     AT_GPIO_Init();
     AT_USART_Init();
     AT_NVIC_Init();
-    /* ç­‰æ¨¡ç»„èƒ½åº”ç­” "AT": æ‹¿åˆ° OK å°±è¯´æ˜å®ƒå·²ç»å¯åŠ¨å®Œæˆã€å¯ä»¥æ¥æ”¶å‘½ä»¤äº†ã€‚
-     * è¿™é‡Œä¸ä¸‹å‘ AT+RESTORE: æ¢å¤å‡ºå‚ä¼šæ“¦æ‰æ¨¡ç»„ä¿å­˜çš„é…ç½®å¹¶å¼ºåˆ¶é‡å¯,
-     * è€Œé‚£æ¬¡é‡å¯æ˜¯"æ¨¡ç»„è¿˜æ²¡å‡†å¤‡å¥½, å…ˆå› busy p... / ready"è¿™ç±»å¶å‘å¤±è´¥çš„æ¥æº
-     * éœ€è¦æ¢å¤å‡ºå‚æ—¶, ç”±ä¸Šå±‚åœ¨å¼‚å¸¸è·¯å¾„ä¸Šè°ƒç”¨ AT_Factory_Reset() */
+    /* µÈÄ£×éÄÜÓ¦´ğ "AT": ÄÃµ½ OK ¾ÍËµÃ÷ËüÒÑ¾­Æô¶¯Íê³É¡¢¿ÉÒÔ½ÓÊÕÃüÁîÁË¡£
+     * ÕâÀï²»ÏÂ·¢ AT+RESTORE: »Ö¸´³ö³§»á²ÁµôÄ£×é±£´æµÄÅäÖÃ²¢Ç¿ÖÆÖØÆô,
+     * ¶øÄÇ´ÎÖØÆôÊÇ"Ä£×é»¹Ã»×¼±¸ºÃ, ÏÈ»Ø busy p... / ready"ÕâÀàÅ¼·¢Ê§°ÜµÄÀ´Ô´
+     * ĞèÒª»Ö¸´³ö³§Ê±, ÓÉÉÏ²ãÔÚÒì³£Â·¾¶ÉÏµ÷ÓÃ AT_Factory_Reset() */
     if (!AT_Wait_Boot(3000))
         return false;
 
@@ -390,31 +390,31 @@ bool AT_Init(void)
 }
 
 /**
- * @brief æ¢å¤æ¨¡ç»„å‡ºå‚è®¾ç½®, å¹¶ç­‰å®ƒé‡å¯å®Œæˆ
- * @return true æˆåŠŸ
- * @note  AT+RESTORE ä¼šæ“¦æ‰æ¨¡ç»„å†…ä¿å­˜çš„é…ç½®(Wi-Fi æ¨¡å¼ã€å·²ä¿å­˜çš„ AP ç­‰)å¹¶**å¼ºåˆ¶é‡å¯**ã€‚
- *        é‡å¯æœŸé—´æ¨¡ç»„å…ˆåçš„æ˜¯ ready / busy p..., è€Œä¸æ˜¯ OK
- *        åªä½œä¸º"æ¨¡ç»„ä¸åº”ç­”æˆ–é…ç½®ç–‘ä¼¼æŸå"æ—¶çš„æ¢å¤æ‰‹æ®µ, ç”±ä¸Šå±‚æŒ‰éœ€è°ƒç”¨ã€‚
+ * @brief »Ö¸´Ä£×é³ö³§ÉèÖÃ, ²¢µÈËüÖØÆôÍê³É
+ * @return true ³É¹¦
+ * @note  AT+RESTORE »á²ÁµôÄ£×éÄÚ±£´æµÄÅäÖÃ(Wi-Fi Ä£Ê½¡¢ÒÑ±£´æµÄ AP µÈ)²¢**Ç¿ÖÆÖØÆô**¡£
+ *        ÖØÆôÆÚ¼äÄ£×éÏÈÍÂµÄÊÇ ready / busy p..., ¶ø²»ÊÇ OK
+ *        Ö»×÷Îª"Ä£×é²»Ó¦´ğ»òÅäÖÃÒÉËÆËğ»µ"Ê±µÄ»Ö¸´ÊÖ¶Î, ÓÉÉÏ²ã°´Ğèµ÷ÓÃ¡£
  */
 bool AT_Factory_Reset(void)
 {
     if (!AT_Send_Command("AT+RESTORE", 2000))
         return false;
 
-    return AT_Wait_Ready(5000); // é‡å¯å®Œæˆå‰ä¸èƒ½å‘åˆ«çš„å‘½ä»¤
+    return AT_Wait_Ready(5000); // ÖØÆôÍê³ÉÇ°²»ÄÜ·¢±ğµÄÃüÁî
 }
 
-/* ================ AT é€šä¿¡ç›¸å…³ public å‡½æ•° ================ */
+/* ================ AT Í¨ĞÅÏà¹Ø public º¯Êı ================ */
 
 /**
- * @brief å‘é€ATæŒ‡ä»¤å¹¶ç­‰å¾… "OK"
- * @param command æŒ‡ä»¤å­—ç¬¦ä¸²
- * @param timeout è¶…æ—¶æ—¶é—´, å•ä½ms(å«é‡å‘ç­‰å¾…)
- * @return true æˆåŠŸ,false å¤±è´¥
- * @note  æ”¶åˆ° "busy p..." è¯´æ˜æ¨¡ç»„æš‚æ—¶æ‹’ç»è¯¥å‘½ä»¤(å¸¸è§äºåˆšä¸Šç”µ/é‡å¯å
- *        Wi-Fiåè®®æ ˆè¿˜åœ¨åˆå§‹åŒ–), åªè¦æ€»æ—¶é—´è¿˜æ²¡ç”¨å®Œå°±é‡å‘ä¸€æ¬¡;
- *        å…¶å®ƒ ACK(ERROR / ready / è¶…æ—¶)ä¸€å¾‹åˆ¤å¤±è´¥, ä¸é‡å‘ã€‚
- *        å‘é€å‰å…ˆæ¸…ç©ºç¯å½¢ç¼“å†², é¿å…ä¸Šä¸€æ¬¡å‘½ä»¤çš„æ®‹ç•™è¢«å½“æˆæœ¬æ¬¡å›å¤ã€‚
+ * @brief ·¢ËÍATÖ¸Áî²¢µÈ´ı "OK"
+ * @param command Ö¸Áî×Ö·û´®
+ * @param timeout ³¬Ê±Ê±¼ä, µ¥Î»ms(º¬ÖØ·¢µÈ´ı)
+ * @return true ³É¹¦,false Ê§°Ü
+ * @note  ÊÕµ½ "busy p..." ËµÃ÷Ä£×éÔİÊ±¾Ü¾ø¸ÃÃüÁî(³£¼ûÓÚ¸ÕÉÏµç/ÖØÆôºó
+ *        Wi-FiĞ­ÒéÕ»»¹ÔÚ³õÊ¼»¯), Ö»Òª×ÜÊ±¼ä»¹Ã»ÓÃÍê¾ÍÖØ·¢Ò»´Î;
+ *        ÆäËü ACK(ERROR / ready / ³¬Ê±)Ò»ÂÉÅĞÊ§°Ü, ²»ÖØ·¢¡£
+ *        ·¢ËÍÇ°ÏÈÇå¿Õ»·ĞÎ»º³å, ±ÜÃâÉÏÒ»´ÎÃüÁîµÄ²ĞÁô±»µ±³É±¾´Î»Ø¸´¡£
  */
 bool AT_Send_Command(const char *command, uint32_t timeout)
 {
@@ -422,16 +422,16 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
 
     for (;;)
     {
-        Usart1_RX_Flush(); // æ¸…åœº: ä¸¢å¼ƒä¸Šä¸€æ¡å‘½ä»¤çš„å°¾å·´/å¯åŠ¨æ—¥å¿—/URC
+        Usart1_RX_Flush(); // Çå³¡: ¶ªÆúÉÏÒ»ÌõÃüÁîµÄÎ²°Í/Æô¶¯ÈÕÖ¾/URC
 
-        /* å‘é€ATæŒ‡ä»¤ */
+        /* ·¢ËÍATÖ¸Áî */
         AT_Usart_Send(command);
 
         uint32_t used = (uint32_t)(TIM5_Get_ms() - start);
         if (used >= timeout)
             return false;
 
-        /* ç­‰å¾…ATæ¨¡å—å›å¤ */
+        /* µÈ´ıATÄ£¿é»Ø¸´ */
         AT_ACK_t ack = AT_Usart_Wait_Receive(timeout - used);
 
         if (ack == AT_ACK_OK)
@@ -441,18 +441,18 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
             return false;
 
         if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
-            vTaskDelay(pdMS_TO_TICKS(100)); // å¿™æ—¶ä¸æ€¥ç€é‡å‘, ç­‰æ¨¡ç»„é€€å‡ºå¿™çŠ¶æ€
+            vTaskDelay(pdMS_TO_TICKS(100)); // Ã¦Ê±²»¼±×ÅÖØ·¢, µÈÄ£×éÍË³öÃ¦×´Ì¬
     }
 }
 
 /**
- * @brief ç­‰å¾…æ¨¡ç»„è¾“å‡º "ready"
- * @param timeout è¶…æ—¶æ—¶é—´, å•ä½ms
- * @return true æ”¶åˆ° ready
- * @note  AT_Usart_Wait_Receive() åŒ¹é…åˆ°**ä»»æ„**å·²çŸ¥ ACK å°±ä¼šè¿”å›, ç›´æ¥æ‹¿å®ƒ
- *        å½“"ç­‰ ready"ç”¨æ˜¯é”™çš„: æ¨¡ç»„é‡å¯é€”ä¸­å…ˆå†’å‡ºçš„ OK / ERROR / busy ä¼šè®©
- *        æœ¬å‡½æ•°ç«‹åˆ»å¤±è´¥(å®æµ‹ AT_Init() å› æ­¤åªèŠ±çº¦100mså°±æŠ¥å¤±è´¥, è€ŒçœŸæ­£çš„è¶…æ—¶
- *        åº”è¯¥æ˜¯ç§’çº§)ã€‚è¿™é‡Œæ˜¾å¼å¿½ç•¥è¿™äº›è¿‡æ¸¡ ACK, ä¸€ç›´ç­‰åˆ° ready æˆ–æ€»è¶…æ—¶ã€‚
+ * @brief µÈ´ıÄ£×éÊä³ö "ready"
+ * @param timeout ³¬Ê±Ê±¼ä, µ¥Î»ms
+ * @return true ÊÕµ½ ready
+ * @note  AT_Usart_Wait_Receive() Æ¥Åäµ½**ÈÎÒâ**ÒÑÖª ACK ¾Í»á·µ»Ø, Ö±½ÓÄÃËü
+ *        µ±"µÈ ready"ÓÃÊÇ´íµÄ: Ä£×éÖØÆôÍ¾ÖĞÏÈÃ°³öµÄ OK / ERROR / busy »áÈÃ
+ *        ±¾º¯ÊıÁ¢¿ÌÊ§°Ü(Êµ²â AT_Init() Òò´ËÖ»»¨Ô¼100ms¾Í±¨Ê§°Ü, ¶øÕæÕıµÄ³¬Ê±
+ *        Ó¦¸ÃÊÇÃë¼¶)¡£ÕâÀïÏÔÊ½ºöÂÔÕâĞ©¹ı¶É ACK, Ò»Ö±µÈµ½ ready »ò×Ü³¬Ê±¡£
  */
 bool AT_Wait_Ready(uint32_t timeout)
 {
@@ -467,23 +467,23 @@ bool AT_Wait_Ready(uint32_t timeout)
         if (ack == AT_ACK_READY)
             return true;
         if (ack == AT_ACK_NONE)
-            return false; // å‰©ä½™æ—¶é—´å·²è€—å°½
+            return false; // Ê£ÓàÊ±¼äÒÑºÄ¾¡
     }
 
     return false;
 }
 
 /**
- * @brief è·å–ATæŒ‡ä»¤å›å¤
- * @return char* å›å¤å­—ç¬¦ä¸²
- * @note å›å¤å­—ç¬¦ä¸²ä¼šè¦†ç›–åœ¨rx_bufä¸­, ä¸å»ºè®®ç›´æ¥æ‰“å°
+ * @brief »ñÈ¡ATÖ¸Áî»Ø¸´
+ * @return char* »Ø¸´×Ö·û´®
+ * @note »Ø¸´×Ö·û´®»á¸²¸ÇÔÚrx_bufÖĞ, ²»½¨ÒéÖ±½Ó´òÓ¡
  */
 const char *AT_Get_Response(void)
 {
     return rx_buf;
 }
 
-/* ================ AT WiFi public å‡½æ•° ================ */
+/* ================ AT WiFi public º¯Êı ================ */
 
 bool AT_WiFi_Init(void)
 {
@@ -491,24 +491,24 @@ bool AT_WiFi_Init(void)
 }
 
 /**
- * @brief è·å–WiFiä¿¡æ¯
- * @param info WiFiä¿¡æ¯ç»“æ„ä½“æŒ‡é’ˆ
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief »ñÈ¡WiFiĞÅÏ¢
+ * @param info WiFiĞÅÏ¢½á¹¹ÌåÖ¸Õë
+ * @return true ³É¹¦,false Ê§°Ü
  */
 bool AT_Get_WiFi_Info(AT_WiFi_Info_t *info)
 {
     if (info == NULL)
         return false;
 
-    memset(info, 0, sizeof(*info)); // æ¸…é›¶, å¤±è´¥æ—¶ä¸æ®‹ç•™æœªåˆå§‹åŒ–/æ—§å€¼
+    memset(info, 0, sizeof(*info)); // ÇåÁã, Ê§°ÜÊ±²»²ĞÁôÎ´³õÊ¼»¯/¾ÉÖµ
 
-    /* CWSTATE æä¾› connected + ssid, ä¸ºå¿…éœ€é¡¹ */
+    /* CWSTATE Ìá¹© connected + ssid, Îª±ØĞèÏî */
     if (!AT_Send_Command("AT+CWSTATE?", 2000))
         return false;
     if (!Parse_CWSTATE_Response(AT_Get_Response(), info))
         return false;
 
-    /* CWJAP æä¾› bssid/channel/rssi, ä¸å› å®ƒå¤±è´¥è€Œä½¿æ•´ä½“å¤±è´¥ */
+    /* CWJAP Ìá¹© bssid/channel/rssi, ²»ÒòËüÊ§°Ü¶øÊ¹ÕûÌåÊ§°Ü */
     if (AT_Send_Command("AT+CWJAP?", 2000))
         Parse_CWJAP_Response(AT_Get_Response(), info);
 
@@ -540,15 +540,15 @@ bool AT_Is_WiFi_Conected(void)
     return info.connected;
 }
 
-/* ================ AT ç®€å•ä½åŠŸè€— public å‡½æ•° ================ */
+/* ================ AT ¼òµ¥µÍ¹¦ºÄ public º¯Êı ================ */
 
 /**
- * @brief è®¾ç½®ESP32-C3çš„Wi-Fiç¡çœ æ¨¡å¼
- * @param mode 0 = å…³é—­ç¡çœ (å…¨é€Ÿ, çº¦80mA)
- *             1 = Modem-sleep, RFæŒ‰APçš„DTIMå‘¨æœŸå…³é—­(ESP32-C3çº¦20mA)  â† å¤œé—´ä½¿ç”¨
- *             2 = Light-sleep(çº¦130uA, ä½†å¿…é¡»å…ˆç”¨ AT+SLEEPWKCFG é…å¥½å”¤é†’æº;
- *               ESP32-C3åªæ”¯æŒå®šæ—¶å™¨/GPIOå”¤é†’, å½“å‰ç¡¬ä»¶æœªè¿å”¤é†’GPIO, æ•…ä¸ä½¿ç”¨)
- *             3 = Modem-sleep, RFæŒ‰ AT+CWJAP çš„ listen interval å…³é—­
+ * @brief ÉèÖÃESP32-C3µÄWi-FiË¯ÃßÄ£Ê½
+ * @param mode 0 = ¹Ø±ÕË¯Ãß(È«ËÙ, Ô¼80mA)
+ *             1 = Modem-sleep, RF°´APµÄDTIMÖÜÆÚ¹Ø±Õ(ESP32-C3Ô¼20mA)  ¡û Ò¹¼äÊ¹ÓÃ
+ *             2 = Light-sleep(Ô¼130uA, µ«±ØĞëÏÈÓÃ AT+SLEEPWKCFG ÅäºÃ»½ĞÑÔ´;
+ *               ESP32-C3Ö»Ö§³Ö¶¨Ê±Æ÷/GPIO»½ĞÑ, µ±Ç°Ó²¼şÎ´Á¬»½ĞÑGPIO, ¹Ê²»Ê¹ÓÃ)
+ *             3 = Modem-sleep, RF°´ AT+CWJAP µÄ listen interval ¹Ø±Õ
  */
 bool AT_Set_Sleep(uint8_t mode)
 {
@@ -561,11 +561,11 @@ bool AT_Set_Sleep(uint8_t mode)
     return true;
 }
 
-/* ================ SNTPç›¸å…³ public å‡½æ•° ================ */
+/* ================ SNTPÏà¹Ø public º¯Êı ================ */
 
 /**
- * @brief åˆå§‹åŒ–SNTPæ¨¡å—
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief ³õÊ¼»¯SNTPÄ£¿é
+ * @return true ³É¹¦,false Ê§°Ü
  */
 bool AT_SNTP_Init(void)
 {
@@ -576,9 +576,9 @@ bool AT_SNTP_Init(void)
 }
 
 /**
- * @brief è·å–SNTPæ—¶é—´
- * @param date_info æ—¥æœŸä¿¡æ¯ç»“æ„ä½“æŒ‡é’ˆ
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief »ñÈ¡SNTPÊ±¼ä
+ * @param date_info ÈÕÆÚĞÅÏ¢½á¹¹ÌåÖ¸Õë
+ * @return true ³É¹¦,false Ê§°Ü
  */
 bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
 {
@@ -588,23 +588,23 @@ bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
     if (!AT_Send_Command("AT+CIPSNTPTIME?", 2000))
         return false;
 
-    /* è§£ææ—¥æœŸæ—¶é—´ */
+    /* ½âÎöÈÕÆÚÊ±¼ä */
     if (!Parse_CIPSNTPTIME_Response(AT_Get_Response(), date_info))
         return false;
 
-    /* ESP å°šæœªå®ŒæˆNTPåŒæ­¥æ—¶ä¼šè¿”å› 1970, è§†ä¸ºæ— æ•ˆ */
+    /* ESP ÉĞÎ´Íê³ÉNTPÍ¬²½Ê±»á·µ»Ø 1970, ÊÓÎªÎŞĞ§ */
     if (date_info->year < 2000 || date_info->month < 1 || date_info->month > 12)
         return false;
 
     return true;
 }
 
-/* ================ HTTP å¤©æ°”ç›¸å…³ public å‡½æ•° ================ */
+/* ================ HTTP ÌìÆøÏà¹Ø public º¯Êı ================ */
 
 /**
- * @brief å‘é€HTTPè¯·æ±‚
- * @param url HTTPè¯·æ±‚URL
- * @return HTTPå“åº”å­—ç¬¦ä¸²æŒ‡é’ˆ
+ * @brief ·¢ËÍHTTPÇëÇó
+ * @param url HTTPÇëÇóURL
+ * @return HTTPÏìÓ¦×Ö·û´®Ö¸Õë
  */
 const char *AT_Get_HTTP(const char *url)
 {
@@ -624,47 +624,47 @@ const char *AT_Get_HTTP(const char *url)
 }
 
 /**
- * @brief è§£æå¤©æ°”å›å¤
- * @param response å¤©æ°”å›å¤å­—ç¬¦ä¸²
- * @param info å¤©æ°”ä¿¡æ¯ç»“æ„ä½“æŒ‡é’ˆ
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief ½âÎöÌìÆø»Ø¸´
+ * @param response ÌìÆø»Ø¸´×Ö·û´®
+ * @param info ÌìÆøĞÅÏ¢½á¹¹ÌåÖ¸Õë
+ * @return true ³É¹¦,false Ê§°Ü
  */
 bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
 {
-    // å‘½ä»¤å’Œå‘½ä»¤å›å¤å†…å®¹ï¼š
+    // ÃüÁîºÍÃüÁî»Ø¸´ÄÚÈİ£º
     //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=KEY&location=101.30.184.223&language=en&unit=c\",,,2\r\n"
     //     "+HTTPCLIENT:267,{\"results\":[{\"location\":{\"id\":\"WWYMRT0VRMUG\",\"name\":\"Dalian\",\"country\":\"CN\",\"path\":\"Dalian,Dalian,Liaoning,China\",\"timezone\":\"Asia/Shanghai\",\"timezone_offset\":\"+08:00\"},\"now\":
     //                      {\"text\":\"Cloudy\",\"code\":\"4\",\"temperature\":\"29\"},\"last_update\":\"2026-08-16T16:45:45+08:00\"}]}\r\n"
     //     "\r\n"
     //     "OK\r\n";
-    // æ³¨: location ç”±ä¸Šå±‚æŒ‰å…¬ç½‘IPåŠ¨æ€å¡«å…¥(è§ User/Src/App.c çš„ Weather_Update_Location), ä¸Šä¾‹ç»™çš„æ˜¯IPå½¢å¼
+    // ×¢: location ÓÉÉÏ²ã°´¹«ÍøIP¶¯Ì¬ÌîÈë(¼û User/Src/App.c µÄ Weather_Update_Location), ÉÏÀı¸øµÄÊÇIPĞÎÊ½
     response = strstr(response, "\"results\":");
 
     if (response == NULL)
         return false;
 
-    /* è§£ælocationéƒ¨åˆ†å†…å®¹ */
+    /* ½âÎölocation²¿·ÖÄÚÈİ */
     const char *response_location = strstr(response, "\"location\":");
     if (response_location == NULL)
         return false;
-    /* 1. è§£æåŸå¸‚ */
+    /* 1. ½âÎö³ÇÊĞ */
     const char *response_location_name = strstr(response_location, "\"name\":");
     if (response_location_name)
         sscanf(response_location_name, "\"name\":\"%31[^\"]\"", info->city);
-    /* 2. è§£æè·¯å¾„ï¼ˆåŸå¸‚ï¼Œçœä»½ï¼Œå›½å®¶ï¼‰ */
+    /* 2. ½âÎöÂ·¾¶£¨³ÇÊĞ£¬Ê¡·İ£¬¹ú¼Ò£© */
     const char *response_location_path = strstr(response_location, "\"path\":");
     if (response_location_path)
         sscanf(response_location_path, "\"path\":\"%127[^\"]\"", info->location);
 
-    /* è§£ænowéƒ¨åˆ†å†…å®¹*/
+    /* ½âÎönow²¿·ÖÄÚÈİ*/
     const char *response_now = strstr(response, "\"now\":");
     if (response_now == NULL)
         return false;
-    /* 1. è§£æå¤©æ°”æè¿° */
+    /* 1. ½âÎöÌìÆøÃèÊö */
     const char *response_now_text = strstr(response_now, "\"text\":");
     if (response_now_text)
         sscanf(response_now_text, "\"text\":\"%31[^\"]\"", info->weather);
-    /* 2. è§£æå¤©æ°”ä»£ç  */
+    /* 2. ½âÎöÌìÆø´úÂë */
     const char *response_now_code = strstr(response_now, "\"code\":");
     if (response_now_code)
     {
@@ -673,7 +673,7 @@ bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
         if (sscanf(response_now_code, "\"code\":\"%7[^\"]\"", code_str) == 1)
             info->weather_code = atoi(code_str);
     }
-    /* 3. è§£ææ¸©åº¦ */
+    /* 3. ½âÎöÎÂ¶È */
     const char *response_now_temperature = strstr(response_now, "\"temperature\":");
     if (response_now_temperature)
     {
@@ -685,15 +685,15 @@ bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
     return true;
 }
 
-/* ================ HTTP è·å–å…¬ç½‘ IP ç›¸å…³ public å‡½æ•° ================ */
-#define AT_IP_URL "https://ipv4.icanhazip.com" // å…¬ç½‘IPæŸ¥è¯¢æ¥å£, ç›´æ¥è¿”å›çº¯æ–‡æœ¬IP, ä¸éœ€è¦key
+/* ================ HTTP »ñÈ¡¹«Íø IP Ïà¹Ø public º¯Êı ================ */
+#define AT_IP_URL "https://ipv4.icanhazip.com" // ¹«ÍøIP²éÑ¯½Ó¿Ú, Ö±½Ó·µ»Ø´¿ÎÄ±¾IP, ²»ĞèÒªkey
 
 /**
- * @brief æŸ¥è¯¢æœ¬æœºå…¬ç½‘IP
- * @param ip è¾“å‡ºç¼“å†²åŒº(è‡³å°‘16å­—èŠ‚), æˆåŠŸæ—¶å†™å…¥ç‚¹åˆ†åè¿›åˆ¶IPå­—ç¬¦ä¸²
- * @return true æˆåŠŸ,false å¤±è´¥
- * @note  content-type ç”¨ 0(çº¯æ–‡æœ¬), ä¸ Parse_Http_IP_Response çš„ç¤ºä¾‹å‘½ä»¤ä¿æŒä¸€è‡´;
- *        å‘½ä»¤å›å¤å½¢å¦‚ "+HTTPCLIENT:15,101.30.184.223", ç”±è§£æå‡½æ•°è´Ÿè´£å–å‡ºIP
+ * @brief ²éÑ¯±¾»ú¹«ÍøIP
+ * @param ip Êä³ö»º³åÇø(ÖÁÉÙ16×Ö½Ú), ³É¹¦Ê±Ğ´Èëµã·ÖÊ®½øÖÆIP×Ö·û´®
+ * @return true ³É¹¦,false Ê§°Ü
+ * @note  content-type ÓÃ 0(´¿ÎÄ±¾), Óë Parse_Http_IP_Response µÄÊ¾ÀıÃüÁî±£³ÖÒ»ÖÂ;
+ *        ÃüÁî»Ø¸´ĞÎÈç "+HTTPCLIENT:15,101.30.184.223", ÓÉ½âÎöº¯Êı¸ºÔğÈ¡³öIP
  */
 bool AT_Get_IP(char *ip)
 {
@@ -712,14 +712,14 @@ bool AT_Get_IP(char *ip)
 }
 
 /**
- * @brief è§£æipå›å¤
- * @param response ipå›å¤å­—ç¬¦ä¸²
- * @param ip ipå­—ç¬¦ä¸²æŒ‡é’ˆ(è‡³å°‘16å­—èŠ‚)
- * @return true æˆåŠŸ,false å¤±è´¥
+ * @brief ½âÎöip»Ø¸´
+ * @param response ip»Ø¸´×Ö·û´®
+ * @param ip ip×Ö·û´®Ö¸Õë(ÖÁÉÙ16×Ö½Ú)
+ * @return true ³É¹¦,false Ê§°Ü
  */
 bool Parse_Http_IP_Response(const char *response, char *ip)
 {
-    // å‘½ä»¤å’Œå‘½ä»¤å›å¤å†…å®¹ï¼š
+    // ÃüÁîºÍÃüÁî»Ø¸´ÄÚÈİ£º
     //     "AT+HTTPCLIENT=2,0,"https://ipv4.icanhazip.com",,,2"
     //     "+HTTPCLIENT:15,101.30.184.223\r\n"
     //     "\r\n"
@@ -728,11 +728,11 @@ bool Parse_Http_IP_Response(const char *response, char *ip)
     if (response == NULL)
         return false;
 
-    /* è§£æip */
-    const char *response_ip = strchr(response, ','); // æ‰¾åˆ°é€—å·
+    /* ½âÎöip */
+    const char *response_ip = strchr(response, ','); // ÕÒµ½¶ººÅ
     if (response_ip == NULL)
         return false;
-    response_ip++; // è·³è¿‡é€—å·
+    response_ip++; // Ìø¹ı¶ººÅ
     if (sscanf(response_ip, "%15s", ip) != 1)
         return false;
 

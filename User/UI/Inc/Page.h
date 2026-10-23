@@ -8,24 +8,24 @@
 #include "Font.h"
 #include "App.h"
 
-#define WEATHER_MAP_SIZE               (sizeof(weather_map) / sizeof(weather_map[0])) // å¤©æ°”å›¾æ ‡ä¸ä¸­æ–‡æ˜ å°„è¡¨å¤§å°
-#define MAIN_TOP_BACK_COLOR            COLOR_GRAY                                     // æ—¶é—´æ—¥æœŸæ¨¡å—èƒŒæ™¯è‰²
-#define MAIN_BOTTOM1_BACK_COLOR        COLOR_DEEPSKYBLUE                              // å¤©æ°”æ¨¡å—èƒŒæ™¯è‰²1
-#define MAIN_BOTTOM2_BACK_COLOR        COLOR_LAVENDER                                 // å¤©æ°”æ¨¡å—èƒŒæ™¯è‰²2
+#define WEATHER_MAP_SIZE               (sizeof(weather_map) / sizeof(weather_map[0])) // ÌìÆøÍ¼±êÓëÖĞÎÄÓ³Éä±í´óĞ¡
+#define MAIN_TOP_BACK_COLOR            COLOR_GRAY                                     // Ê±¼äÈÕÆÚÄ£¿é±³¾°É«
+#define MAIN_BOTTOM1_BACK_COLOR        COLOR_DEEPSKYBLUE                              // ÌìÆøÄ£¿é±³¾°É«1
+#define MAIN_BOTTOM2_BACK_COLOR        COLOR_LAVENDER                                 // ÌìÆøÄ£¿é±³¾°É«2
 
-/* Main Page: æ—¶é’Ÿ */
-#define CLOCK_CHAR_W         (Font_48B.size / 2)             // å•å­—ç¬¦å®½ = 24
-#define CLOCK_TOTAL_W        (5 * CLOCK_CHAR_W)              // æ€»å®½ = 5 * 24 = 120
-#define CLOCK_X0             ((WIDTH - CLOCK_TOTAL_W) / 2)   // æ—¶é’Ÿèµ·å§‹ x = (240 - 120) / 2 = 60
-#define CLOCK_Y0             (5 + (Image_wifi.height) * 2)   // æ—¶é’Ÿèµ·å§‹ y = 5 + 20 * 2 = 45
-#define CLOCK_HH_X           CLOCK_X0                        // æ—¶é’Ÿèµ·å§‹ x = 60
-#define CLOCK_HH_W           (2 * CLOCK_CHAR_W)              // æ—¶é’Ÿå°æ—¶å®½åº¦ = 2 * 24 = 48
-#define CLOCK_COLON_X        (CLOCK_X0 + CLOCK_HH_W)         // å†’å·ä½ç½® = 60 + 48 = 108
-#define CLOCK_COLON_W        CLOCK_CHAR_W                    // å†’å·å®½åº¦ = 24
-#define CLOCK_MM_X           (CLOCK_COLON_X + CLOCK_COLON_W) // æ—¶é’Ÿåˆ†é’Ÿèµ·å§‹ x = 108 + 24 = 132
-#define CLOCK_MM_W           (2 * CLOCK_CHAR_W)              // æ—¶é’Ÿåˆ†é’Ÿå®½åº¦ = 2 * 24 = 48
+/* Main Page: Ê±ÖÓ */
+#define CLOCK_CHAR_W         (Font_48B.size / 2)             // µ¥×Ö·û¿í = 24
+#define CLOCK_TOTAL_W        (5 * CLOCK_CHAR_W)              // ×Ü¿í = 5 * 24 = 120
+#define CLOCK_X0             ((WIDTH - CLOCK_TOTAL_W) / 2)   // Ê±ÖÓÆğÊ¼ x = (240 - 120) / 2 = 60
+#define CLOCK_Y0             (5 + (Image_wifi.height) * 2)   // Ê±ÖÓÆğÊ¼ y = 5 + 20 * 2 = 45
+#define CLOCK_HH_X           CLOCK_X0                        // Ê±ÖÓÆğÊ¼ x = 60
+#define CLOCK_HH_W           (2 * CLOCK_CHAR_W)              // Ê±ÖÓĞ¡Ê±¿í¶È = 2 * 24 = 48
+#define CLOCK_COLON_X        (CLOCK_X0 + CLOCK_HH_W)         // Ã°ºÅÎ»ÖÃ = 60 + 48 = 108
+#define CLOCK_COLON_W        CLOCK_CHAR_W                    // Ã°ºÅ¿í¶È = 24
+#define CLOCK_MM_X           (CLOCK_COLON_X + CLOCK_COLON_W) // Ê±ÖÓ·ÖÖÓÆğÊ¼ x = 108 + 24 = 132
+#define CLOCK_MM_W           (2 * CLOCK_CHAR_W)              // Ê±ÖÓ·ÖÖÓ¿í¶È = 2 * 24 = 48
 
-/* é¡µé¢æ¨¡å—å¤§å° */
+/* Ò³ÃæÄ£¿é´óĞ¡ */
 typedef struct
 {
     uint16_t x_start;
@@ -34,7 +34,7 @@ typedef struct
     uint16_t height;
 } Modle_Size_t;
 
-/* å¤©æ°”å›¾æ ‡ä¸ä¸­æ–‡æ˜ å°„è¡¨ */
+/* ÌìÆøÍ¼±êÓëÖĞÎÄÓ³Éä±í */
 typedef struct
 {
     int code;

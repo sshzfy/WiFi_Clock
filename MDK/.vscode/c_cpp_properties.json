@@ -19,6 +19,7 @@
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\porting",
+                "d:\\Code\\Keil\\Project4\\Boot\\Inc",
                 "D:\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Keil5\\ARM\\ARMCC\\include\\rw",
                 "d:\\Code\\Keil\\Project4\\User\\Application\\Src",
@@ -59,11 +60,13 @@
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\spinner",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\tabview",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\tileview",
-                "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\win"
+                "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\win",
+                "d:\\Code\\Keil\\Project4\\Boot\\Src"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",
                 "STM32F40_41xxx",
+                "APP_BUILD",
                 "__CC_ARM",
                 "__arm__",
                 "__align(x)=",

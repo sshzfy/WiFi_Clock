@@ -1,22 +1,22 @@
 #include "Profiling.h"
 
-/* DWT(Data Watchpoint and Trace) çš„ CYCCNT æ˜¯ä¸€ä¸ªè‡ªç”±è¿è¡Œçš„ 32 ä½å‘¨æœŸè®¡æ•°å™¨,
- * åœ¨ 168MHz ä¸‹çº¦ 25.6 ç§’å›ç»•ä¸€æ¬¡, è¶³å¤Ÿè¦†ç›–å•æ¬¡æ¸²æŸ“çš„æµ‹é‡çª—å£ã€‚ */
+/* DWT(Data Watchpoint and Trace) µÄ CYCCNT ÊÇÒ»¸ö×ÔÓÉÔËĞĞµÄ 32 Î»ÖÜÆÚ¼ÆÊıÆ÷,
+ * ÔÚ 168MHz ÏÂÔ¼ 25.6 Ãë»ØÈÆÒ»´Î, ×ã¹»¸²¸Çµ¥´ÎäÖÈ¾µÄ²âÁ¿´°¿Ú¡£ */
 
 /**
- * @brief åˆå§‹åŒ–æ€§èƒ½æµ‹é‡æ¨¡å—
- * @return æ— 
+ * @brief ³õÊ¼»¯ĞÔÄÜ²âÁ¿Ä£¿é
+ * @return ÎŞ
  */
 void Prof_Init(void)
 {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // ä½¿èƒ½è·Ÿè¸ªä¸è°ƒè¯•æ¨¡å—
-    DWT->CYCCNT = 0;                                // è®¡æ•°æ¸…é›¶
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            // å¯åŠ¨å‘¨æœŸè®¡æ•°å™¨
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // Ê¹ÄÜ¸ú×ÙÓëµ÷ÊÔÄ£¿é
+    DWT->CYCCNT = 0;                                // ¼ÆÊıÇåÁã
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            // Æô¶¯ÖÜÆÚ¼ÆÊıÆ÷
 }
 
 /**
- * @brief è·å–å½“å‰å‘¨æœŸæ•°
- * @return uint32_t å½“å‰å‘¨æœŸæ•°
+ * @brief »ñÈ¡µ±Ç°ÖÜÆÚÊı
+ * @return uint32_t µ±Ç°ÖÜÆÚÊı
  */
 uint32_t Prof_Cycles(void)
 {
@@ -24,13 +24,13 @@ uint32_t Prof_Cycles(void)
 }
 
 /**
- * @brief è®¡ç®—ä» start å¼€å§‹åˆ°å½“å‰æ—¶é—´çš„å¾®ç§’æ•°
- * @param start å¼€å§‹æ—¶é—´çš„å‘¨æœŸæ•°
- * @return uint32_t ä» start å¼€å§‹åˆ°å½“å‰æ—¶é—´çš„å¾®ç§’æ•°
+ * @brief ¼ÆËã´Ó start ¿ªÊ¼µ½µ±Ç°Ê±¼äµÄÎ¢ÃëÊı
+ * @param start ¿ªÊ¼Ê±¼äµÄÖÜÆÚÊı
+ * @return uint32_t ´Ó start ¿ªÊ¼µ½µ±Ç°Ê±¼äµÄÎ¢ÃëÊı
  */
 uint32_t Prof_Us(uint32_t start)
 {
-    uint32_t delta = DWT->CYCCNT - start; // æ— ç¬¦å·ç›¸å‡, è‡ªåŠ¨å¤„ç†å›ç»•
+    uint32_t delta = DWT->CYCCNT - start; // ÎŞ·ûºÅÏà¼õ, ×Ô¶¯´¦Àí»ØÈÆ
     uint32_t per_us = SystemCoreClock / 1000000U;
 
     return (per_us == 0U) ? 0U : (delta / per_us);

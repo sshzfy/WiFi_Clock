@@ -1,14 +1,14 @@
 #include "DHT22.h"
 
-/* ================ DHT22 ä¼ æ„Ÿå™¨æ—¶åº ================
- * SDAæ€»çº¿ç©ºé—²æ—¶é«˜ç”µå¹³
- * ä¸»æœºå°†GPIOè®¾ä¸ºè¾“å‡ºæ¨¡å¼å¹¶æ‹‰ä½SDAè‡³å°‘ 1sï¼Œä¸»æœºæ‹‰é«˜SDAå¹¶è®¾ç½®GPIOè¾“å…¥æ¨¡å¼
- * ä¼ æ„Ÿå™¨æ‹‰ä½ SDA 80us ä½œä¸ºåº”ç­”ï¼Œå†æ‹‰é«˜ SDA 80us è¡¨ç¤ºå‡†å¤‡å‘é€æ•°æ®
- * æ•°æ®ä½0 ï¼š50us ä½ç”µå¹³+ 26~28 us é«˜ç”µå¹³ ï¼›æ•°æ®ä½1ï¼š50us ä½ç”µå¹³+ 70 us é«˜ç”µå¹³
- * æ•°æ®æ ¼å¼ï¼šæ¹¿åº¦é«˜å­—èŠ‚ + æ¹¿åº¦ä½å­—èŠ‚ + æ¸©åº¦é«˜å­—èŠ‚ + æ¸©åº¦ä½å­—èŠ‚ + æ ¡éªŒå’Œ
+/* ================ DHT22 ´«¸ĞÆ÷Ê±Ğò ================
+ * SDA×ÜÏß¿ÕÏĞÊ±¸ßµçÆ½
+ * Ö÷»ú½«GPIOÉèÎªÊä³öÄ£Ê½²¢À­µÍSDAÖÁÉÙ 1s£¬Ö÷»úÀ­¸ßSDA²¢ÉèÖÃGPIOÊäÈëÄ£Ê½
+ * ´«¸ĞÆ÷À­µÍ SDA 80us ×÷ÎªÓ¦´ğ£¬ÔÙÀ­¸ß SDA 80us ±íÊ¾×¼±¸·¢ËÍÊı¾İ
+ * Êı¾İÎ»0 £º50us µÍµçÆ½+ 26~28 us ¸ßµçÆ½ £»Êı¾İÎ»1£º50us µÍµçÆ½+ 70 us ¸ßµçÆ½
+ * Êı¾İ¸ñÊ½£ºÊª¶È¸ß×Ö½Ú + Êª¶ÈµÍ×Ö½Ú + ÎÂ¶È¸ß×Ö½Ú + ÎÂ¶ÈµÍ×Ö½Ú + Ğ£ÑéºÍ
  * ================================ */
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static inline void DHT22_DATA_OUT_H(void) { GPIO_SetBits(DHT22_PORT, DHT22_PIN); }
 static inline void DHT22_DATA_OUT_L(void) { GPIO_ResetBits(DHT22_PORT, DHT22_PIN); }
 static inline uint8_t DHT22_READ_DATA(void) { return GPIO_ReadInputDataBit(DHT22_PORT, DHT22_PIN); }
@@ -20,7 +20,7 @@ static uint8_t DHT22_ReadByte(uint8_t *out);
 static uint8_t DHT22_ReadAttempt(DHT22_Data_t *data);
 static uint8_t DHT22_CheckAllZero(uint8_t code, const DHT22_Data_t *data);
 
-/* è®¾ç½®DHT22 GPIOä¸ºè¾“å‡ºæ¨¡å¼(MCUæ–¹å‘) */
+/* ÉèÖÃDHT22 GPIOÎªÊä³öÄ£Ê½(MCU·½Ïò) */
 static void DHT22_GPIO_Output(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -34,7 +34,7 @@ static void DHT22_GPIO_Output(void)
     GPIO_Init(DHT22_PORT, &GPIO_InitStruct);
 }
 
-/* è®¾ç½®DHT22 GPIOä¸ºè¾“å…¥æ¨¡å¼(MCUæ–¹å‘) */
+/* ÉèÖÃDHT22 GPIOÎªÊäÈëÄ£Ê½(MCU·½Ïò) */
 static void DHT22_GPIO_Input(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -44,14 +44,14 @@ static void DHT22_GPIO_Input(void)
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStruct.GPIO_Speed = GPIO_High_Speed;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP; // è¾“å…¥+å†…éƒ¨ä¸Šæ‹‰: æ€»çº¿ç©ºé—²ä¸ºé«˜, æŠ—å™ª
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP; // ÊäÈë+ÄÚ²¿ÉÏÀ­: ×ÜÏß¿ÕÏĞÎª¸ß, ¿¹Ôë
     GPIO_Init(DHT22_PORT, &GPIO_InitStruct);
 }
 
 /**
- * @brief ç­‰å¾…æ€»çº¿å˜ä¸ºé«˜ç”µå¹³; è¶…æ—¶(max_us)è¿”å›1
- * @param max_us æœ€å¤§ç­‰å¾…æ—¶é—´(å¾®ç§’)
- * @return 0=æˆåŠŸ, 1=è¶…æ—¶
+ * @brief µÈ´ı×ÜÏß±äÎª¸ßµçÆ½; ³¬Ê±(max_us)·µ»Ø1
+ * @param max_us ×î´óµÈ´ıÊ±¼ä(Î¢Ãë)
+ * @return 0=³É¹¦, 1=³¬Ê±
  */
 static uint8_t DHT22_Wait_For_Set(uint32_t max_us)
 {
@@ -67,9 +67,9 @@ static uint8_t DHT22_Wait_For_Set(uint32_t max_us)
 }
 
 /**
- * @brief ç­‰å¾…æ€»çº¿å˜ä¸ºä½ç”µå¹³; è¶…æ—¶(max_us)è¿”å›1
- * @param max_us æœ€å¤§ç­‰å¾…æ—¶é—´(å¾®ç§’)
- * @return 0=æˆåŠŸ, 1=è¶…æ—¶
+ * @brief µÈ´ı×ÜÏß±äÎªµÍµçÆ½; ³¬Ê±(max_us)·µ»Ø1
+ * @param max_us ×î´óµÈ´ıÊ±¼ä(Î¢Ãë)
+ * @return 0=³É¹¦, 1=³¬Ê±
  */
 static uint8_t DHT22_Wait_For_Reset(uint32_t max_us)
 {
@@ -85,12 +85,12 @@ static uint8_t DHT22_Wait_For_Reset(uint32_t max_us)
 }
 
 /**
- * @brief è¯»å–ä¸€ä¸ªå­—èŠ‚
- * @param out è¾“å‡ºå­—èŠ‚æŒ‡é’ˆ
- * @return 0=æˆåŠŸ, 1=è¶…æ—¶
- * @note  ç”¨TIM5æµ‹é‡"é«˜ç”µå¹³æŒç»­æ—¶é—´"æ¥åˆ¤åˆ«0/1, è€Œä¸æ˜¯åœ¨å›ºå®šæ—¶åˆ»é‡‡æ ·:
- *        å›ºå®šå»¶æ—¶30usé‡‡æ ·æ—¶, ä½"0"(26~28us)çš„è£•é‡åªæœ‰2~5us,
- *        ä»»ä½•ä¸­æ–­æ’å…¥æŠŠé‡‡æ ·ç‚¹æ¨åéƒ½æœ‰è¯¯åˆ¤é£é™©
+ * @brief ¶ÁÈ¡Ò»¸ö×Ö½Ú
+ * @param out Êä³ö×Ö½ÚÖ¸Õë
+ * @return 0=³É¹¦, 1=³¬Ê±
+ * @note  ÓÃTIM5²âÁ¿"¸ßµçÆ½³ÖĞøÊ±¼ä"À´ÅĞ±ğ0/1, ¶ø²»ÊÇÔÚ¹Ì¶¨Ê±¿Ì²ÉÑù:
+ *        ¹Ì¶¨ÑÓÊ±30us²ÉÑùÊ±, Î»"0"(26~28us)µÄÔ£Á¿Ö»ÓĞ2~5us,
+ *        ÈÎºÎÖĞ¶Ï²åÈë°Ñ²ÉÑùµãÍÆºó¶¼ÓĞÎóÅĞ·çÏÕ
  */
 static uint8_t DHT22_ReadByte(uint8_t *out)
 {
@@ -98,18 +98,18 @@ static uint8_t DHT22_ReadByte(uint8_t *out)
 
     for (uint8_t i = 0; i < 8; i++)
     {
-        /* ç­‰ä½èµ·å§‹(50usä½ç”µå¹³ç»“æŸ) */
+        /* µÈÎ»ÆğÊ¼(50usµÍµçÆ½½áÊø) */
         if (DHT22_Wait_For_Set(300) != 0)
             return DHT22_ERR_TIMEOUT;
 
-        uint64_t t_rise = TIM5_Get_us(); // è®°å½•è¯¥ä½ä¸Šå‡æ²¿æ—¶åˆ»
+        uint64_t t_rise = TIM5_Get_us(); // ¼ÇÂ¼¸ÃÎ»ÉÏÉıÑØÊ±¿Ì
 
-        /* ç­‰è¯¥ä½é«˜ç”µå¹³ç»“æŸ */
+        /* µÈ¸ÃÎ»¸ßµçÆ½½áÊø */
         if (DHT22_Wait_For_Reset(300) != 0)
             return DHT22_ERR_TIMEOUT;
 
-        /* é«˜ç”µå¹³å®½åº¦ > 40us åˆ¤ä¸º1, å¦åˆ™åˆ¤ä¸º0ã€‚
-         * ç”¨æœ‰ç¬¦å·æ¯”è¾ƒ: é‡‡æ ·å€¼ä¸€æ—¦å›é€€, æ— ç¬¦å·ç›¸å‡ä¼šä¸‹æº¢æˆå·¨å¤§å€¼è€Œè¢«è¯¯åˆ¤ä¸º1 */
+        /* ¸ßµçÆ½¿í¶È > 40us ÅĞÎª1, ·ñÔòÅĞÎª0¡£
+         * ÓÃÓĞ·ûºÅ±È½Ï: ²ÉÑùÖµÒ»µ©»ØÍË, ÎŞ·ûºÅÏà¼õ»áÏÂÒç³É¾Ş´óÖµ¶ø±»ÎóÅĞÎª1 */
         if ((int64_t)(TIM5_Get_us() - t_rise) > (int64_t)DHT22_BIT_THRESHOLD_US)
             data |= (uint8_t)(1U << (7 - i));
     }
@@ -119,9 +119,9 @@ static uint8_t DHT22_ReadByte(uint8_t *out)
 }
 
 /**
- * @brief è¯»å–ä¸€æ¬¡DHT22ä¼ æ„Ÿå™¨æ•°æ®
- * @param data è¾“å‡ºæ•°æ®ç»“æ„ä½“æŒ‡é’ˆ
- * @return 0=æˆåŠŸ, 1=è¶…æ—¶
+ * @brief ¶ÁÈ¡Ò»´ÎDHT22´«¸ĞÆ÷Êı¾İ
+ * @param data Êä³öÊı¾İ½á¹¹ÌåÖ¸Õë
+ * @return 0=³É¹¦, 1=³¬Ê±
  */
 static uint8_t DHT22_ReadAttempt(DHT22_Data_t *data)
 {
@@ -130,19 +130,19 @@ static uint8_t DHT22_ReadAttempt(DHT22_Data_t *data)
 
     DHT22_GPIO_Output();
     DHT22_DATA_OUT_L();
-    vTaskDelay(pdMS_TO_TICKS(2)); // èµ·å§‹ä¿¡å·: æ‹‰ä½â‰¥1ms
+    vTaskDelay(pdMS_TO_TICKS(2)); // ÆğÊ¼ĞÅºÅ: À­µÍ¡İ1ms
 
     DHT22_DATA_OUT_H();
     DHT22_GPIO_Input();
-    delay_us(30); // ç­‰å¾…æ€»çº¿ç¨³å®š, é˜²æ­¢é˜²æŠ–åŠ¨
+    delay_us(30); // µÈ´ı×ÜÏßÎÈ¶¨, ·ÀÖ¹·À¶¶¶¯
 
-    /* ç­‰80usåº”ç­”(æ‹‰ä½) */
+    /* µÈ80usÓ¦´ğ(À­µÍ) */
     if (DHT22_Wait_For_Reset(200) != 0)
         return DHT22_ERR_NO_ACK;
-    /* åº”ç­”ç»“æŸ(æ‹‰é«˜) */
+    /* Ó¦´ğ½áÊø(À­¸ß) */
     if (DHT22_Wait_For_Set(200) != 0)
         return DHT22_ERR_NO_HIGH;
-    /* æ•°æ®èµ·å§‹(æ‹‰ä½ï¼Œæ•°æ®ä¸ºå‡æ˜¯ä»¥ 50us ä½ç”µå¹³å¼€å§‹ï¼Œä»¥é«˜ç”µå¹³æŒç»­æ—¶é—´åŒºåˆ† 0 å’Œ 1 ) */
+    /* Êı¾İÆğÊ¼(À­µÍ£¬Êı¾İÎª¾ùÊÇÒÔ 50us µÍµçÆ½¿ªÊ¼£¬ÒÔ¸ßµçÆ½³ÖĞøÊ±¼äÇø·Ö 0 ºÍ 1 ) */
     if (DHT22_Wait_For_Reset(200) != 0)
         return DHT22_ERR_NO_LOW;
 
@@ -153,15 +153,15 @@ static uint8_t DHT22_ReadAttempt(DHT22_Data_t *data)
             return code;
     }
 
-    /* æ ¡éªŒå’Œ */
+    /* Ğ£ÑéºÍ */
     if ((uint8_t)(buf[0] + buf[1] + buf[2] + buf[3]) != buf[4])
         return DHT22_ERR_CHECKSUM;
 
-    /* è§£ææ•°æ® */
-    uint16_t humidity_raw = (uint16_t)((uint16_t)(buf[0] << 8) | buf[1]); // æ¹¿åº¦åŸå§‹æ•°æ®
+    /* ½âÎöÊı¾İ */
+    uint16_t humidity_raw = (uint16_t)((uint16_t)(buf[0] << 8) | buf[1]); // Êª¶ÈÔ­Ê¼Êı¾İ
     data->humidity = (float)(humidity_raw / 10.0f);
-    uint16_t temp_raw = (uint16_t)((uint16_t)(buf[2] << 8) | buf[3]); // æ¸©åº¦åŸå§‹æ•°æ®
-    /* æ¸©åº¦ä¸ºè´Ÿæ•°æ—¶ */
+    uint16_t temp_raw = (uint16_t)((uint16_t)(buf[2] << 8) | buf[3]); // ÎÂ¶ÈÔ­Ê¼Êı¾İ
+    /* ÎÂ¶ÈÎª¸ºÊıÊ± */
     if (temp_raw & 0x8000U)
     {
         temp_raw &= 0x7FFFU;
@@ -176,14 +176,14 @@ static uint8_t DHT22_ReadAttempt(DHT22_Data_t *data)
 }
 
 /**
- * @brief æŠŠ"å…¨ 0 åƒåœ¾æ•°æ®"è¯†åˆ«æˆå¤±è´¥
- * @param code å•æ¬¡è¯»å–çš„è¿”å›ç 
- * @param data å•æ¬¡è¯»å–çš„æ•°æ®
- * @return åˆ¤å®šåçš„è¿”å›ç 
- * @note  DHT22 çš„ 5 ä¸ªå­—èŠ‚å…¨ä¸º 0 æ—¶, æ ¡éªŒå’Œ (0+0+0+0) == 0 åŒæ ·æˆç«‹, ä¼šéª—è¿‡æ ¡éªŒå’Œè¿™ä¸€å…³ã€‚
- *        ä½†å®¤å†…ä¸å¯èƒ½åŒæ—¶æ˜¯ 0.0Â°C ä¸” 0.0%RH(é‡ç¨‹ä¸‹é™ä¸º -40Â°C / 0%), è¿™ç§æ•°æ®å®é™…æ˜¯
- *        "ä¼ æ„Ÿå™¨æ²¡çœŸæ­£å›æ•°æ®" â€”â€” ä¾›ç”µä¸è¶³ã€DATA çº¿æ¥è§¦ä¸è‰¯, æˆ–è€…ä½æ—¶åºè¢«æ‰“æ–­æŠŠä½"1"
- *        å…¨åˆ¤æˆäº†ä½"0"ã€‚å½“å¤±è´¥å¤„ç†, è®©ä¸‹é¢çš„é‡è¯•ä¸ç•Œé¢çš„ "--" ç”Ÿæ•ˆ
+ * @brief °Ñ"È« 0 À¬»øÊı¾İ"Ê¶±ğ³ÉÊ§°Ü
+ * @param code µ¥´Î¶ÁÈ¡µÄ·µ»ØÂë
+ * @param data µ¥´Î¶ÁÈ¡µÄÊı¾İ
+ * @return ÅĞ¶¨ºóµÄ·µ»ØÂë
+ * @note  DHT22 µÄ 5 ¸ö×Ö½ÚÈ«Îª 0 Ê±, Ğ£ÑéºÍ (0+0+0+0) == 0 Í¬Ñù³ÉÁ¢, »áÆ­¹ıĞ£ÑéºÍÕâÒ»¹Ø¡£
+ *        µ«ÊÒÄÚ²»¿ÉÄÜÍ¬Ê±ÊÇ 0.0¡ãC ÇÒ 0.0%RH(Á¿³ÌÏÂÏŞÎª -40¡ãC / 0%), ÕâÖÖÊı¾İÊµ¼ÊÊÇ
+ *        "´«¸ĞÆ÷Ã»ÕæÕı»ØÊı¾İ" ¡ª¡ª ¹©µç²»×ã¡¢DATA Ïß½Ó´¥²»Á¼, »òÕßÎ»Ê±Ğò±»´ò¶Ï°ÑÎ»"1"
+ *        È«ÅĞ³ÉÁËÎ»"0"¡£µ±Ê§°Ü´¦Àí, ÈÃÏÂÃæµÄÖØÊÔÓë½çÃæµÄ "--" ÉúĞ§
  */
 static uint8_t DHT22_CheckAllZero(uint8_t code, const DHT22_Data_t *data)
 {
@@ -193,7 +193,7 @@ static uint8_t DHT22_CheckAllZero(uint8_t code, const DHT22_Data_t *data)
     return code;
 }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 bool DHT22_Init(void)
 {
     DHT22_GPIO_Output();
@@ -203,9 +203,9 @@ bool DHT22_Init(void)
 }
 
 /**
- * @brief è¯»å–ä¸€æ¬¡DHT22ä¼ æ„Ÿå™¨æ•°æ®
- * @param data è¾“å‡ºæ•°æ®ç»“æ„ä½“æŒ‡é’ˆ
- * @return 0=æˆåŠŸ, 1=è¶…æ—¶
+ * @brief ¶ÁÈ¡Ò»´ÎDHT22´«¸ĞÆ÷Êı¾İ
+ * @param data Êä³öÊı¾İ½á¹¹ÌåÖ¸Õë
+ * @return 0=³É¹¦, 1=³¬Ê±
  */
 uint8_t DHT22_ReadData(DHT22_Data_t *data)
 {
@@ -214,15 +214,15 @@ uint8_t DHT22_ReadData(DHT22_Data_t *data)
     if (code == DHT22_OK)
         return DHT22_OK;
 
-    vTaskDelay(pdMS_TO_TICKS(50)); // é—´éš”åé‡è¯•ä¸€æ¬¡, å®¹å¿ç¬æ—¶å¹²æ‰°
+    vTaskDelay(pdMS_TO_TICKS(50)); // ¼ä¸ôºóÖØÊÔÒ»´Î, ÈİÈÌË²Ê±¸ÉÈÅ
     return DHT22_CheckAllZero(DHT22_ReadAttempt(data), data);
 }
 
 /**
- * @brief è·å–DHT22ä¼ æ„Ÿå™¨é”™è¯¯ç å­—ç¬¦ä¸²
- * @param code é”™è¯¯ç 
- * @return é”™è¯¯ç å­—ç¬¦ä¸²æŒ‡é’ˆ
- * @note é”™è¯¯ç å­—ç¬¦ä¸²ä¸ºASCIIç , ä¸åŒ…å«æ¢è¡Œç¬¦
+ * @brief »ñÈ¡DHT22´«¸ĞÆ÷´íÎóÂë×Ö·û´®
+ * @param code ´íÎóÂë
+ * @return ´íÎóÂë×Ö·û´®Ö¸Õë
+ * @note ´íÎóÂë×Ö·û´®ÎªASCIIÂë, ²»°üº¬»»ĞĞ·û
  */
 const char *DHT22_ErrString(uint8_t code)
 {

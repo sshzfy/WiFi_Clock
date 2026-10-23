@@ -6,22 +6,22 @@
 #include "task.h"
 #include "event_groups.h"
 
-/* ================ UI äº‹ä»¶ä½(ç”Ÿäº§è€…â†’uiTask é€šçŸ¥) ================ */
-#define EV_WEATHER                     (1UL << 0) // å¤©æ°”å·²æ›´æ–°, åˆ·æ–°å¤©æ°”æ¨¡å—
-#define EV_DHT22                       (1UL << 1) // æˆ¿é—´æ¸©æ¹¿åº¦å·²æ›´æ–°, åˆ·æ–°æˆ¿é—´æ¨¡å—
-#define EV_NET_READY                   (1UL << 2) // å¼€æœºç½‘ç»œé˜¶æ®µå®Œæˆ(æ— è®ºæˆè´¥)
-#define EV_WIFI                        (1UL << 3) // WiFiè¿æ¥çŠ¶æ€å˜åŒ–, åˆ·æ–°é¡¶éƒ¨çŠ¶æ€æ¡
-#define EV_LOWERPOWER                  (1UL << 4) // è¿›å…¥ä½åŠŸè€—æ¨¡å¼
-#define EV_LOWPOWER_ACK                (1UL << 5) // ä½åŠŸè€—æ¨¡å¼ç¡®è®¤
-#define EV_WAKEUP                      (1UL << 6) // ä»ä½åŠŸè€—æ¨¡å¼å”¤é†’
-#define EV_NET_UPDATE_NOW              (1UL << 7) // ç«‹å³æ›´æ–°ç½‘ç»œçŠ¶æ€, åŒ…æ‹¬WiFiè¿æ¥çŠ¶æ€ã€SNTPæ—¶é—´ã€å¤©æ°”
-#define EV_DHT22_UPDATE_NOW            (1UL << 8) // ç«‹å³æ›´æ–°DHT22ä¼ æ„Ÿå™¨çŠ¶æ€
-#define EV_WIFI_KB                     (1UL << 9)  // ç‚¹äº†WiFiå›¾æ ‡, åˆ·WiFié…ç½‘ç•Œé¢
-#define EV_MAIN_SCREEN                 (1UL << 10) // åˆ·æ–°ä¸»ç•Œé¢
-#define EV_WIFI_CRED                   (1UL << 11) // é”®ç›˜æäº¤äº†æ–°çš„WiFiå‡­æ®, ä¿å­˜å¹¶é‡è¿
-#define EV_LOCATION_KB                 (1UL << 12) // ç‚¹äº†å®šä½å›¾æ ‡, åˆ·å®šä½è¾“å…¥ç•Œé¢
-#define EV_LOCATION_CRED               (1UL << 13) // é”®ç›˜æäº¤äº†æ–°çš„å®šä½ä¿¡æ¯, ç«‹å³æŒ‰æ–°å®šä½å–å¤©æ°”
-/* æ³¨: GPS + é«˜å¾·é€†åœ°ç†ç¼–ç çš„çœå¸‚æ˜¾ç¤ºæš‚æœªæ¥å…¥(æ¥å£ä¿ç•™) */
+/* ================ UI ÊÂ¼şÎ»(Éú²úÕß¡úuiTask Í¨Öª) ================ */
+#define EV_WEATHER                     (1UL << 0) // ÌìÆøÒÑ¸üĞÂ, Ë¢ĞÂÌìÆøÄ£¿é
+#define EV_DHT22                       (1UL << 1) // ·¿¼äÎÂÊª¶ÈÒÑ¸üĞÂ, Ë¢ĞÂ·¿¼äÄ£¿é
+#define EV_NET_READY                   (1UL << 2) // ¿ª»úÍøÂç½×¶ÎÍê³É(ÎŞÂÛ³É°Ü)
+#define EV_WIFI                        (1UL << 3) // WiFiÁ¬½Ó×´Ì¬±ä»¯, Ë¢ĞÂ¶¥²¿×´Ì¬Ìõ
+#define EV_LOWERPOWER                  (1UL << 4) // ½øÈëµÍ¹¦ºÄÄ£Ê½
+#define EV_LOWPOWER_ACK                (1UL << 5) // µÍ¹¦ºÄÄ£Ê½È·ÈÏ
+#define EV_WAKEUP                      (1UL << 6) // ´ÓµÍ¹¦ºÄÄ£Ê½»½ĞÑ
+#define EV_NET_UPDATE_NOW              (1UL << 7) // Á¢¼´¸üĞÂÍøÂç×´Ì¬, °üÀ¨WiFiÁ¬½Ó×´Ì¬¡¢SNTPÊ±¼ä¡¢ÌìÆø
+#define EV_DHT22_UPDATE_NOW            (1UL << 8) // Á¢¼´¸üĞÂDHT22´«¸ĞÆ÷×´Ì¬
+#define EV_WIFI_KB                     (1UL << 9)  // µãÁËWiFiÍ¼±ê, Ë¢WiFiÅäÍø½çÃæ
+#define EV_MAIN_SCREEN                 (1UL << 10) // Ë¢ĞÂÖ÷½çÃæ
+#define EV_WIFI_CRED                   (1UL << 11) // ¼üÅÌÌá½»ÁËĞÂµÄWiFiÆ¾¾İ, ±£´æ²¢ÖØÁ¬
+#define EV_LOCATION_KB                 (1UL << 12) // µãÁË¶¨Î»Í¼±ê, Ë¢¶¨Î»ÊäÈë½çÃæ
+#define EV_LOCATION_CRED               (1UL << 13) // ¼üÅÌÌá½»ÁËĞÂµÄ¶¨Î»ĞÅÏ¢, Á¢¼´°´ĞÂ¶¨Î»È¡ÌìÆø
+/* ×¢: GPS + ¸ßµÂÄæµØÀí±àÂëµÄÊ¡ÊĞÏÔÊ¾ÔİÎ´½ÓÈë(½Ó¿Ú±£Áô) */
 
 extern volatile bool g_lowpower;
 

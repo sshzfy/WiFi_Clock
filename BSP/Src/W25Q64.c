@@ -1,23 +1,23 @@
 #include "W25Q64.h"
 
-/* ================ W25Q64 ç›¸å…³ä¿¡æ¯ ================
- * æ­¤é¡¹ç›®ä¸­ç”¨æ¥å­˜å‚¨å­—åº“å’Œå›¾ç‰‡ä¿¡æ¯
- * å¤§å° 64 Mbitï¼Œ8MBï¼ˆ8M å­—èŠ‚ = 8388608 å­—èŠ‚ï¼‰
- * SPI æ¥å£ æœ€å¤§ä¼ è¾“é€Ÿç‡ 75 MHzï¼Œæ”¯æŒ SPI æ¨¡å¼ 0 å’Œæ¨¡å¼ 3
- *   æ¨¡å¼0: CPOL=0, CPHA=0   (ç©ºé—²ä½ç”µå¹³, ç¬¬ä¸€ä¸ªè¾¹æ²¿é‡‡æ ·)
- *   æ¨¡å¼3: CPOL=1, CPHA=1   (ç©ºé—²é«˜ç”µå¹³, ç¬¬äºŒä¸ªè¾¹æ²¿é‡‡æ ·)
- * æ¯é¡µ 256 å­—èŠ‚ï¼Œ32768 é¡µ
- * æ¯æ‰‡åŒº 4KB(4096 å­—èŠ‚)ï¼Œå…± 2048 ä¸ªæ‰‡åŒº
- * æ¯å— 64KBï¼Œå…± 128 ä¸ªå—
- * æ“¦é™¤æ–¹å¼ï¼š4KB æ‰‡åŒºæ“¦é™¤ã€32KB å—æ“¦é™¤ã€64KB å—æ“¦é™¤ã€æ•´ç‰‡æ“¦é™¤
- *   â€”â€” Flash çš„ç‰¹æ€§ï¼šåªèƒ½æŒ‰ä½ä» 1 å˜ 0ï¼Œå†™ä¹‹å‰å¿…é¡»å…ˆæ“¦é™¤(æ“¦é™¤å³å…¨ç½® 1)
- * CLK ä¸Šå‡æ²¿è·å–æ•°æ®(ä¸»æœºé‡‡æ · MISO)ï¼Œä¸‹é™æ²¿è¾“å‡ºæ•°æ®(ä»æœºåœ¨ä¸‹é™æ²¿æ›´æ–° MISO)ï¼Œæ•°æ®å‡ä¸º MSB å…ˆå‘é€
+/* ================ W25Q64 Ïà¹ØĞÅÏ¢ ================
+ * ´ËÏîÄ¿ÖĞÓÃÀ´´æ´¢×Ö¿âºÍÍ¼Æ¬ĞÅÏ¢
+ * ´óĞ¡ 64 Mbit£¬8MB£¨8M ×Ö½Ú = 8388608 ×Ö½Ú£©
+ * SPI ½Ó¿Ú ×î´ó´«ÊäËÙÂÊ 75 MHz£¬Ö§³Ö SPI Ä£Ê½ 0 ºÍÄ£Ê½ 3
+ *   Ä£Ê½0: CPOL=0, CPHA=0   (¿ÕÏĞµÍµçÆ½, µÚÒ»¸ö±ßÑØ²ÉÑù)
+ *   Ä£Ê½3: CPOL=1, CPHA=1   (¿ÕÏĞ¸ßµçÆ½, µÚ¶ş¸ö±ßÑØ²ÉÑù)
+ * Ã¿Ò³ 256 ×Ö½Ú£¬32768 Ò³
+ * Ã¿ÉÈÇø 4KB(4096 ×Ö½Ú)£¬¹² 2048 ¸öÉÈÇø
+ * Ã¿¿é 64KB£¬¹² 128 ¸ö¿é
+ * ²Á³ı·½Ê½£º4KB ÉÈÇø²Á³ı¡¢32KB ¿é²Á³ı¡¢64KB ¿é²Á³ı¡¢ÕûÆ¬²Á³ı
+ *   ¡ª¡ª Flash µÄÌØĞÔ£ºÖ»ÄÜ°´Î»´Ó 1 ±ä 0£¬Ğ´Ö®Ç°±ØĞëÏÈ²Á³ı(²Á³ı¼´È«ÖÃ 1)
+ * CLK ÉÏÉıÑØ»ñÈ¡Êı¾İ(Ö÷»ú²ÉÑù MISO)£¬ÏÂ½µÑØÊä³öÊı¾İ(´Ó»úÔÚÏÂ½µÑØ¸üĞÂ MISO)£¬Êı¾İ¾ùÎª MSB ÏÈ·¢ËÍ
  * ================================ */
 
-/* å¿™ç­‰å¾…è¶…æ—¶ç´¯è®¡æ¬¡æ•°, ç”± W25Q64_GetBusyTimeoutCount() è¯»å–, ä¾¿äºæµ‹è¯•å®šä½ç¡¬ä»¶é—®é¢˜ */
+/* Ã¦µÈ´ı³¬Ê±ÀÛ¼Æ´ÎÊı, ÓÉ W25Q64_GetBusyTimeoutCount() ¶ÁÈ¡, ±ãÓÚ²âÊÔ¶¨Î»Ó²¼şÎÊÌâ */
 static volatile uint32_t s_busy_timeout_cnt = 0;
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static inline void W25Q64_CS_Low(void)
 {
     GPIO_ResetBits(W25Q64_GPIO_PORT, W25Q64_CS_PIN);
@@ -35,22 +35,22 @@ static bool W25Q64_WaitBusy(void);
 static uint8_t W25Q64_ReadStatus1(void);
 
 /**
- * @brief è¯»å†™å­—èŠ‚å‡½æ•°ï¼Œç”¨äºä¸W25Q64 Flashè¿›è¡Œæ•°æ®äº¤æ¢
- * @param data è¦å‘é€çš„å­—èŠ‚ï¼ˆè¯»æ“ä½œæ—¶ç»Ÿä¸€å¡« 0xFF ä»¥äº§ç”Ÿæ—¶é’Ÿå¹¶é¿å…é©±åŠ¨ MISO å†²çª
- * @return uint8_t æ¥æ”¶çš„å­—èŠ‚
+ * @brief ¶ÁĞ´×Ö½Úº¯Êı£¬ÓÃÓÚÓëW25Q64 Flash½øĞĞÊı¾İ½»»»
+ * @param data Òª·¢ËÍµÄ×Ö½Ú£¨¶Á²Ù×÷Ê±Í³Ò»Ìî 0xFF ÒÔ²úÉúÊ±ÖÓ²¢±ÜÃâÇı¶¯ MISO ³åÍ»
+ * @return uint8_t ½ÓÊÕµÄ×Ö½Ú
  * */
 static uint8_t W25Q64_SpiReadWriteByte(uint8_t data)
 {
-    /* ç­‰å¾…å‘é€å¯„å­˜å™¨ä¸ºç©º
-     * å‘é€æ•°æ®
-     * ç­‰å¾…æ¥æ”¶å®Œæˆ */
+    /* µÈ´ı·¢ËÍ¼Ä´æÆ÷Îª¿Õ
+     * ·¢ËÍÊı¾İ
+     * µÈ´ı½ÓÊÕÍê³É */
     while (SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET)
         ;
     SPI_SendData(SPI1, data);
     while (SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE) == RESET)
         ;
 
-    /* è¿”å›æ¥æ”¶å¯„å­˜å™¨æ•°æ® */
+    /* ·µ»Ø½ÓÊÕ¼Ä´æÆ÷Êı¾İ */
     return SPI_ReceiveData(SPI1);
 }
 
@@ -58,14 +58,14 @@ static void W25Q64_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
     GPIO_StructInit(&GPIO_InitStructure);
-    /* åˆå§‹åŒ–CSå¼•è„šï¼Œæ¨æŒ½è¾“å‡ºï¼Œå†…éƒ¨ä¸Šæ‹‰ */
+    /* ³õÊ¼»¯CSÒı½Å£¬ÍÆÍìÊä³ö£¬ÄÚ²¿ÉÏÀ­ */
     GPIO_InitStructure.GPIO_Pin = W25Q64_CS_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_Init(W25Q64_GPIO_PORT, &GPIO_InitStructure);
-    /* åˆå§‹åŒ– SPI1 çš„ CLK MOSI MISO å¼•è„šï¼Œå¤ç”¨æ¨æŒ½ */
+    /* ³õÊ¼»¯ SPI1 µÄ CLK MOSI MISO Òı½Å£¬¸´ÓÃÍÆÍì */
     GPIO_PinAFConfig(W25Q64_GPIO_PORT, GPIO_PinSource5, GPIO_AF_SPI1);
     GPIO_PinAFConfig(W25Q64_GPIO_PORT, GPIO_PinSource6, GPIO_AF_SPI1);
     GPIO_PinAFConfig(W25Q64_GPIO_PORT, GPIO_PinSource7, GPIO_AF_SPI1);
@@ -82,15 +82,15 @@ static void W25Q64_SPI_Init(void)
 {
     SPI_InitTypeDef SPI_InitStructure;
     SPI_StructInit(&SPI_InitStructure);
-    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex; // 2çº¿å…¨åŒå·¥æ¨¡å¼
-    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;                      // ä¸»æ¨¡å¼
-    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;                  // 8ä½æ•°æ®
-    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;                       // 1; 1è¾¹æ²¿é‡‡æ ·
-    SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;                         // 0; ä½ç”µå¹³æœ‰æ•ˆ
-    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4; // SPI1=84MHz â†’ 21MHz
-    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;                 // æœ€é«˜ä½å…ˆå‘é€
-    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;                          // è½¯ä»¶æ§åˆ¶NSSå¼•è„š
-    SPI_InitStructure.SPI_CRCPolynomial = 7;                           // CRCå¤šé¡¹å¼7
+    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex; // 2ÏßÈ«Ë«¹¤Ä£Ê½
+    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;                      // Ö÷Ä£Ê½
+    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;                  // 8Î»Êı¾İ
+    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;                       // 1; 1±ßÑØ²ÉÑù
+    SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;                         // 0; µÍµçÆ½ÓĞĞ§
+    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4; // SPI1=84MHz ¡ú 21MHz
+    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;                 // ×î¸ßÎ»ÏÈ·¢ËÍ
+    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;                          // Èí¼ş¿ØÖÆNSSÒı½Å
+    SPI_InitStructure.SPI_CRCPolynomial = 7;                           // CRC¶àÏîÊ½7
     SPI_Init(SPI1, &SPI_InitStructure);
     SPI_Cmd(SPI1, ENABLE);
 }
@@ -103,27 +103,27 @@ static void W25Q64_WriteEnable(void)
 }
 
 /**
- * @brief è½®è¯¢çŠ¶æ€å¯„å­˜å™¨ç›´åˆ° BUSY æ¸…é›¶
- * @return true èŠ¯ç‰‡å·²ç©ºé—², false è¶…æ—¶(èŠ¯ç‰‡æ— å“åº”)
- * @note  æ¯æ¬¡è¯»å–çŠ¶æ€éƒ½å¿…é¡»é‡æ–°æ‹‰ä½å†æ‹‰é«˜ç‰‡é€‰: è‹¥é€€å‡ºæ—¶ CS ä¿æŒä½ç”µå¹³,
- *        åç»­å‘½ä»¤ä¼šè¢«èŠ¯ç‰‡å½“ä½œä¸Šä¸€æ¡å‘½ä»¤çš„å»¶ç»­è€Œå…¨éƒ¨å¤±æ•ˆ(å†™/æ“¦é™¤é™é»˜å¤±è´¥)ã€‚
+ * @brief ÂÖÑ¯×´Ì¬¼Ä´æÆ÷Ö±µ½ BUSY ÇåÁã
+ * @return true Ğ¾Æ¬ÒÑ¿ÕÏĞ, false ³¬Ê±(Ğ¾Æ¬ÎŞÏìÓ¦)
+ * @note  Ã¿´Î¶ÁÈ¡×´Ì¬¶¼±ØĞëÖØĞÂÀ­µÍÔÙÀ­¸ßÆ¬Ñ¡: ÈôÍË³öÊ± CS ±£³ÖµÍµçÆ½,
+ *        ºóĞøÃüÁî»á±»Ğ¾Æ¬µ±×÷ÉÏÒ»ÌõÃüÁîµÄÑÓĞø¶øÈ«²¿Ê§Ğ§(Ğ´/²Á³ı¾²Ä¬Ê§°Ü)¡£
  * */
 static bool W25Q64_WaitBusy(void)
 {
     uint8_t status;
     uint32_t timeout = W25Q64_BUSY_TIMEOUT;
 
-    /* ç­‰å¾… BUSY æ¸…é›¶æˆ–è¶…æ—¶ */
+    /* µÈ´ı BUSY ÇåÁã»ò³¬Ê± */
     do
     {
         W25Q64_CS_Low();
-        /* è¯»çŠ¶æ€å¯„å­˜å™¨1 */
+        /* ¶Á×´Ì¬¼Ä´æÆ÷1 */
         W25Q64_SpiReadWriteByte(W25Q64_CMD_READ_SR1);
-        status = W25Q64_SpiReadWriteByte(0xFF); // å‘é€0xFFï¼Œè¯»ä¸€å­—èŠ‚çŠ¶æ€
+        status = W25Q64_SpiReadWriteByte(0xFF); // ·¢ËÍ0xFF£¬¶ÁÒ»×Ö½Ú×´Ì¬
         W25Q64_CS_High();
     } while ((status & W25Q64_SR1_BUSY) && (--timeout != 0U));
 
-    /* è¶…æ—¶æˆ–èŠ¯ç‰‡æ— å“åº”, è®¡æ•° + 1ï¼Œè¿”å› false */
+    /* ³¬Ê±»òĞ¾Æ¬ÎŞÏìÓ¦, ¼ÆÊı + 1£¬·µ»Ø false */
     if (status & W25Q64_SR1_BUSY)
     {
         s_busy_timeout_cnt++;
@@ -144,19 +144,19 @@ static uint8_t W25Q64_ReadStatus1(void)
     return status;
 }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 void W25Q64_Init(void)
 {
     W25Q64_GPIO_Init();
     W25Q64_SPI_Init();
 
-    W25Q64_CS_High(); // ä¸Šç”µå…ˆé‡Šæ”¾ç‰‡é€‰, ä¿è¯é¦–ä¸ªå‘½ä»¤çš„èµ·å§‹æ²¿è¢«èŠ¯ç‰‡è¯†åˆ«
+    W25Q64_CS_High(); // ÉÏµçÏÈÊÍ·ÅÆ¬Ñ¡, ±£Ö¤Ê×¸öÃüÁîµÄÆğÊ¼ÑØ±»Ğ¾Æ¬Ê¶±ğ
 
     W25Q64_CS_Low();
-    W25Q64_SpiReadWriteByte(W25Q64_CMD_RELEASE_PD); // é‡Šæ”¾ä¿æŠ¤æ¨¡å¼ï¼Œæ¢å¤æ­£å¸¸å·¥ä½œ
+    W25Q64_SpiReadWriteByte(W25Q64_CMD_RELEASE_PD); // ÊÍ·Å±£»¤Ä£Ê½£¬»Ö¸´Õı³£¹¤×÷
     W25Q64_CS_High();
 
-    /* èŠ¯ç‰‡ä»æ‰ç”µæ¨¡å¼å”¤é†’éœ€è¦ tRES1(å…¸å‹ 3us)ï¼Œè¿™é‡Œåšä¿å®ˆå»¶æ—¶ */
+    /* Ğ¾Æ¬´ÓµôµçÄ£Ê½»½ĞÑĞèÒª tRES1(µäĞÍ 3us)£¬ÕâÀï×ö±£ÊØÑÓÊ± */
     for (volatile uint32_t i = 0; i < 100; i++)
         ;
 }
@@ -171,14 +171,14 @@ uint16_t W25Q64_ReadId(void)
     uint16_t id;
 
     W25Q64_CS_Low();
-    /* å‘é€è¯»å–å‘½ä»¤
-     * é«˜ä¸­ä½å ä½å­—èŠ‚ */
+    /* ·¢ËÍ¶ÁÈ¡ÃüÁî
+     * ¸ßÖĞµÍÕ¼Î»×Ö½Ú */
     W25Q64_SpiReadWriteByte(W25Q64_CMD_READ_ID);
     W25Q64_SpiReadWriteByte(0x00);
     W25Q64_SpiReadWriteByte(0x00);
     W25Q64_SpiReadWriteByte(0x00);
-    id = W25Q64_SpiReadWriteByte(0xFF) << 8; // è¯»å‚å•† IDï¼ˆ0xEFï¼‰
-    id |= W25Q64_SpiReadWriteByte(0xFF);     // è¯»å™¨ä»¶ IDï¼ˆ0x16ï¼‰
+    id = W25Q64_SpiReadWriteByte(0xFF) << 8; // ¶Á³§ÉÌ ID£¨0xEF£©
+    id |= W25Q64_SpiReadWriteByte(0xFF);     // ¶ÁÆ÷¼ş ID£¨0x16£©
     W25Q64_CS_High();
 
     return id;
@@ -190,9 +190,9 @@ uint32_t W25Q64_ReadJedecId(void)
 
     W25Q64_CS_Low();
     W25Q64_SpiReadWriteByte(W25Q64_CMD_JEDEC_ID);
-    id = W25Q64_SpiReadWriteByte(0xFF) << 16; // å‚å•† ID
-    id |= W25Q64_SpiReadWriteByte(0xFF) << 8; // å­˜å‚¨ç±»å‹
-    id |= W25Q64_SpiReadWriteByte(0xFF);      // å®¹é‡
+    id = W25Q64_SpiReadWriteByte(0xFF) << 16; // ³§ÉÌ ID
+    id |= W25Q64_SpiReadWriteByte(0xFF) << 8; // ´æ´¢ÀàĞÍ
+    id |= W25Q64_SpiReadWriteByte(0xFF);      // ÈİÁ¿
     W25Q64_CS_High();
 
     return id;
@@ -204,16 +204,16 @@ uint8_t W25Q64_IsBusy(void)
 }
 
 /**
- * @brief ä»W25Q64 Flashè¯»å–æ•°æ®
- * @param addr èµ·å§‹åœ°å€ï¼ˆå­—èŠ‚å¯¹é½ï¼‰
- * @param buf è¦è¯»å–çš„ç¼“å†²åŒºæŒ‡é’ˆ
- * @param len è¦è¯»å–çš„å­—èŠ‚æ•°
- * @note  è¯»å–æ—¶å¿…é¡»å…ˆå‘é€åœ°å€å­—èŠ‚ï¼Œå†å‘é€æ•°æ®å­—èŠ‚ã€‚
+ * @brief ´ÓW25Q64 Flash¶ÁÈ¡Êı¾İ
+ * @param addr ÆğÊ¼µØÖ·£¨×Ö½Ú¶ÔÆë£©
+ * @param buf Òª¶ÁÈ¡µÄ»º³åÇøÖ¸Õë
+ * @param len Òª¶ÁÈ¡µÄ×Ö½ÚÊı
+ * @note  ¶ÁÈ¡Ê±±ØĞëÏÈ·¢ËÍµØÖ·×Ö½Ú£¬ÔÙ·¢ËÍÊı¾İ×Ö½Ú¡£
  * */
 void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 {
     W25Q64_CS_Low();
-    /* è¯»å–æ•°æ®é«˜ä¸­ä½å­—èŠ‚ */
+    /* ¶ÁÈ¡Êı¾İ¸ßÖĞµÍ×Ö½Ú */
     W25Q64_SpiReadWriteByte(W25Q64_CMD_READ_DATA);
     W25Q64_SpiReadWriteByte((addr >> 16) & 0xFF);
     W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
@@ -224,11 +224,11 @@ void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 }
 
 /**
- * @brief é¡µç¼–ç¨‹å‡½æ•°ï¼Œç”¨äºå°†æ•°æ®å†™å…¥W25Q64 Flashçš„æŒ‡å®šé¡µ
- * @param addr èµ·å§‹åœ°å€ï¼ˆå­—èŠ‚å¯¹é½ï¼Œå¯è·¨é¡µï¼Œå‡½æ•°å†…éƒ¨è‡ªåŠ¨åˆ†é¡µï¼‰
- * @param buf è¦å†™å…¥çš„ç¼“å†²åŒºæŒ‡é’ˆ
- * @param len è¦å†™å…¥çš„å­—èŠ‚æ•°
- * @return true å…¨éƒ¨å†™å…¥å®Œæˆ, false å‡ºç°å¿™ç­‰å¾…è¶…æ—¶
+ * @brief Ò³±à³Ìº¯Êı£¬ÓÃÓÚ½«Êı¾İĞ´ÈëW25Q64 FlashµÄÖ¸¶¨Ò³
+ * @param addr ÆğÊ¼µØÖ·£¨×Ö½Ú¶ÔÆë£¬¿É¿çÒ³£¬º¯ÊıÄÚ²¿×Ô¶¯·ÖÒ³£©
+ * @param buf ÒªĞ´ÈëµÄ»º³åÇøÖ¸Õë
+ * @param len ÒªĞ´ÈëµÄ×Ö½ÚÊı
+ * @return true È«²¿Ğ´ÈëÍê³É, false ³öÏÖÃ¦µÈ´ı³¬Ê±
  * */
 bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
 {
@@ -236,24 +236,24 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
 
     while (len > 0)
     {
-        uint32_t page_remain = W25Q64_PAGE_SIZE - (addr & (W25Q64_PAGE_SIZE - 1U)); // é¡µå‰©ä½™å­—èŠ‚æ•°
-        uint32_t write_len = (len < page_remain) ? len : page_remain;               // å†™å…¥å­—èŠ‚æ•°
+        uint32_t page_remain = W25Q64_PAGE_SIZE - (addr & (W25Q64_PAGE_SIZE - 1U)); // Ò³Ê£Óà×Ö½ÚÊı
+        uint32_t write_len = (len < page_remain) ? len : page_remain;               // Ğ´Èë×Ö½ÚÊı
 
-        W25Q64_WriteEnable(); // å†™ä½¿èƒ½
+        W25Q64_WriteEnable(); // Ğ´Ê¹ÄÜ
         W25Q64_CS_Low();
-        W25Q64_SpiReadWriteByte(W25Q64_CMD_PAGE_PROGRAM); // é¡µç¼–ç¨‹å‘½ä»¤
+        W25Q64_SpiReadWriteByte(W25Q64_CMD_PAGE_PROGRAM); // Ò³±à³ÌÃüÁî
         W25Q64_SpiReadWriteByte((addr >> 16) & 0xFF);
         W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
         W25Q64_SpiReadWriteByte(addr & 0xFF);
-        for (uint32_t i = 0; i < write_len; i++) // é€å­—èŠ‚å†™å…¥
+        for (uint32_t i = 0; i < write_len; i++) // Öğ×Ö½ÚĞ´Èë
             W25Q64_SpiReadWriteByte(buf[i]);
-        W25Q64_CS_High(); // æ‹‰é«˜ç‰‡é€‰ï¼ŒèŠ¯ç‰‡å†…éƒ¨å¼€å§‹ç¼–ç¨‹
+        W25Q64_CS_High(); // À­¸ßÆ¬Ñ¡£¬Ğ¾Æ¬ÄÚ²¿¿ªÊ¼±à³Ì
 
-        /* ç­‰å¾…ç¼–ç¨‹å®Œæˆ */
+        /* µÈ´ı±à³ÌÍê³É */
         if (!W25Q64_WaitBusy())
             ok = false;
 
-        /* æ¨è¿›åœ°å€/ç¼“å†²åŒº/å‰©ä½™é•¿åº¦ï¼Œå‡†å¤‡å†™ä¸‹ä¸€é¡µ */
+        /* ÍÆ½øµØÖ·/»º³åÇø/Ê£Óà³¤¶È£¬×¼±¸Ğ´ÏÂÒ»Ò³ */
         addr += write_len;
         buf += write_len;
         len -= write_len;
@@ -263,65 +263,65 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
 }
 
 /**
- * @brief æ‰‡åŒºæ“¦é™¤å‡½æ•°ï¼Œå°†W25Q64 Flashçš„æŒ‡å®šæ‰‡åŒºå…¨éƒ¨æ“¦é™¤ä¸º 0xFF
- * @param addr æ‰‡åŒºèµ·å§‹åœ°å€ï¼ˆå­—èŠ‚å¯¹é½ï¼‰
- * @return true å®Œæˆ, false è¶…æ—¶
- * @note  æ‰‡åŒºæ“¦é™¤æ—¶å¿…é¡»å…ˆå‘é€åœ°å€å­—èŠ‚ï¼Œå†å‘é€å‘½ä»¤å­—èŠ‚ã€‚
+ * @brief ÉÈÇø²Á³ıº¯Êı£¬½«W25Q64 FlashµÄÖ¸¶¨ÉÈÇøÈ«²¿²Á³ıÎª 0xFF
+ * @param addr ÉÈÇøÆğÊ¼µØÖ·£¨×Ö½Ú¶ÔÆë£©
+ * @return true Íê³É, false ³¬Ê±
+ * @note  ÉÈÇø²Á³ıÊ±±ØĞëÏÈ·¢ËÍµØÖ·×Ö½Ú£¬ÔÙ·¢ËÍÃüÁî×Ö½Ú¡£
  * */
 bool W25Q64_SectorErase(uint32_t addr)
 {
-    /* åœ°å€å‘ä¸‹å¯¹é½åˆ° 4KB (0x1000) è¾¹ç•Œ
-     * æ¯ä¸ªæ‰‡åŒº: 0x0000 0000 ~ 0x0000 0FFF(4KB)
+    /* µØÖ·ÏòÏÂ¶ÔÆëµ½ 4KB (0x1000) ±ß½ç
+     * Ã¿¸öÉÈÇø: 0x0000 0000 ~ 0x0000 0FFF(4KB)
      *           0x0000 1000 ~ 0x0000 1FFF(4KB)
-     * ä¼ å…¥åœ°å€: 0x00 xxxx,åªéœ€åˆ¤æ–­ä½å››ä½çš„æœ€é«˜ä½å³å¯ç¡®å®šæ‰‡åŒºèµ·å§‹åœ°å€ */
+     * ´«ÈëµØÖ·: 0x00 xxxx,Ö»ĞèÅĞ¶ÏµÍËÄÎ»µÄ×î¸ßÎ»¼´¿ÉÈ·¶¨ÉÈÇøÆğÊ¼µØÖ· */
     addr &= ~(W25Q64_SECTOR_SIZE - 1);
 
-    W25Q64_WriteEnable(); // å†™ä½¿èƒ½
+    W25Q64_WriteEnable(); // Ğ´Ê¹ÄÜ
     W25Q64_CS_Low();
-    W25Q64_SpiReadWriteByte(W25Q64_CMD_SECTOR_ERASE); // æ‰‡åŒºæ“¦é™¤å‘½ä»¤
+    W25Q64_SpiReadWriteByte(W25Q64_CMD_SECTOR_ERASE); // ÉÈÇø²Á³ıÃüÁî
     W25Q64_SpiReadWriteByte((addr >> 16) & 0xFF);
     W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
     W25Q64_SpiReadWriteByte(addr & 0xFF);
     W25Q64_CS_High();
 
-    return W25Q64_WaitBusy(); // ç­‰å¾…æ“¦é™¤å®Œæˆåè¿”å›æ˜¯å¦æˆåŠŸ
+    return W25Q64_WaitBusy(); // µÈ´ı²Á³ıÍê³Éºó·µ»ØÊÇ·ñ³É¹¦
 }
 
 /**
- * @brief 32KB å—æ“¦é™¤å‡½æ•°ï¼Œå°†W25Q64 Flashçš„æŒ‡å®š 32KB å—å…¨éƒ¨æ“¦é™¤ä¸º 0xFF
- * @param addr 32KB å—èµ·å§‹åœ°å€ï¼ˆå­—èŠ‚å¯¹é½ï¼‰
- * @return true å®Œæˆ, false è¶…æ—¶
- * @note  32KB å—æ“¦é™¤æ—¶å¿…é¡»å…ˆå‘é€åœ°å€å­—èŠ‚ï¼Œå†å‘é€å‘½ä»¤å­—èŠ‚ã€‚
+ * @brief 32KB ¿é²Á³ıº¯Êı£¬½«W25Q64 FlashµÄÖ¸¶¨ 32KB ¿éÈ«²¿²Á³ıÎª 0xFF
+ * @param addr 32KB ¿éÆğÊ¼µØÖ·£¨×Ö½Ú¶ÔÆë£©
+ * @return true Íê³É, false ³¬Ê±
+ * @note  32KB ¿é²Á³ıÊ±±ØĞëÏÈ·¢ËÍµØÖ·×Ö½Ú£¬ÔÙ·¢ËÍÃüÁî×Ö½Ú¡£
  * */
 bool W25Q64_Block32Erase(uint32_t addr)
 {
-    /* åœ°å€å‘ä¸‹å¯¹é½åˆ° 32KB (0x8000) è¾¹ç•Œ
-     * æ¯ä¸ªå—: 0x0000 0000 ~ 0x0000 7FFF(32KB)
+    /* µØÖ·ÏòÏÂ¶ÔÆëµ½ 32KB (0x8000) ±ß½ç
+     * Ã¿¸ö¿é: 0x0000 0000 ~ 0x0000 7FFF(32KB)
      *         0x0000 8000 ~ 0x0000 FFFF(32KB)
-     * ä¼ å…¥åœ°å€: 0x00 xxxx,åªéœ€åˆ¤æ–­ä½å››ä½çš„æœ€é«˜ä½å³å¯ç¡®å®šå—èµ·å§‹åœ°å€ */
+     * ´«ÈëµØÖ·: 0x00 xxxx,Ö»ĞèÅĞ¶ÏµÍËÄÎ»µÄ×î¸ßÎ»¼´¿ÉÈ·¶¨¿éÆğÊ¼µØÖ· */
     addr &= ~(W25Q64_BLOCK32_SIZE - 1);
 
-    W25Q64_WriteEnable(); // å†™ä½¿èƒ½
+    W25Q64_WriteEnable(); // Ğ´Ê¹ÄÜ
     W25Q64_CS_Low();
-    W25Q64_SpiReadWriteByte(W25Q64_CMD_BLOCK32_ERASE); // 32KB å—æ“¦é™¤å‘½ä»¤
+    W25Q64_SpiReadWriteByte(W25Q64_CMD_BLOCK32_ERASE); // 32KB ¿é²Á³ıÃüÁî
     W25Q64_SpiReadWriteByte((addr >> 16) & 0xFF);
     W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
     W25Q64_SpiReadWriteByte(addr & 0xFF);
     W25Q64_CS_High();
 
-    return W25Q64_WaitBusy(); // ç­‰å¾…æ“¦é™¤å®Œæˆåè¿”å›æ˜¯å¦æˆåŠŸ
+    return W25Q64_WaitBusy(); // µÈ´ı²Á³ıÍê³Éºó·µ»ØÊÇ·ñ³É¹¦
 }
 
 /**
- * @brief æ•´ç‰‡æ“¦é™¤
- * @return true å®Œæˆ, false è¶…æ—¶
- * @note  8MB èŠ¯ç‰‡å…¸å‹è€—æ—¶ 20~100s, ä¼šé•¿æ—¶é—´é˜»å¡, æµ‹è¯•æ—¶æ…ç”¨
+ * @brief ÕûÆ¬²Á³ı
+ * @return true Íê³É, false ³¬Ê±
+ * @note  8MB Ğ¾Æ¬µäĞÍºÄÊ± 20~100s, »á³¤Ê±¼ä×èÈû, ²âÊÔÊ±É÷ÓÃ
  * */
 bool W25Q64_ChipErase(void)
 {
     W25Q64_WriteEnable();
     W25Q64_CS_Low();
-    W25Q64_SpiReadWriteByte(W25Q64_CMD_CHIP_ERASE); // æ•´ç‰‡æ“¦é™¤å‘½ä»¤
+    W25Q64_SpiReadWriteByte(W25Q64_CMD_CHIP_ERASE); // ÕûÆ¬²Á³ıÃüÁî
     W25Q64_CS_High();
 
     return W25Q64_WaitBusy();

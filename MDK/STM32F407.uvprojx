@@ -80,7 +80,7 @@
             <nStopB2X>0</nStopB2X>
           </BeforeMake>
           <AfterMake>
-            <RunUserProg1>0</RunUserProg1>
+            <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
             <UserProg1Name>"$K\ARM\ARMCC\bin\fromelf.exe" --bin --output="$L@L.bin" "#L"</UserProg1Name>
             <UserProg2Name></UserProg2Name>
@@ -273,8 +273,8 @@
               </OCR_RVCT3>
               <OCR_RVCT4>
                 <Type>1</Type>
-                <StartAddress>0x8000000</StartAddress>
-                <Size>0x80000</Size>
+                <StartAddress>0x8010000</StartAddress>
+                <Size>0x70000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -334,9 +334,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
+              <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx,APP_BUILD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\User\Application\Inc;..\User\Task\Inc;..\User\UI\Inc;..\User\Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Middlewares\FreeRTOS\include;..\Middlewares\FreeRTOS\portable;..\Middlewares\LittleFS\Inc;..\Middlewares\Lvgl;..\Middlewares\Lvgl\lvgl;..\Middlewares\Lvgl\lvgl\src;..\Middlewares\Lvgl\porting</IncludePath>
+              <IncludePath>..\User\Application\Inc;..\User\Task\Inc;..\User\UI\Inc;..\User\Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Middlewares\FreeRTOS\include;..\Middlewares\FreeRTOS\portable;..\Middlewares\LittleFS\Inc;..\Middlewares\Lvgl;..\Middlewares\Lvgl\lvgl;..\Middlewares\Lvgl\lvgl\src;..\Middlewares\Lvgl\porting;..\Boot\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -364,7 +364,7 @@
             <noStLib>0</noStLib>
             <RepFail>1</RepFail>
             <useFile>0</useFile>
-            <TextAddressRange>0x08000000</TextAddressRange>
+            <TextAddressRange>0x08010000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
             <pXoBase></pXoBase>
             <ScatterFile></ScatterFile>
@@ -1734,6 +1734,21 @@
               <FileName>lv_port_fs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Middlewares\Lvgl\porting\lv_port_fs.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>BOOT</GroupName>
+          <Files>
+            <File>
+              <FileName>boot_param.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Boot\Src\boot_param.c</FilePath>
+            </File>
+            <File>
+              <FileName>boot_crc32.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Boot\Src\boot_crc32.c</FilePath>
             </File>
           </Files>
         </Group>

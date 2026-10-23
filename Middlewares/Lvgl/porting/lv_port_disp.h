@@ -1,7 +1,7 @@
 /**
  * @file lv_port_disp.h
  *
- * LVGL 显示端口(2.4" ST7789V, 240x320, SPI3 + DMA)
+ * LVGL ��ʾ�˿�(2.4" ST7789V, 240x320, SPI3 + DMA)
  */
 #ifndef LV_PORT_DISP_H
 #define LV_PORT_DISP_H
@@ -23,10 +23,10 @@ extern "C" {
  * GLOBAL PROTOTYPES
  **********************/
 
-/* 注册显示驱动: 必须在 lv_init() 之后、创建任何控件之前调用 */
+/* ע����ʾ����: ������ lv_init() ֮�󡢴����κοؼ�֮ǰ���� */
 void lv_port_disp_init(void);
 
-/* 暂停/恢复刷屏(刷屏期间会把缓冲交给 DMA, 需要临时闭屏时用) */
+/* ��ͣ/�ָ�ˢ��(ˢ���ڼ��ѻ��彻�� DMA, ��Ҫ��ʱ����ʱ��) */
 void disp_enable_update(void);
 void disp_disable_update(void);
 

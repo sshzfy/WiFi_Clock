@@ -2,7 +2,7 @@
 
 static void UI_TopBar_Draw(void);
 
-/** @brief é¡¶éƒ¨çŠ¶æ€æ¡ç»˜åˆ¶ */
+/** @brief ¶¥²¿×´Ì¬Ìõ»æÖÆ */
 static void UI_TopBar_Draw(void)
 {
     uint16_t back_color = MAIN_TOP_BACK_COLOR;
@@ -12,12 +12,12 @@ static void UI_TopBar_Draw(void)
     uint16_t len;
     uint16_t info_x;
 
-    /* å…ˆæ¸…æ‰é¡¶éƒ¨çŠ¶æ€æ¡ */
+    /* ÏÈÇåµô¶¥²¿×´Ì¬Ìõ */
     LCD_Fill_Color(TOPBAR_WIFI_X, TOPBAR_Y,
                    (uint16_t)(WIDTH - TOPBAR_MARGIN), (uint16_t)(TOPBAR_Y + TOPBAR_ICON_SIZE - 1U),
                    back_color);
 
-    /* WiFi å›¾æ ‡ */
+    /* WiFi Í¼±ê */
     if (wifi_info.connected)
         LCD_Draw_Picture_AutoTransparent(TOPBAR_WIFI_X, TOPBAR_Y,
                                          (const Image_t *)&Image_wifi, back_color);
@@ -25,7 +25,7 @@ static void UI_TopBar_Draw(void)
         LCD_Draw_Picture_AutoTransparent(TOPBAR_WIFI_X, TOPBAR_Y,
                                          (const Image_t *)&Image_wifi_off, back_color);
 
-    /* å®šä½å›¾æ ‡ */
+    /* ¶¨Î»Í¼±ê */
     if (g_location[0] != '\0')
         LCD_Draw_Picture_AutoTransparent(TOPBAR_LOC_X, TOPBAR_Y,
                                          (const Image_t *)&Image_location, back_color);
@@ -33,7 +33,7 @@ static void UI_TopBar_Draw(void)
         LCD_Draw_Picture_AutoTransparent(TOPBAR_LOC_X, TOPBAR_Y,
                                          (const Image_t *)&Image_no_location, back_color);
 
-    /* [WiFiå,åŸå¸‚å]; ä¸¤ä¸ªåå­—å„è‡ªæˆªæ–­åˆ° 10 å­—ç¬¦, å†æ‹¼æˆä¸€æ¡ */
+    /* [WiFiÃû,³ÇÊĞÃû]; Á½¸öÃû×Ö¸÷×Ô½Ø¶Ïµ½ 10 ×Ö·û, ÔÙÆ´³ÉÒ»Ìõ */
     snprintf(wifi_name, sizeof(wifi_name), "%s",
              (wifi_info.ssid[0] != '\0') ? wifi_info.ssid : "--");
     snprintf(city_name, sizeof(city_name), "%s",
@@ -45,26 +45,26 @@ static void UI_TopBar_Draw(void)
     LCD_Write_String(info_x, (uint16_t)(TOPBAR_Y + 2U), info, COLOR_BLACK, back_color, &Font_16B);
 }
 
-/* ==================== LCD å¼€å…³ ==================== */
+/* ==================== LCD ¿ª¹Ø ==================== */
 
-/** @brief è¿›å…¥ç™½å¤©æ¨¡å¼: æ‰“å¼€ LCD èƒŒå…‰ */
+/** @brief ½øÈë°×ÌìÄ£Ê½: ´ò¿ª LCD ±³¹â */
 void UI_Day_Enter(void)
 {
-    LCD_Display_Power(true); // 0x29 æ˜¾ç¤ºå¼€ + å¼€èƒŒå…‰
+    LCD_Display_Power(true); // 0x29 ÏÔÊ¾¿ª + ¿ª±³¹â
 }
 
-/** @brief é€€å‡ºç™½å¤©: å…³é—­ LCD èƒŒå…‰å¹¶è®©æ˜¾ç¤ºè¿›å…¥ç¡çœ  */
+/** @brief ÍË³ö°×Ìì: ¹Ø±Õ LCD ±³¹â²¢ÈÃÏÔÊ¾½øÈëË¯Ãß */
 void UI_Day_Leave(void)
 {
-    LCD_Display_Power(false); // å…³é—­èƒŒå…‰ + 0x28 æ˜¾ç¤ºç¡çœ 
+    LCD_Display_Power(false); // ¹Ø±Õ±³¹â + 0x28 ÏÔÊ¾Ë¯Ãß
 }
 
-/** @brief æ•´é¡µé‡ç»˜ä¸»é¡µé¢
- *  @note  å¼€æœºé¦–ç»˜ã€å¤œé—´å›åˆ°ç™½å¤©ã€ä»è¾“å…¥ç•Œé¢è¿”å›ä¸»é¡µé¢
+/** @brief ÕûÒ³ÖØ»æÖ÷Ò³Ãæ
+ *  @note  ¿ª»úÊ×»æ¡¢Ò¹¼ä»Øµ½°×Ìì¡¢´ÓÊäÈë½çÃæ·µ»ØÖ÷Ò³Ãæ
  */
 void UI_Day_Repaint(void)
 {
-    uint32_t prof_t0 = Prof_Cycles(); // æ•´é¡µé‡ç»˜è€—æ—¶(DWT CYCCNT)
+    uint32_t prof_t0 = Prof_Cycles(); // ÕûÒ³ÖØ»æºÄÊ±(DWT CYCCNT)
 
     Main_Page_Display();
     UI_TopBar_Draw();
@@ -72,27 +72,27 @@ void UI_Day_Repaint(void)
     DBG_PRINTF("[PROF] main page render: %u us\r\n", (unsigned)Prof_Us(prof_t0));
 }
 
-/** @brief æ—¶é’Ÿ/æ—¥æœŸåˆ·æ–°(å†…éƒ¨æŒ‰ç§’/åˆ†/æ—¶å˜åŒ–æ‰çœŸæ­£é‡ç”») */
+/** @brief Ê±ÖÓ/ÈÕÆÚË¢ĞÂ(ÄÚ²¿°´Ãë/·Ö/Ê±±ä»¯²ÅÕæÕıÖØ»­) */
 void UI_Day_RefreshClock(void)
 {
     Main_Page_Clock_Update();
 }
 
-/** @brief ç™½å¤©é¡µé¢æ•°æ®äº‹ä»¶: WiFi / å¤©æ°” / å®¤å†…æ¸©æ¹¿åº¦ */
+/** @brief °×ÌìÒ³ÃæÊı¾İÊÂ¼ş: WiFi / ÌìÆø / ÊÒÄÚÎÂÊª¶È */
 void UI_Day_HandleEvent(EventBits_t bits)
 {
-    /* WiFiè¿æ¥çŠ¶æ€å˜åŒ–: åˆ·é¡¶éƒ¨çŠ¶æ€æ¡ */
+    /* WiFiÁ¬½Ó×´Ì¬±ä»¯: Ë¢¶¥²¿×´Ì¬Ìõ */
     if (bits & EV_WIFI)
     {
         UI_TopBar_Draw();
     }
-    /* å¤©æ°”åˆ°ä½ååŒæ­¥åŸå¸‚å */
+    /* ÌìÆøµ½Î»ºóÍ¬²½³ÇÊĞÃû */
     if (bits & EV_WEATHER)
     {
         Main_Page_Weather_Update();
         UI_TopBar_Draw();
     }
-    /* æˆ¿é—´æ¸©åº¦æ›´æ–° */
+    /* ·¿¼äÎÂ¶È¸üĞÂ */
     if (bits & EV_DHT22)
     {
         Main_Page_Room_Update();

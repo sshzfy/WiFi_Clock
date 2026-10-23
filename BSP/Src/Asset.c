@@ -15,18 +15,18 @@ static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] =
         {"/font/as48b.bin", ASSET_AS48B_SIZE}, // ASSET_FID_AS48B
 };
 
-static bool s_mounted = false; // littlefs æ˜¯å¦å·²æŒ‚è½½
-static uint32_t s_missing = 0; // è‡ªæ£€å‘ç°çš„é—®é¢˜é¡¹æ•°
-static uint32_t s_checked = 0; // è‡ªæ£€æ ¸å¯¹è¿‡çš„é¡¹æ•°
+static bool s_mounted = false; // littlefs ÊÇ·ñÒÑ¹ÒÔØ
+static uint32_t s_missing = 0; // ×Ô¼ì·¢ÏÖµÄÎÊÌâÏîÊı
+static uint32_t s_checked = 0; // ×Ô¼ìºË¶Ô¹ıµÄÏîÊı
 
-/* å¸¸å¼€å¥æŸ„: å­—æ¨¡è¯»å–éå¸¸é¢‘ç¹, æ¯æ¬¡ open/close éƒ½è¦èµ°ä¸€éç›®å½•æŸ¥æ‰¾, å¤ªæµªè´¹ */
-static lfs_file_t s_file[ASSET_FID_COUNT]; // å­—åº“æ–‡ä»¶å¥æŸ„
-static bool s_open[ASSET_FID_COUNT];       // å­—åº“æ–‡ä»¶æ˜¯å¦å·²æ‰“å¼€
-static uint32_t s_pos[ASSET_FID_COUNT];    // è®°å½•å½“å‰æ–‡ä»¶ä½ç½®, ä½ç½®ç›¸åŒå°±è·³è¿‡ seek
+/* ³£¿ª¾ä±ú: ×ÖÄ£¶ÁÈ¡·Ç³£Æµ·±, Ã¿´Î open/close ¶¼Òª×ßÒ»±éÄ¿Â¼²éÕÒ, Ì«ÀË·Ñ */
+static lfs_file_t s_file[ASSET_FID_COUNT]; // ×Ö¿âÎÄ¼ş¾ä±ú
+static bool s_open[ASSET_FID_COUNT];       // ×Ö¿âÎÄ¼şÊÇ·ñÒÑ´ò¿ª
+static uint32_t s_pos[ASSET_FID_COUNT];    // ¼ÇÂ¼µ±Ç°ÎÄ¼şÎ»ÖÃ, Î»ÖÃÏàÍ¬¾ÍÌø¹ı seek
 
-static uint32_t s_imageMask = 0; // å›¾ç‰‡è‡ªæ£€ç»“æœä½å›¾(æœ€å¤š 32 å¼ )
+static uint32_t s_imageMask = 0; // Í¼Æ¬×Ô¼ì½á¹ûÎ»Í¼(×î¶à 32 ÕÅ)
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static int Asset_MapErr(int err);
 static int Asset_MkdirLocked(const char *path);
 static void Asset_EnsureDirs(void);
@@ -56,25 +56,25 @@ static int Asset_MapErr(int err)
     }
 }
 
-/* åˆ›å»ºç›®å½•(è°ƒç”¨è€…å¿…é¡»å·²æŒæœ‰ LittleFS_Lock); å·²å­˜åœ¨è§†ä¸ºæˆåŠŸ */
+/* ´´½¨Ä¿Â¼(µ÷ÓÃÕß±ØĞëÒÑ³ÖÓĞ LittleFS_Lock); ÒÑ´æÔÚÊÓÎª³É¹¦ */
 static int Asset_MkdirLocked(const char *path)
 {
     struct lfs_info info;
 
-    /* æ£€æŸ¥ç›®å½•æ˜¯å¦å­˜åœ¨ */
+    /* ¼ì²éÄ¿Â¼ÊÇ·ñ´æÔÚ */
     int err = lfs_stat(&g_lfs, path, &info);
-    /* ç›®å½•å­˜åœ¨ä¸”æ˜¯ç›®å½•, æˆåŠŸ */
+    /* Ä¿Â¼´æÔÚÇÒÊÇÄ¿Â¼, ³É¹¦ */
     if (err == LFS_ERR_OK)
     {
         return (info.type == LFS_TYPE_DIR) ? ASSET_OK : ASSET_ERR_PARAM;
     }
-    /* å…¶ä»–é”™è¯¯ç , ç›´æ¥è¿”å› */
+    /* ÆäËû´íÎóÂë, Ö±½Ó·µ»Ø */
     if (err != LFS_ERR_NOENT)
     {
         return Asset_MapErr(err);
     }
 
-    /* åˆ›å»ºç›®å½• */
+    /* ´´½¨Ä¿Â¼ */
     err = lfs_mkdir(&g_lfs, path);
     if ((err != LFS_ERR_OK) && (err != LFS_ERR_EXIST))
     {
@@ -84,7 +84,7 @@ static int Asset_MkdirLocked(const char *path)
     return ASSET_OK;
 }
 
-/* ç¡®ä¿å­—åº“/å›¾ç‰‡/æ•°æ®ä¸‰ä¸ªç›®å½•å­˜åœ¨(æ ¼å¼åŒ–åç›®å½•ä¼šå…¨ä¸¢, éœ€è¦èƒ½é‡å»º) */
+/* È·±£×Ö¿â/Í¼Æ¬/Êı¾İÈı¸öÄ¿Â¼´æÔÚ(¸ñÊ½»¯ºóÄ¿Â¼»áÈ«¶ª, ĞèÒªÄÜÖØ½¨) */
 static void Asset_EnsureDirs(void)
 {
     LittleFS_Lock();
@@ -96,7 +96,7 @@ static void Asset_EnsureDirs(void)
     LittleFS_Unlock();
 }
 
-/* å…³é—­å…¨éƒ¨å¸¸å¼€å­—åº“å¥æŸ„ */
+/* ¹Ø±ÕÈ«²¿³£¿ª×Ö¿â¾ä±ú */
 static void Asset_CloseFonts(void)
 {
     LittleFS_Lock();
@@ -105,22 +105,22 @@ static void Asset_CloseFonts(void)
     {
         if (s_open[i])
         {
-            /* å¥æŸ„å¯èƒ½å·²ç»å› ä¸ºæ ¼å¼åŒ–è€Œå¤±æ•ˆ, å…³é—­å¤±è´¥ä¸å½±å“åç»­æµç¨‹ */
+            /* ¾ä±ú¿ÉÄÜÒÑ¾­ÒòÎª¸ñÊ½»¯¶øÊ§Ğ§, ¹Ø±ÕÊ§°Ü²»Ó°ÏìºóĞøÁ÷³Ì */
             (void)lfs_file_close(&g_lfs, &s_file[i]);
             s_open[i] = false;
         }
-        s_pos[i] = ASSET_POS_INVALID; // é‡ç½®ä½ç½®
+        s_pos[i] = ASSET_POS_INVALID; // ÖØÖÃÎ»ÖÃ
     }
 
     LittleFS_Unlock();
 }
 
-/* æ‰“å¼€å…¨éƒ¨å­—åº“æ–‡ä»¶å¹¶å¸¸å¼€å¥æŸ„ */
+/* ´ò¿ªÈ«²¿×Ö¿âÎÄ¼ş²¢³£¿ª¾ä±ú */
 static void Asset_OpenFonts(void)
 {
     LittleFS_Lock();
 
-    /* ä»¥åªè¯»æ¨¡å¼æ‰“å¼€å…¨éƒ¨å­—åº“æ–‡ä»¶ */
+    /* ÒÔÖ»¶ÁÄ£Ê½´ò¿ªÈ«²¿×Ö¿âÎÄ¼ş */
     for (int i = 0; i < ASSET_FID_COUNT; i++)
     {
         int err = lfs_file_open(&g_lfs, &s_file[i], s_fontFiles[i].path, LFS_O_RDONLY);
@@ -140,8 +140,8 @@ static void Asset_OpenFonts(void)
 }
 
 /**
- * @brief é€é¡¹æ ¸å¯¹èµ„æºæ–‡ä»¶æ˜¯å¦å­˜åœ¨ä¸”å¤§å°æ­£ç¡®
- * @note å­—åº“æŒ‰å›ºå®šå°ºå¯¸æ ¸å¯¹, å›¾ç‰‡æŒ‰ 4 å­—èŠ‚å¤´ + å®½*é«˜*2 æ ¸å¯¹
+ * @brief ÖğÏîºË¶Ô×ÊÔ´ÎÄ¼şÊÇ·ñ´æÔÚÇÒ´óĞ¡ÕıÈ·
+ * @note ×Ö¿â°´¹Ì¶¨³ß´çºË¶Ô, Í¼Æ¬°´ 4 ×Ö½ÚÍ· + ¿í*¸ß*2 ºË¶Ô
  */
 static void Asset_SelfCheck(void)
 {
@@ -149,25 +149,25 @@ static void Asset_SelfCheck(void)
 
     LittleFS_Lock();
 
-    /* å­—åº“æ–‡ä»¶
-     * é€é¡¹æ ¸å¯¹å­—åº“æ–‡ä»¶æ˜¯å¦å­˜åœ¨ä¸”å¤§å°æ­£ç¡®*/
+    /* ×Ö¿âÎÄ¼ş
+     * ÖğÏîºË¶Ô×Ö¿âÎÄ¼şÊÇ·ñ´æÔÚÇÒ´óĞ¡ÕıÈ·*/
     for (int i = 0; i < ASSET_FID_COUNT; i++)
     {
         int err = lfs_stat(&g_lfs, s_fontFiles[i].path, &info);
-        s_checked++; // è®°å½•å·²æ ¸å¯¹çš„å­—åº“æ–‡ä»¶æ•°é‡
+        s_checked++; // ¼ÇÂ¼ÒÑºË¶ÔµÄ×Ö¿âÎÄ¼şÊıÁ¿
 
-        /* æ–‡ä»¶æœ‰é”™è¯¯æˆ–å¤§å°ä¸æ­£ç¡® */
+        /* ÎÄ¼şÓĞ´íÎó»ò´óĞ¡²»ÕıÈ· */
         if ((err != LFS_ERR_OK) || (info.size != s_fontFiles[i].size))
         {
-            s_missing++; // è®°å½•é”™è¯¯å­—åº“çš„æ•°é‡
-            /* æ–‡ä»¶å­˜åœ¨ä½†å¤§å°ä¸æ­£ç¡® */
+            s_missing++; // ¼ÇÂ¼´íÎó×Ö¿âµÄÊıÁ¿
+            /* ÎÄ¼ş´æÔÚµ«´óĞ¡²»ÕıÈ· */
             if (err == LFS_ERR_OK)
             {
                 DBG_PRINTF("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
                        s_fontFiles[i].path, (unsigned long)info.size,
                        (unsigned long)s_fontFiles[i].size);
             }
-            /* æ–‡ä»¶ä¸å­˜åœ¨ */
+            /* ÎÄ¼ş²»´æÔÚ */
             else
             {
                 DBG_PRINTF("[ASSET] MISSING %s err=%d\r\n", s_fontFiles[i].path, err);
@@ -175,31 +175,31 @@ static void Asset_SelfCheck(void)
         }
     }
 
-    /* å›¾ç‰‡æ–‡ä»¶
-     * é€é¡¹æ ¸å¯¹å›¾ç‰‡æ–‡ä»¶æ˜¯å¦å­˜åœ¨ä¸”å¤§å°æ­£ç¡®*/
+    /* Í¼Æ¬ÎÄ¼ş
+     * ÖğÏîºË¶ÔÍ¼Æ¬ÎÄ¼şÊÇ·ñ´æÔÚÇÒ´óĞ¡ÕıÈ·*/
     for (uint32_t i = 0; i < g_AllImageCount; i++)
     {
         const Image_t *im = g_AllImages[i];
         uint32_t want = (uint32_t)ASSET_IMAGE_HEADER_SIZE +
-                        (uint32_t)im->width * (uint32_t)im->height * 2U; // 4 å­—èŠ‚å¤´ + å®½*é«˜*2,ä¸€å¼ å›¾ç‰‡ç†è®ºçš„æ­£ç¡®å¤§å°
+                        (uint32_t)im->width * (uint32_t)im->height * 2U; // 4 ×Ö½ÚÍ· + ¿í*¸ß*2,Ò»ÕÅÍ¼Æ¬ÀíÂÛµÄÕıÈ·´óĞ¡
         int err = lfs_stat(&g_lfs, im->path, &info);
-        s_checked++; // è®°å½•å·²æ ¸å¯¹çš„å›¾ç‰‡æ–‡ä»¶æ•°é‡
+        s_checked++; // ¼ÇÂ¼ÒÑºË¶ÔµÄÍ¼Æ¬ÎÄ¼şÊıÁ¿
 
-        /* æ–‡ä»¶æœ‰é”™è¯¯æˆ–å¤§å°ä¸æ­£ç¡® */
+        /* ÎÄ¼şÓĞ´íÎó»ò´óĞ¡²»ÕıÈ· */
         if ((err != LFS_ERR_OK) || (info.size != want))
         {
-            s_missing++; // è®°å½•é”™è¯¯å›¾ç‰‡çš„æ•°é‡
-            /* æ–‡ä»¶å­˜åœ¨ä½†å¤§å°ä¸æ­£ç¡® */
+            s_missing++; // ¼ÇÂ¼´íÎóÍ¼Æ¬µÄÊıÁ¿
+            /* ÎÄ¼ş´æÔÚµ«´óĞ¡²»ÕıÈ· */
             if (err == LFS_ERR_OK)
             {
                 DBG_PRINTF("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
                        im->path, (unsigned long)info.size, (unsigned long)want);
             }
-            /* æ–‡ä»¶ä¸å­˜åœ¨ */
+            /* ÎÄ¼ş²»´æÔÚ */
             else
                 DBG_PRINTF("[ASSET] MISSING %s err=%d\r\n", im->path, err);
         }
-        /* æ©ç åªæœ‰ 32 ä½, è¶…å‡ºèŒƒå›´çš„å›¾ç‰‡ä¸è®°æ©ç  */
+        /* ÑÚÂëÖ»ÓĞ 32 Î», ³¬³ö·¶Î§µÄÍ¼Æ¬²»¼ÇÑÚÂë */
         else if (i < ASSET_IMAGE_MASK_BITS)
         {
             s_imageMask |= (1UL << i);
@@ -209,23 +209,23 @@ static void Asset_SelfCheck(void)
     LittleFS_Unlock();
 }
 
-/** @brief è¿è¡Œæ•°æ®åæ˜¯å¦åˆæ³•: åªå…è®¸å­—æ¯/æ•°å­—/'_'/'-', é•¿åº¦ 1 ~ ASSET_DATA_NAME_MAX
- * @param name æ•°æ®å
- * @return true åˆæ³•, false ä¸åˆæ³•
+/** @brief ÔËĞĞÊı¾İÃûÊÇ·ñºÏ·¨: Ö»ÔÊĞí×ÖÄ¸/Êı×Ö/'_'/'-', ³¤¶È 1 ~ ASSET_DATA_NAME_MAX
+ * @param name Êı¾İÃû
+ * @return true ºÏ·¨, false ²»ºÏ·¨
  */
 static bool Asset_DataNameLegal(const char *name)
 {
     if ((name == NULL) || (name[0] == '\0'))
         return false;
 
-    /* æ£€æŸ¥æ˜¯å¦æœ‰éæ³•å­—ç¬¦ */
+    /* ¼ì²éÊÇ·ñÓĞ·Ç·¨×Ö·û */
     for (uint32_t i = 0; name[i] != '\0'; i++)
     {
         char c = name[i];
         bool ok = ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) ||
                   ((c >= '0') && (c <= '9')) || (c == '_') || (c == '-');
 
-        /* åå­—é‡Œä¸å…è®¸å‡ºç° '/', '.', '\\' ç­‰å­—ç¬¦: è·¯å¾„ç”±æœ¬å±‚æ‹¼, è°ƒç”¨è€…æ— æ³•è¶Šå‡º /data */
+        /* Ãû×ÖÀï²»ÔÊĞí³öÏÖ '/', '.', '\\' µÈ×Ö·û: Â·¾¶ÓÉ±¾²ãÆ´, µ÷ÓÃÕßÎŞ·¨Ô½³ö /data */
         if ((!ok) || (i >= ASSET_DATA_NAME_MAX))
             return false;
     }
@@ -233,11 +233,11 @@ static bool Asset_DataNameLegal(const char *name)
     return true;
 }
 
-/** @brief æŠŠæ•°æ®åæ‹¼æˆå®Œæ•´è·¯å¾„ /data/<name>.bin
- * @param name æ•°æ®å
- * @param out è¾“å‡ºç¼“å†²åŒº
- * @param out_size è¾“å‡ºç¼“å†²åŒºå¤§å°
- * @return ASSET_OK æˆåŠŸ; å…¶ä»–è´Ÿæ•°ä¸ºé”™è¯¯ç (å‚æ•°é”™è¯¯/ç¼“å†²åŒºå¤ªå°)
+/** @brief °ÑÊı¾İÃûÆ´³ÉÍêÕûÂ·¾¶ /data/<name>.bin
+ * @param name Êı¾İÃû
+ * @param out Êä³ö»º³åÇø
+ * @param out_size Êä³ö»º³åÇø´óĞ¡
+ * @return ASSET_OK ³É¹¦; ÆäËû¸ºÊıÎª´íÎóÂë(²ÎÊı´íÎó/»º³åÇøÌ«Ğ¡)
  */
 static int Asset_DataPathAssemble(const char *name, char *out, uint32_t out_size)
 {
@@ -253,26 +253,26 @@ static int Asset_DataPathAssemble(const char *name, char *out, uint32_t out_size
     return ASSET_OK;
 }
 
-/* ================ publicå‡½æ•° ================ */
+/* ================ publicº¯Êı ================ */
 
-/* ================ åˆå§‹åŒ–ä¸çŠ¶æ€ ================ */
+/* ================ ³õÊ¼»¯Óë×´Ì¬ ================ */
 
 /**
- * @brief åˆå§‹åŒ–èµ„æºå±‚: W25Q64 -> æŒ‚è½½ -> å¸¸å¼€å­—åº“å¥æŸ„ -> è‡ªæ£€ -> å»ºç›®å½•
- * @return ASSET_OK ä¸€åˆ‡å°±ç»ª; ASSET_ERR_MISSING æ–‡ä»¶ç³»ç»Ÿå¯ç”¨ä½†èµ„æºä¸å…¨;
- *         å…¶ä»–è´Ÿæ•°ä¸ºé”™è¯¯ç (æœªæ£€æµ‹åˆ° Flash / æŒ‚è½½å¤±è´¥)
- * @note  å¯é‡å¤è°ƒç”¨ã€‚æŒ‚è½½å¤±è´¥æ—¶ç»ä¸è‡ªåŠ¨æ ¼å¼åŒ– â€”â€” é‚£ä¼šæŠŠå·²ç»çƒ§å½•å¥½çš„
- *        å­—åº“ä¸å›¾ç‰‡å…¨éƒ¨æ¸…ç©º, åªèƒ½æç¤ºé‡æ–°çƒ§å½• Provision å›ºä»¶ã€‚
+ * @brief ³õÊ¼»¯×ÊÔ´²ã: W25Q64 -> ¹ÒÔØ -> ³£¿ª×Ö¿â¾ä±ú -> ×Ô¼ì -> ½¨Ä¿Â¼
+ * @return ASSET_OK Ò»ÇĞ¾ÍĞ÷; ASSET_ERR_MISSING ÎÄ¼şÏµÍ³¿ÉÓÃµ«×ÊÔ´²»È«;
+ *         ÆäËû¸ºÊıÎª´íÎóÂë(Î´¼ì²âµ½ Flash / ¹ÒÔØÊ§°Ü)
+ * @note  ¿ÉÖØ¸´µ÷ÓÃ¡£¹ÒÔØÊ§°ÜÊ±¾ø²»×Ô¶¯¸ñÊ½»¯ ¡ª¡ª ÄÇ»á°ÑÒÑ¾­ÉÕÂ¼ºÃµÄ
+ *        ×Ö¿âÓëÍ¼Æ¬È«²¿Çå¿Õ, Ö»ÄÜÌáÊ¾ÖØĞÂÉÕÂ¼ Provision ¹Ì¼ş¡£
  */
 int Asset_Init(void)
 {
-    /* é‡å¤è°ƒç”¨æ—¶å…ˆæ”¾æ‰æ—§å¥æŸ„, é¿å… littlefs å¥æŸ„æ³„æ¼ */
+    /* ÖØ¸´µ÷ÓÃÊ±ÏÈ·Åµô¾É¾ä±ú, ±ÜÃâ littlefs ¾ä±úĞ¹Â© */
     if (s_mounted)
     {
         Asset_CloseFonts();
     }
 
-    /* åˆå§‹åŒ–çŠ¶æ€ */
+    /* ³õÊ¼»¯×´Ì¬ */
     s_mounted = false;
     s_missing = 0;
     s_checked = 0;
@@ -283,7 +283,7 @@ int Asset_Init(void)
         s_pos[i] = ASSET_POS_INVALID;
     }
 
-    /* 1. ç¡¬ä»¶: ç¡®è®¤ SPI Flash åœ¨ä½(è¯» JEDEC ID) */
+    /* 1. Ó²¼ş: È·ÈÏ SPI Flash ÔÚÎ»(¶Á JEDEC ID) */
     W25Q64_Init();
     uint32_t jedec = W25Q64_ReadJedecId();
     if (jedec != 0xEF4017U)
@@ -294,7 +294,7 @@ int Asset_Init(void)
     }
     DBG_PRINTF("[ASSET] W25Q64 jedec = 0x%06lX\r\n", (unsigned long)jedec);
 
-    /* 2. æ–‡ä»¶ç³»ç»Ÿ: åªæŒ‚è½½(å¹‚ç­‰), å¤±è´¥ä¸æ ¼å¼åŒ– */
+    /* 2. ÎÄ¼şÏµÍ³: Ö»¹ÒÔØ(ÃİµÈ), Ê§°Ü²»¸ñÊ½»¯ */
     int err = LittleFS_Mount();
     if (err != LFS_ERR_OK)
     {
@@ -302,19 +302,19 @@ int Asset_Init(void)
         DBG_PRINTF("[ASSET] flash the provision firmware (RESOURCE_PROVISION=1) first\r\n");
         return Asset_MapErr(err);
     }
-    s_mounted = true; // æ ‡è®°ä¸ºå·²æŒ‚è½½
+    s_mounted = true; // ±ê¼ÇÎªÒÑ¹ÒÔØ
     DBG_PRINTF("[ASSET] littlefs mounted: %lu blocks x %lu B\r\n",
            (unsigned long)g_lfs_config.block_count, (unsigned long)g_lfs_config.block_size);
 
-    /* 3. ç›®å½•: å­—åº“ä¸å›¾ç‰‡ç›®å½•ç”±çƒ§å½•å›ºä»¶åˆ›å»º, è¿™é‡Œåªæ˜¯è¡¥é½ç¼ºå¤±çš„ */
+    /* 3. Ä¿Â¼: ×Ö¿âÓëÍ¼Æ¬Ä¿Â¼ÓÉÉÕÂ¼¹Ì¼ş´´½¨, ÕâÀïÖ»ÊÇ²¹ÆëÈ±Ê§µÄ */
     Asset_EnsureDirs();
 
-    /* 4. å¸¸å¼€å­—åº“å¥æŸ„ + èµ„æºè‡ªæ£€ */
+    /* 4. ³£¿ª×Ö¿â¾ä±ú + ×ÊÔ´×Ô¼ì */
     Asset_OpenFonts();
     Asset_SelfCheck();
     DBG_PRINTF("[ASSET] selfcheck: checked=%lu, missing=%lu\r\n",
            (unsigned long)s_checked, (unsigned long)s_missing);
-    /* å…¨éƒ¨ç¼ºå¤±æ˜¯æœ€å¸¸è§çš„æƒ…å½¢: èµ„æºä»æœªçƒ§å½•è¿› W25Q64 */
+    /* È«²¿È±Ê§ÊÇ×î³£¼ûµÄÇéĞÎ: ×ÊÔ´´ÓÎ´ÉÕÂ¼½ø W25Q64 */
     if ((s_missing > 0U) && (s_missing == s_checked))
     {
         DBG_PRINTF("[ASSET] HINT: no resources on flash, flash the provision firmware first\r\n");
@@ -323,31 +323,31 @@ int Asset_Init(void)
     return (s_missing == 0U) ? ASSET_OK : ASSET_ERR_MISSING;
 }
 
-/* æ–‡ä»¶ç³»ç»Ÿæ˜¯å¦å·²æŒ‚è½½å¯ç”¨(èµ„æºç¼ºå¤±ä¹Ÿç®—å¯ç”¨, è§ Asset_MissingCount) */
+/* ÎÄ¼şÏµÍ³ÊÇ·ñÒÑ¹ÒÔØ¿ÉÓÃ(×ÊÔ´È±Ê§Ò²Ëã¿ÉÓÃ, ¼û Asset_MissingCount) */
 bool Asset_Ready(void)
 {
     return s_mounted && LittleFS_IsMounted();
 }
 
-/* è‡ªæ£€å‘ç°çš„é—®é¢˜é¡¹æ•°(æ–‡ä»¶ç¼ºå¤±æˆ–å¤§å°ä¸ç¬¦) */
+/* ×Ô¼ì·¢ÏÖµÄÎÊÌâÏîÊı(ÎÄ¼şÈ±Ê§»ò´óĞ¡²»·û) */
 uint32_t Asset_MissingCount(void)
 {
     return s_missing;
 }
 
-/* è‡ªæ£€æ ¸å¯¹è¿‡çš„èµ„æºé¡¹æ€»æ•° */
+/* ×Ô¼ìºË¶Ô¹ıµÄ×ÊÔ´Ïî×ÜÊı */
 uint32_t Asset_CheckedCount(void)
 {
     return s_checked;
 }
 
 /**
- * @brief æŸ¥è¯¢æ–‡ä»¶ç³»ç»Ÿç©ºé—´
- * @param total_bytes è¾“å‡º: æ€»å®¹é‡, å¯ä¼  NULL
- * @param used_bytes  è¾“å‡º: å·²å ç”¨(æŒ‰å—ç»Ÿè®¡), å¯ä¼  NULL
- * @return ASSET_OK æˆåŠŸ; è´Ÿæ•°ä¸ºé”™è¯¯ç 
- * @note  lfs_fs_size() è¦æ‰«ææ•´ä¸ªæ–‡ä»¶ç³»ç»Ÿçš„å—çŠ¶æ€, è€—æ—¶éšå®¹é‡å¢é•¿,
- *        é€‚åˆå¶å°”æŸ¥è¯¢, ä¸è¦æ”¾åœ¨æ¸²æŸ“å¾ªç¯é‡Œã€‚
+ * @brief ²éÑ¯ÎÄ¼şÏµÍ³¿Õ¼ä
+ * @param total_bytes Êä³ö: ×ÜÈİÁ¿, ¿É´« NULL
+ * @param used_bytes  Êä³ö: ÒÑÕ¼ÓÃ(°´¿éÍ³¼Æ), ¿É´« NULL
+ * @return ASSET_OK ³É¹¦; ¸ºÊıÎª´íÎóÂë
+ * @note  lfs_fs_size() ÒªÉ¨ÃèÕû¸öÎÄ¼şÏµÍ³µÄ¿é×´Ì¬, ºÄÊ±ËæÈİÁ¿Ôö³¤,
+ *        ÊÊºÏÅ¼¶û²éÑ¯, ²»Òª·ÅÔÚäÖÈ¾Ñ­»·Àï¡£
  */
 int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes)
 {
@@ -356,7 +356,7 @@ int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes)
         return ASSET_ERR_STATE;
     }
 
-    /* æŸ¥è¯¢å·²å ç”¨å—æ•° */
+    /* ²éÑ¯ÒÑÕ¼ÓÃ¿éÊı */
     LittleFS_Lock();
     lfs_ssize_t used_blocks = lfs_fs_size(&g_lfs);
     LittleFS_Unlock();
@@ -366,28 +366,28 @@ int Asset_Space(uint32_t *total_bytes, uint32_t *used_bytes)
         return ASSET_ERR_IO;
     }
 
-    uint32_t block_size = (uint32_t)g_lfs_config.block_size; // æ¯ä¸ªå—çš„å¤§å°
+    uint32_t block_size = (uint32_t)g_lfs_config.block_size; // Ã¿¸ö¿éµÄ´óĞ¡
 
     if (total_bytes != NULL)
     {
-        *total_bytes = block_size * (uint32_t)g_lfs_config.block_count; // æ€»å®¹é‡å­—èŠ‚æ•°
+        *total_bytes = block_size * (uint32_t)g_lfs_config.block_count; // ×ÜÈİÁ¿×Ö½ÚÊı
     }
     if (used_bytes != NULL)
     {
-        *used_bytes = (uint32_t)used_blocks * block_size; // å·²å ç”¨å­—èŠ‚æ•°
+        *used_bytes = (uint32_t)used_blocks * block_size; // ÒÑÕ¼ÓÃ×Ö½ÚÊı
     }
 
     return ASSET_OK;
 }
 
 /**
- * @brief ä»å­—åº“èµ„æºæ–‡ä»¶è¯»å–å­—ä½“æ•°æ®,åªè¯»
- * @param fid èµ„æºæ–‡ä»¶ ID(è§ Asset_FontId_t)
- * @param off æ–‡ä»¶å†…å­—èŠ‚åç§»
- * @param buf è¾“å‡ºç¼“å†²åŒº
- * @param len è¦è¯»å–çš„å­—èŠ‚æ•°
- * @return ASSET_OK æˆåŠŸ; è´Ÿæ•°ä¸ºé”™è¯¯ç 
- * @note  å¥æŸ„å¸¸å¼€ä¸”ä½ç½®è¢«è®°ä½, è¿ç»­è¯»åŒä¸€æ®µæ—¶ä¸éœ€è¦é‡æ–° seekã€‚
+ * @brief ´Ó×Ö¿â×ÊÔ´ÎÄ¼ş¶ÁÈ¡×ÖÌåÊı¾İ,Ö»¶Á
+ * @param fid ×ÊÔ´ÎÄ¼ş ID(¼û Asset_FontId_t)
+ * @param off ÎÄ¼şÄÚ×Ö½ÚÆ«ÒÆ
+ * @param buf Êä³ö»º³åÇø
+ * @param len Òª¶ÁÈ¡µÄ×Ö½ÚÊı
+ * @return ASSET_OK ³É¹¦; ¸ºÊıÎª´íÎóÂë
+ * @note  ¾ä±ú³£¿ªÇÒÎ»ÖÃ±»¼Ç×¡, Á¬Ğø¶ÁÍ¬Ò»¶ÎÊ±²»ĞèÒªÖØĞÂ seek¡£
  */
 int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
 {
@@ -399,7 +399,7 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
     {
         return ASSET_ERR_STATE;
     }
-    /* è¶Šç•Œä¿æŠ¤: å…ˆæ¯” off å†æ¯” len, é¿å… off + len æº¢å‡º */
+    /* Ô½½ç±£»¤: ÏÈ±È off ÔÙ±È len, ±ÜÃâ off + len Òç³ö */
     if ((off > s_fontFiles[fid].size) || ((len + off) > (s_fontFiles[fid].size)))
     {
         return ASSET_ERR_RANGE;
@@ -407,7 +407,7 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
 
     LittleFS_Lock();
 
-    /* å½“ä½ç½®ä¸åŒ¹é…æ—¶éœ€è¦ seek */
+    /* µ±Î»ÖÃ²»Æ¥ÅäÊ±ĞèÒª seek */
     if (s_pos[fid] != off)
     {
         if (lfs_file_seek(&g_lfs, &s_file[fid], (lfs_off_t)off, LFS_SEEK_SET) < 0)
@@ -416,14 +416,14 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
             return ASSET_ERR_IO;
         }
     }
-    /* è¯»å–æ•°æ® */
+    /* ¶ÁÈ¡Êı¾İ */
     if (lfs_file_read(&g_lfs, &s_file[fid], buf, len) != (lfs_ssize_t)len)
     {
-        s_pos[fid] = ASSET_POS_INVALID; // å¥æŸ„ä½ç½®å·²ä¸å¯ä¿¡, ä¸‹æ¬¡å¼ºåˆ¶ seek
+        s_pos[fid] = ASSET_POS_INVALID; // ¾ä±úÎ»ÖÃÒÑ²»¿ÉĞÅ, ÏÂ´ÎÇ¿ÖÆ seek
         LittleFS_Unlock();
         return ASSET_ERR_IO;
     }
-    s_pos[fid] = off + len; // æˆåŠŸè¯»å–å,æ›´æ–°å¥æŸ„ä½ç½®
+    s_pos[fid] = off + len; // ³É¹¦¶ÁÈ¡ºó,¸üĞÂ¾ä±úÎ»ÖÃ
 
     LittleFS_Unlock();
 
@@ -431,9 +431,9 @@ int Asset_ReadFont(uint8_t fid, uint32_t off, void *buf, uint32_t len)
 }
 
 /**
- * @brief è¯¥å›¾ç‰‡æ˜¯å¦å·²é€šè¿‡å¼€æœºè‡ªæ£€(å­˜åœ¨ä¸”å¤§å°ä¸æè¿°ä¸€è‡´)
- * @param img å›¾ç‰‡æè¿°
- * @return true å·²é€šè¿‡è‡ªæ£€; false æœªé€šè¿‡(æˆ–ä¸åœ¨èµ„æºæ¸…å•é‡Œ)
+ * @brief ¸ÃÍ¼Æ¬ÊÇ·ñÒÑÍ¨¹ı¿ª»ú×Ô¼ì(´æÔÚÇÒ´óĞ¡ÓëÃèÊöÒ»ÖÂ)
+ * @param img Í¼Æ¬ÃèÊö
+ * @return true ÒÑÍ¨¹ı×Ô¼ì; false Î´Í¨¹ı(»ò²»ÔÚ×ÊÔ´Çåµ¥Àï)
  */
 bool Asset_ImageOk(const Image_t *img)
 {
@@ -446,7 +446,7 @@ bool Asset_ImageOk(const Image_t *img)
     {
         if (g_AllImages[i] == img)
         {
-            /* æ©ç åªæœ‰ 32 ä½: è¶…å‡ºèŒƒå›´çš„å›¾ç‰‡æ— æ³•ç”¨æ©ç è¡¨ç¤º, ä¸€å¾‹å½“ä½œä¸å¯ç”¨ */
+            /* ÑÚÂëÖ»ÓĞ 32 Î»: ³¬³ö·¶Î§µÄÍ¼Æ¬ÎŞ·¨ÓÃÑÚÂë±íÊ¾, Ò»ÂÉµ±×÷²»¿ÉÓÃ */
             if (i >= ASSET_IMAGE_MASK_BITS)
             {
                 return false;
@@ -459,10 +459,10 @@ bool Asset_ImageOk(const Image_t *img)
 }
 
 /**
- * @brief åªè¯»å›¾ç‰‡æ–‡ä»¶å¤´, å–å‡ºå®½é«˜
- * @param path å›¾ç‰‡è·¯å¾„(ç»å¯¹è·¯å¾„, å¦‚ "/img/wifi.bin")
- * @param w,h  è¾“å‡º: å®½é«˜
- * @return ASSET_OK æˆåŠŸ; ASSET_ERR_FORMAT æ–‡ä»¶å¤´éæ³•; å…¶ä»–è´Ÿæ•°ä¸ºé”™è¯¯ç 
+ * @brief Ö»¶ÁÍ¼Æ¬ÎÄ¼şÍ·, È¡³ö¿í¸ß
+ * @param path Í¼Æ¬Â·¾¶(¾ø¶ÔÂ·¾¶, Èç "/img/wifi.bin")
+ * @param w,h  Êä³ö: ¿í¸ß
+ * @return ASSET_OK ³É¹¦; ASSET_ERR_FORMAT ÎÄ¼şÍ··Ç·¨; ÆäËû¸ºÊıÎª´íÎóÂë
  */
 int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
 {
@@ -475,7 +475,7 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
         return ASSET_ERR_STATE;
     }
 
-    uint8_t header[ASSET_IMAGE_HEADER_SIZE]; // å›¾ç‰‡æ–‡ä»¶å¤´
+    uint8_t header[ASSET_IMAGE_HEADER_SIZE]; // Í¼Æ¬ÎÄ¼şÍ·
 
     LittleFS_Lock();
 
@@ -490,8 +490,8 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
         }
         return Asset_MapErr(err);
     }
-    /* ä»ä¸´æ—¶æ‰“å¼€çš„å›¾ç‰‡æ–‡ä»¶è¯»å–æ–‡ä»¶å¤´ */
-    lfs_ssize_t rd = lfs_file_read(&g_lfs, &file, header, sizeof(header)); // rd ä¸ºå®é™…è¯»å–çš„å­—èŠ‚æ•°
+    /* ´ÓÁÙÊ±´ò¿ªµÄÍ¼Æ¬ÎÄ¼ş¶ÁÈ¡ÎÄ¼şÍ· */
+    lfs_ssize_t rd = lfs_file_read(&g_lfs, &file, header, sizeof(header)); // rd ÎªÊµ¼Ê¶ÁÈ¡µÄ×Ö½ÚÊı
     (void)lfs_file_close(&g_lfs, &file);
 
     LittleFS_Unlock();
@@ -518,11 +518,11 @@ int Asset_ImageInfo(const char *path, uint16_t *w, uint16_t *h)
 }
 
 /**
- * @brief æ‰“å¼€å›¾ç‰‡æ–‡ä»¶å¹¶è·³è¿‡ 4 å­—èŠ‚æ–‡ä»¶å¤´
- * @param img å›¾ç‰‡æè¿°(å®½é«˜åœ¨ç¼–è¯‘æœŸå·²çŸ¥, å¤´åªç”¨æ¥å ä½è·³è¿‡)
- * @param f   è¾“å‡º: æ–‡ä»¶å¥æŸ„, ç”±è°ƒç”¨æ–¹æŒæœ‰åˆ° Asset_ImageClose()
- * @return ASSET_OK æˆåŠŸ; è´Ÿæ•°ä¸ºé”™è¯¯ç 
- * @note  æ¯æ¬¡è¯»éƒ½æŒ LittleFS_Lock(), ä¸ä¼šä¸åˆ«çš„ä»»åŠ¡å†™ Flash æŠ¢ SPI1ã€‚
+ * @brief ´ò¿ªÍ¼Æ¬ÎÄ¼ş²¢Ìø¹ı 4 ×Ö½ÚÎÄ¼şÍ·
+ * @param img Í¼Æ¬ÃèÊö(¿í¸ßÔÚ±àÒëÆÚÒÑÖª, Í·Ö»ÓÃÀ´Õ¼Î»Ìø¹ı)
+ * @param f   Êä³ö: ÎÄ¼ş¾ä±ú, ÓÉµ÷ÓÃ·½³ÖÓĞµ½ Asset_ImageClose()
+ * @return ASSET_OK ³É¹¦; ¸ºÊıÎª´íÎóÂë
+ * @note  Ã¿´Î¶Á¶¼³Ö LittleFS_Lock(), ²»»áÓë±ğµÄÈÎÎñĞ´ Flash ÇÀ SPI1¡£
  */
 int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
 {
@@ -544,7 +544,7 @@ int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
         DBG_PRINTF("[ASSET] open %s failed, err = %d\r\n", img->path, err);
         return Asset_MapErr(err);
     }
-    /* è·³è¿‡ 4 å­—èŠ‚æ–‡ä»¶å¤´(width/height ç¼–è¯‘æœŸå·²çŸ¥, ä¸å¿…è¯»å‡ºæ¥) */
+    /* Ìø¹ı 4 ×Ö½ÚÎÄ¼şÍ·(width/height ±àÒëÆÚÒÑÖª, ²»±Ø¶Á³öÀ´) */
     if (lfs_file_seek(&g_lfs, f, (lfs_off_t)ASSET_IMAGE_HEADER_SIZE, LFS_SEEK_SET) < 0)
     {
         (void)lfs_file_close(&g_lfs, f);
@@ -558,11 +558,11 @@ int Asset_ImageOpen(const Image_t *img, lfs_file_t *f)
 }
 
 /**
- * @brief ä»å·²æ‰“å¼€çš„å›¾ç‰‡æ–‡ä»¶é¡ºåºè¯»å– len å­—èŠ‚
- * @param f   å›¾ç‰‡æ–‡ä»¶å¥æŸ„
- * @param buf è¾“å‡ºç¼“å†²åŒº
- * @param len è¯»å–çš„å­—èŠ‚æ•°
- * @return ASSET_OK æˆåŠŸ; è´Ÿæ•°ä¸ºé”™è¯¯ç 
+ * @brief ´ÓÒÑ´ò¿ªµÄÍ¼Æ¬ÎÄ¼şË³Ğò¶ÁÈ¡ len ×Ö½Ú
+ * @param f   Í¼Æ¬ÎÄ¼ş¾ä±ú
+ * @param buf Êä³ö»º³åÇø
+ * @param len ¶ÁÈ¡µÄ×Ö½ÚÊı
+ * @return ASSET_OK ³É¹¦; ¸ºÊıÎª´íÎóÂë
  */
 int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len)
 {
@@ -588,7 +588,7 @@ int Asset_ImageRead(lfs_file_t *f, void *buf, uint32_t len)
     return ASSET_OK;
 }
 
-/* å…³é—­å›¾ç‰‡æ–‡ä»¶å¥æŸ„ */
+/* ¹Ø±ÕÍ¼Æ¬ÎÄ¼ş¾ä±ú */
 void Asset_ImageClose(lfs_file_t *f)
 {
     if (s_mounted && (f != NULL))
@@ -599,19 +599,19 @@ void Asset_ImageClose(lfs_file_t *f)
     }
 }
 
-/* ================ è¿è¡Œæ•°æ®: /data/<name>.bin ================ */
+/* ================ ÔËĞĞÊı¾İ: /data/<name>.bin ================ */
 
 /**
- * @brief ä¿å­˜è¿è¡Œæ•°æ®(è¦†ç›–å†™, ä¸å­˜åœ¨åˆ™åˆ›å»º)
- * @param name æ•°æ®å(å­—æ¯/æ•°å­—/'_'/'-', æœ€é•¿ ASSET_DATA_NAME_MAX)
- * @param buf  æ•°æ®
- * @param len  å­—èŠ‚æ•°(å¿…é¡» > 0)
- * @return ASSET_OK å…¨éƒ¨å­—èŠ‚å·²è½ç›˜; è´Ÿæ•°ä¸ºé”™è¯¯ç 
- * @note  littlefs å†™å…¥æ˜¯å†™æ—¶å¤åˆ¶: ä¸­é€”æ‰ç”µä¿ç•™æ—§å†…å®¹, ä¸ä¼šå†™å‡ºåŠä¸ªæ–‡ä»¶ã€‚
+ * @brief ±£´æÔËĞĞÊı¾İ(¸²¸ÇĞ´, ²»´æÔÚÔò´´½¨)
+ * @param name Êı¾İÃû(×ÖÄ¸/Êı×Ö/'_'/'-', ×î³¤ ASSET_DATA_NAME_MAX)
+ * @param buf  Êı¾İ
+ * @param len  ×Ö½ÚÊı(±ØĞë > 0)
+ * @return ASSET_OK È«²¿×Ö½ÚÒÑÂäÅÌ; ¸ºÊıÎª´íÎóÂë
+ * @note  littlefs Ğ´ÈëÊÇĞ´Ê±¸´ÖÆ: ÖĞÍ¾µôµç±£Áô¾ÉÄÚÈİ, ²»»áĞ´³ö°ë¸öÎÄ¼ş¡£
  */
 int Asset_SaveData(const char *name, const void *buf, uint32_t len)
 {
-    char path[ASSET_DATA_PATH_MAX]; // æ•°æ®æ–‡ä»¶è·¯å¾„
+    char path[ASSET_DATA_PATH_MAX]; // Êı¾İÎÄ¼şÂ·¾¶
 
     if (!Asset_Ready())
     {
@@ -631,13 +631,13 @@ int Asset_SaveData(const char *name, const void *buf, uint32_t len)
     LittleFS_Lock();
 
     lfs_file_t file;
-    int err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC); // æ‰“å¼€æ–‡ä»¶, å¹¶åˆ›å»º(ä¸å­˜åœ¨)æˆ–æˆªæ–­(å­˜åœ¨)
+    int err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC); // ´ò¿ªÎÄ¼ş, ²¢´´½¨(²»´æÔÚ)»ò½Ø¶Ï(´æÔÚ)
     if (err == LFS_ERR_OK)
     {
-        lfs_ssize_t written = lfs_file_write(&g_lfs, &file, buf, len); // å†™å…¥æ•°æ®,å¹¶è¿”å›å†™å…¥çš„å­—èŠ‚æ•°
-        int close_err = lfs_file_close(&g_lfs, &file);                 // ç©ºé—´ä¸è¶³å¸¸åœ¨ close(sync) æ—¶æ‰æš´éœ²
+        lfs_ssize_t written = lfs_file_write(&g_lfs, &file, buf, len); // Ğ´ÈëÊı¾İ,²¢·µ»ØĞ´ÈëµÄ×Ö½ÚÊı
+        int close_err = lfs_file_close(&g_lfs, &file);                 // ¿Õ¼ä²»×ã³£ÔÚ close(sync) Ê±²Å±©Â¶
 
-        /* æ£€æŸ¥å†™å…¥æ˜¯å¦æˆåŠŸ */
+        /* ¼ì²éĞ´ÈëÊÇ·ñ³É¹¦ */
         if (written != (lfs_ssize_t)len)
         {
             err = (written < 0) ? (int)written : LFS_ERR_IO;
@@ -660,15 +660,15 @@ int Asset_SaveData(const char *name, const void *buf, uint32_t len)
 }
 
 /**
- * @brief è¯»å–è¿è¡Œæ•°æ®(æ•´å—)
- * @param name     æ•°æ®å
- * @param buf      è¾“å‡ºç¼“å†²åŒº
- * @param buf_size ç¼“å†²åŒºå¤§å°
- * @return å®é™…è¯»å–å­—èŠ‚æ•°; è´Ÿæ•°ä¸ºé”™è¯¯ç (æ”¾ä¸ä¸‹æ—¶ä¸º ASSET_ERR_SPACE)
+ * @brief ¶ÁÈ¡ÔËĞĞÊı¾İ(Õû¿é)
+ * @param name     Êı¾İÃû
+ * @param buf      Êä³ö»º³åÇø
+ * @param buf_size »º³åÇø´óĞ¡
+ * @return Êµ¼Ê¶ÁÈ¡×Ö½ÚÊı; ¸ºÊıÎª´íÎóÂë(·Å²»ÏÂÊ±Îª ASSET_ERR_SPACE)
  */
 int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
 {
-    char path[ASSET_DATA_PATH_MAX]; // æ•°æ®æ–‡ä»¶è·¯å¾„
+    char path[ASSET_DATA_PATH_MAX]; // Êı¾İÎÄ¼şÂ·¾¶
 
     if (!Asset_Ready())
     {
@@ -688,14 +688,14 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
     LittleFS_Lock();
 
     lfs_file_t file;
-    int err = lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY); // ä¸€åªè¯»æ–¹å¼æ‰“å¼€æ–‡ä»¶
+    int err = lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY); // Ò»Ö»¶Á·½Ê½´ò¿ªÎÄ¼ş
     if (err != LFS_ERR_OK)
     {
         LittleFS_Unlock();
         return Asset_MapErr(err);
     }
 
-    lfs_soff_t size = lfs_file_size(&g_lfs, &file); // è·å–æ–‡ä»¶å¤§å°
+    lfs_soff_t size = lfs_file_size(&g_lfs, &file); // »ñÈ¡ÎÄ¼ş´óĞ¡
     if (size < 0)
     {
         (void)lfs_file_close(&g_lfs, &file);
@@ -703,7 +703,7 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
         return ASSET_ERR_IO;
     }
 
-    /* ä¸€æ¬¡æ€§è¯»å®Œ: ç¼“å†²åŒºå¿…é¡»æ”¾å¾—ä¸‹æ•´å—æ•°æ®, ä¸åšéƒ¨åˆ†è¯»å– */
+    /* Ò»´ÎĞÔ¶ÁÍê: »º³åÇø±ØĞë·ÅµÃÏÂÕû¿éÊı¾İ, ²»×ö²¿·Ö¶ÁÈ¡ */
     if ((uint32_t)size > buf_size)
     {
         (void)lfs_file_close(&g_lfs, &file);
@@ -713,7 +713,7 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
         return ASSET_ERR_SPACE;
     }
 
-    lfs_ssize_t rd = (size > 0) ? lfs_file_read(&g_lfs, &file, buf, (lfs_size_t)size) : 0; // è¯»å–æ–‡ä»¶å†…å®¹ï¼Œè¿”å›è¯»å–çš„å­—èŠ‚æ•°
+    lfs_ssize_t rd = (size > 0) ? lfs_file_read(&g_lfs, &file, buf, (lfs_size_t)size) : 0; // ¶ÁÈ¡ÎÄ¼şÄÚÈİ£¬·µ»Ø¶ÁÈ¡µÄ×Ö½ÚÊı
     (void)lfs_file_close(&g_lfs, &file);
 
     LittleFS_Unlock();
@@ -728,8 +728,8 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
 }
 
 /**
- * @brief æŸ¥è¯¢è¿è¡Œæ•°æ®çš„å¤§å°
- * @return ASSET_OK æˆåŠŸ; ASSET_ERR_NOENT è¿˜æ²¡å­˜è¿‡; å…¶ä»–è´Ÿæ•°ä¸ºé”™è¯¯ç 
+ * @brief ²éÑ¯ÔËĞĞÊı¾İµÄ´óĞ¡
+ * @return ASSET_OK ³É¹¦; ASSET_ERR_NOENT »¹Ã»´æ¹ı; ÆäËû¸ºÊıÎª´íÎóÂë
  */
 int Asset_DataSize(const char *name, uint32_t *size)
 {
@@ -752,7 +752,7 @@ int Asset_DataSize(const char *name, uint32_t *size)
     }
 
     LittleFS_Lock();
-    int err = lfs_stat(&g_lfs, path, &info); // è·å–æ–‡ä»¶ä¿¡æ¯
+    int err = lfs_stat(&g_lfs, path, &info); // »ñÈ¡ÎÄ¼şĞÅÏ¢
     LittleFS_Unlock();
 
     if (err != LFS_ERR_OK)
@@ -765,7 +765,7 @@ int Asset_DataSize(const char *name, uint32_t *size)
     return ASSET_OK;
 }
 
-/* è¯¥è¿è¡Œæ•°æ®æ˜¯å¦å­˜åœ¨ */
+/* ¸ÃÔËĞĞÊı¾İÊÇ·ñ´æÔÚ */
 bool Asset_HasData(const char *name)
 {
     char path[ASSET_DATA_PATH_MAX];
@@ -784,8 +784,8 @@ bool Asset_HasData(const char *name)
 }
 
 /**
- * @brief åˆ é™¤è¿è¡Œæ•°æ®
- * @return ASSET_OK æˆåŠŸ; ASSET_ERR_NOENT æœ¬æ¥å°±ä¸å­˜åœ¨; å…¶ä»–è´Ÿæ•°ä¸ºé”™è¯¯ç 
+ * @brief É¾³ıÔËĞĞÊı¾İ
+ * @return ASSET_OK ³É¹¦; ASSET_ERR_NOENT ±¾À´¾Í²»´æÔÚ; ÆäËû¸ºÊıÎª´íÎóÂë
  */
 int Asset_DeleteData(const char *name)
 {

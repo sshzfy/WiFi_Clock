@@ -1,25 +1,25 @@
 #include "Touch.h"
 
-/* å»æ‰ä¸€ä¸ªæœ€å¤§å€¼å’Œä¸€ä¸ªæœ€å°å€¼ä¹‹åè¿˜è¦æœ‰æ ·æœ¬å¯å¹³å‡ */
+/* È¥µôÒ»¸ö×î´óÖµºÍÒ»¸ö×îĞ¡ÖµÖ®ºó»¹ÒªÓĞÑù±¾¿ÉÆ½¾ù */
 #if (TOUCH_MAX_SAMPLES < 3U)
 #error "TOUCH_MAX_SAMPLES must be >= 3"
 #endif
 
-static bool s_touch_ready = false;              // SPI3 å·²å°±ç»ª(å³ Touch_Init æˆåŠŸè¿‡)
-static touch_calpointcb_t s_calpoint_cb = NULL; // æ ¡å‡†ç‚¹çš„ç»˜åˆ¶å›è°ƒ(å¯é€‰)
-TouchState_t touch_state = {0};                 // æœ€è¿‘ä¸€æ¬¡ Touch_GetPoint() çš„ç»“æœ; ä¹Ÿå¯ç”¨ Touch_GetPoint(NULL) ç›´æ¥è¯»å®ƒ
-CalibrationParams_t calibration_params = {0};   // å½“å‰ç”Ÿæ•ˆçš„æ ¡å‡†å‚æ•°
+static bool s_touch_ready = false;              // SPI3 ÒÑ¾ÍĞ÷(¼´ Touch_Init ³É¹¦¹ı)
+static touch_calpointcb_t s_calpoint_cb = NULL; // Ğ£×¼µãµÄ»æÖÆ»Øµ÷(¿ÉÑ¡)
+TouchState_t touch_state = {0};                 // ×î½üÒ»´Î Touch_GetPoint() µÄ½á¹û; Ò²¿ÉÓÃ Touch_GetPoint(NULL) Ö±½Ó¶ÁËü
+CalibrationParams_t calibration_params = {0};   // µ±Ç°ÉúĞ§µÄĞ£×¼²ÎÊı
 
-/* æ ¡å‡†ç‚¹åæ ‡(å±å¹•åæ ‡) */
+/* Ğ£×¼µã×ø±ê(ÆÁÄ»×ø±ê) */
 const uint16_t cal_points[5][2] = {
-    {20, 20},                              // å·¦ä¸Šè§’
-    {TOUCH_WIDTH - 20, 20},                // å³ä¸Šè§’
-    {TOUCH_WIDTH - 20, TOUCH_HEIGHT - 20}, // å³ä¸‹è§’
-    {20, TOUCH_HEIGHT - 20},               // å·¦ä¸‹è§’
-    {TOUCH_WIDTH / 2, TOUCH_HEIGHT / 2}    // ä¸­å¿ƒç‚¹(åªç”¨æ¥æ ¡éªŒ, ä¸å‚ä¸æ‹Ÿåˆ)
+    {20, 20},                              // ×óÉÏ½Ç
+    {TOUCH_WIDTH - 20, 20},                // ÓÒÉÏ½Ç
+    {TOUCH_WIDTH - 20, TOUCH_HEIGHT - 20}, // ÓÒÏÂ½Ç
+    {20, TOUCH_HEIGHT - 20},               // ×óÏÂ½Ç
+    {TOUCH_WIDTH / 2, TOUCH_HEIGHT / 2}    // ÖĞĞÄµã(Ö»ÓÃÀ´Ğ£Ñé, ²»²ÎÓëÄâºÏ)
 };
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static uint8_t Touch_SpiReadWriteByte(uint8_t tx);
 static void Touch_SpiClearRx(void);
 static uint16_t Touch_ReadAd(uint8_t cmd);
@@ -42,51 +42,51 @@ static uint8_t Touch_SpiReadWriteByte(uint8_t tx)
     return (uint8_t)SPI_I2S_ReceiveData(TOUCH_SPI);
 }
 
-/* å¼€å§‹ä¸€æ¬¡è§¦æ‘¸äº‹åŠ¡å‰æ¸…ç©º SPI3 çš„æ¥æ”¶é€šé“ã€‚
- * LCD æ˜¯å…¨åŒå·¥å‘é€ä¸”ä»ä¸è¯» DR, æ‰€ä»¥ RXNE ä¸€ç›´è¢«ä¸Šä¸€æ¬¡åˆ·å±ç•™ä¸‹çš„æ•°æ®å ç€;
- * ä¸æ¸…æ‰çš„è¯è¿™é‡Œè¯»åˆ°çš„ç¬¬ä¸€ä¸ªå­—èŠ‚å°±æ˜¯æ—§æ•°æ®, 24 ä½æ—¶åºä¼šæ•´ä½“é”™ä½ä¸€å­—èŠ‚,
- * ç®—å‡ºæ¥çš„åæ ‡å®Œå…¨ä¸å¯¹ã€‚é¡ºä¾¿ç”¨"è¯» DR å†è¯» SR"çš„åºåˆ—æ¸…æ‰ OVR æº¢å‡ºæ ‡å¿—ã€‚ */
+/* ¿ªÊ¼Ò»´Î´¥ÃşÊÂÎñÇ°Çå¿Õ SPI3 µÄ½ÓÊÕÍ¨µÀ¡£
+ * LCD ÊÇÈ«Ë«¹¤·¢ËÍÇÒ´Ó²»¶Á DR, ËùÒÔ RXNE Ò»Ö±±»ÉÏÒ»´ÎË¢ÆÁÁôÏÂµÄÊı¾İÕ¼×Å;
+ * ²»ÇåµôµÄ»°ÕâÀï¶Áµ½µÄµÚÒ»¸ö×Ö½Ú¾ÍÊÇ¾ÉÊı¾İ, 24 Î»Ê±Ğò»áÕûÌå´íÎ»Ò»×Ö½Ú,
+ * Ëã³öÀ´µÄ×ø±êÍêÈ«²»¶Ô¡£Ë³±ãÓÃ"¶Á DR ÔÙ¶Á SR"µÄĞòÁĞÇåµô OVR Òç³ö±êÖ¾¡£ */
 static void Touch_SpiClearRx(void)
 {
-    volatile uint16_t dummy = 0; // è¯»å–çš„ dummy æ•°æ®
+    volatile uint16_t dummy = 0; // ¶ÁÈ¡µÄ dummy Êı¾İ
 
-    /* æ¸…ç©ºæ¥æ”¶é€šé“ */
+    /* Çå¿Õ½ÓÊÕÍ¨µÀ */
     while (SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_RXNE) != RESET)
-        dummy = SPI_I2S_ReceiveData(TOUCH_SPI); // è¯»å–å¹¶å¿½ç•¥æ•°æ®
+        dummy = SPI_I2S_ReceiveData(TOUCH_SPI); // ¶ÁÈ¡²¢ºöÂÔÊı¾İ
 
-    /* è¯» DR, å†è¯» SR, æ¸… OVR */
+    /* ¶Á DR, ÔÙ¶Á SR, Çå OVR */
     dummy = TOUCH_SPI->DR;
     (void)SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_RXNE);
-    (void)dummy; // ä¸¢å¼ƒæ•°æ®
+    (void)dummy; // ¶ªÆúÊı¾İ
 }
 
-/* è¯»ä¸€æ¬¡ AD ç»“æœ(12 ä½): 1 ä¸ªå‘½ä»¤å­—èŠ‚ + 2 ä¸ªæ•°æ®å­—èŠ‚å…± 24 ä¸ªæ—¶é’Ÿ,
- * å…¶ä¸­å‘½ä»¤å­—èŠ‚å›è¯»çš„æ•°æ®æ— æ•ˆ, æœ‰æ•ˆæ•°æ®æ˜¯ bit11..bit0 */
+/* ¶ÁÒ»´Î AD ½á¹û(12 Î»): 1 ¸öÃüÁî×Ö½Ú + 2 ¸öÊı¾İ×Ö½Ú¹² 24 ¸öÊ±ÖÓ,
+ * ÆäÖĞÃüÁî×Ö½Ú»Ø¶ÁµÄÊı¾İÎŞĞ§, ÓĞĞ§Êı¾İÊÇ bit11..bit0 */
 static uint16_t Touch_ReadAd(uint8_t cmd)
 {
     uint8_t byte_h, byte_l;
 
     (void)Touch_SpiReadWriteByte(cmd);
-    byte_h = Touch_SpiReadWriteByte(0x00); // è¯»å–æ•°æ®é«˜8ä½
-    byte_l = Touch_SpiReadWriteByte(0x00); // è¯»å–æ•°æ®ä½4ä½
+    byte_h = Touch_SpiReadWriteByte(0x00); // ¶ÁÈ¡Êı¾İ¸ß8Î»
+    byte_l = Touch_SpiReadWriteByte(0x00); // ¶ÁÈ¡Êı¾İµÍ4Î»
 
-    uint16_t ad_result = (uint16_t)(((uint16_t)byte_h << 4) | ((uint16_t)byte_l >> 4)); // åˆå¹¶é«˜8ä½å’Œä½4ä½
+    uint16_t ad_result = (uint16_t)(((uint16_t)byte_h << 4) | ((uint16_t)byte_l >> 4)); // ºÏ²¢¸ß8Î»ºÍµÍ4Î»
 
     return ad_result;
 }
 
 // /**
-//  * @brief é‡æ–°åŒæ­¥ XPT2046 çš„ SPI çŠ¶æ€æœº
-//  * @note  ä¸Šä¸€æ¬¡ä¼šè¯è‹¥è¢«ä¸­é€”æ‰“æ–­(å…¸å‹æ˜¯ MCU å¤ä½æœŸé—´ CS æµ®ç©ºã€SCK ä¸Šæœ‰å™ªå£°), å®ƒä¼šåœåœ¨
-//  *        "ç­‰æ•°æ®"çš„ä¸­é—´çŠ¶æ€, ä¹‹åæ¯ç¬”äº‹åŠ¡éƒ½é”™ä½, è¯»å›æ¥çš„åæ ‡è‡ªç„¶å…¨æ˜¯åƒåœ¾ã€‚
-//  *        ä¸€ä¸ªå®Œæ•´çš„ 24 æ—¶é’Ÿäº‹åŠ¡ + CS ä¸Šå‡æ²¿èƒ½æŠŠå®ƒæ‹‰å›"ç­‰å¾…å‘½ä»¤"çš„çŠ¶æ€
+//  * @brief ÖØĞÂÍ¬²½ XPT2046 µÄ SPI ×´Ì¬»ú
+//  * @note  ÉÏÒ»´Î»á»°Èô±»ÖĞÍ¾´ò¶Ï(µäĞÍÊÇ MCU ¸´Î»ÆÚ¼ä CS ¸¡¿Õ¡¢SCK ÉÏÓĞÔëÉù), Ëü»áÍ£ÔÚ
+//  *        "µÈÊı¾İ"µÄÖĞ¼ä×´Ì¬, Ö®ºóÃ¿±ÊÊÂÎñ¶¼´íÎ», ¶Á»ØÀ´µÄ×ø±ê×ÔÈ»È«ÊÇÀ¬»ø¡£
+//  *        Ò»¸öÍêÕûµÄ 24 Ê±ÖÓÊÂÎñ + CS ÉÏÉıÑØÄÜ°ÑËüÀ­»Ø"µÈ´ıÃüÁî"µÄ×´Ì¬
 //  */
 // static void Touch_SpiResync(void)
 // {
 //     LCD_Bus_Acquire();
 //     Touch_SpiClearRx();
 //     TOUCH_CS_LOW();
-//     (void)Touch_SpiReadWriteByte(TOUCH_CMD_SCREEN_X); /* å‘½ä»¤ + 2 å­—èŠ‚æ•°æ® = ä¸€ç¬”å®Œæ•´äº‹åŠ¡ */
+//     (void)Touch_SpiReadWriteByte(TOUCH_CMD_SCREEN_X); /* ÃüÁî + 2 ×Ö½ÚÊı¾İ = Ò»±ÊÍêÕûÊÂÎñ */
 //     (void)Touch_SpiReadWriteByte(0x00);
 //     (void)Touch_SpiReadWriteByte(0x00);
 //     TOUCH_CS_HIGH();
@@ -97,7 +97,7 @@ static void Touch_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
     GPIO_StructInit(&GPIO_InitStructure);
-    /* CS: ç©ºé—²æ‹‰é«˜, ä¸é€‰ä¸­è§¦æ‘¸æ—¶æŠŠ MISO è®©ç»™æ€»çº¿ */
+    /* CS: ¿ÕÏĞÀ­¸ß, ²»Ñ¡ÖĞ´¥ÃşÊ±°Ñ MISO ÈÃ¸ø×ÜÏß */
     GPIO_SetBits(TOUCH_PORT, TOUCH_CS_PIN);
     GPIO_InitStructure.GPIO_Pin = TOUCH_CS_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -105,7 +105,7 @@ static void Touch_GPIO_Init(void)
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(TOUCH_PORT, &GPIO_InitStructure);
-    /* PENIRQ: XPT2046 çš„ PENIRQ æ˜¯å¼€æ¼è¾“å‡º, ä½ç”µå¹³è¡¨ç¤ºæŒ‰ä¸‹ */
+    /* PENIRQ: XPT2046 µÄ PENIRQ ÊÇ¿ªÂ©Êä³ö, µÍµçÆ½±íÊ¾°´ÏÂ */
     GPIO_InitStructure.GPIO_Pin = TOUCH_IRQ_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
@@ -120,10 +120,10 @@ static void Touch_Idle(uint32_t ms)
         delay_ms(ms);
 }
 
-/** @brief ç­‰ PENIRQ å˜æˆæœŸæœ›çš„çŠ¶æ€; è¶…æ—¶è¿”å› false, é¿å…æ­»ç­‰é¥¿æ­»å…¶å®ƒä»»åŠ¡
- * @param pressed æœŸæœ›çš„çŠ¶æ€: true è¡¨ç¤ºæŒ‰ä¸‹, false è¡¨ç¤ºæ¾å¼€
- * @param timeout_ms è¶…æ—¶æ—¶é—´, å•ä½æ¯«ç§’
- * @return true æˆåŠŸ, false è¶…æ—¶
+/** @brief µÈ PENIRQ ±ä³ÉÆÚÍûµÄ×´Ì¬; ³¬Ê±·µ»Ø false, ±ÜÃâËÀµÈ¶öËÀÆäËüÈÎÎñ
+ * @param pressed ÆÚÍûµÄ×´Ì¬: true ±íÊ¾°´ÏÂ, false ±íÊ¾ËÉ¿ª
+ * @param timeout_ms ³¬Ê±Ê±¼ä, µ¥Î»ºÁÃë
+ * @return true ³É¹¦, false ³¬Ê±
  */
 static bool Touch_WaitState(bool pressed, uint32_t timeout_ms)
 {
@@ -139,47 +139,47 @@ static bool Touch_WaitState(bool pressed, uint32_t timeout_ms)
     return true;
 }
 
-/** @brief æ¯”ä¾‹ç³»æ•°çš„åˆç†æ€§æ£€æŸ¥
- * @param k æ¯”ä¾‹ç³»æ•°
- * @return true åˆç†, false æ— æ•ˆ
+/** @brief ±ÈÀıÏµÊıµÄºÏÀíĞÔ¼ì²é
+ * @param k ±ÈÀıÏµÊı
+ * @return true ºÏÀí, false ÎŞĞ§
  */
 static bool Touch_ScaleValid(float k)
 {
     return ((k > 0.0001f) || (k < -0.0001f)) && (k < 100.0f) && (k > -100.0f);
 }
 
-/** @brief å››èˆäº”å…¥åè½¬ int16(åç§»é‡åªæœ‰æ•´æ•°ç²¾åº¦)
- * @param v æµ®ç‚¹æ•°
- * @return æ•´æ•°éƒ¨åˆ†
+/** @brief ËÄÉáÎåÈëºó×ª int16(Æ«ÒÆÁ¿Ö»ÓĞÕûÊı¾«¶È)
+ * @param v ¸¡µãÊı
+ * @return ÕûÊı²¿·Ö
  */
 static int16_t Touch_RoundToI16(float v)
 {
     return (int16_t)((v >= 0.0f) ? (v + 0.5f) : (v - 0.5f));
 }
 
-/** @brief ä»å¤–éƒ¨ Flash è¯»å›æ ¡å‡†å‚æ•°
- * @return true è¯»åˆ°ä¸€ç»„å¯ç”¨å‚æ•°; false æ²¡å­˜è¿‡/å†…å®¹ä¸åˆæ³•(ä¿æŒæœªæ ¡å‡†çŠ¶æ€)
- * @note è¯»çš„æ˜¯ /data/touch_cal.bin, å¿…é¡»å·²æŒ‚è½½ littlefs(Asset_Init ä¹‹å)
+/** @brief ´ÓÍâ²¿ Flash ¶Á»ØĞ£×¼²ÎÊı
+ * @return true ¶Áµ½Ò»×é¿ÉÓÃ²ÎÊı; false Ã»´æ¹ı/ÄÚÈİ²»ºÏ·¨(±£³ÖÎ´Ğ£×¼×´Ì¬)
+ * @note ¶ÁµÄÊÇ /data/touch_cal.bin, ±ØĞëÒÑ¹ÒÔØ littlefs(Asset_Init Ö®ºó)
  */
 static bool Touch_LoadCalibration(void)
 {
     TouchCalData_t data = {0};
-    int n; // è¯»å–çš„å­—èŠ‚æ•°
+    int n; // ¶ÁÈ¡µÄ×Ö½ÚÊı
 
     calibration_params.calibrated = false;
 
-    /* èµ„æºå±‚æ²¡èµ·æ¥(æ¯”å¦‚æ²¡æ£€æµ‹åˆ° W25Q64): åªèƒ½æŒ‰æœªæ ¡å‡†å¤„ç† */
+    /* ×ÊÔ´²ãÃ»ÆğÀ´(±ÈÈçÃ»¼ì²âµ½ W25Q64): Ö»ÄÜ°´Î´Ğ£×¼´¦Àí */
     if (!Asset_Ready())
         return false;
 
     memset(&data, 0, sizeof(data));
 
-    /* è¿˜æ²¡å­˜è¿‡æ—¶è¿”å›è´Ÿé”™è¯¯ç (èµ„æºå±‚ä¸åˆ·æ—¥å¿—), è¿™é‡Œç›´æ¥å½“"æœªæ ¡å‡†" */
+    /* »¹Ã»´æ¹ıÊ±·µ»Ø¸º´íÎóÂë(×ÊÔ´²ã²»Ë¢ÈÕÖ¾), ÕâÀïÖ±½Óµ±"Î´Ğ£×¼" */
     n = Asset_LoadData(TOUCH_CAL_NAME, &data, (uint32_t)sizeof(data));
     if (n != (int)sizeof(TouchCalData_t))
         return false;
 
-    /* å¯¹ Flash è¯»å›çš„æ ¡å‡†æ•°æ®åšâ€œé­”æ•° + ç‰ˆæœ¬ + é•¿åº¦â€ä¸‰é‡æ ¡éªŒ */
+    /* ¶Ô Flash ¶Á»ØµÄĞ£×¼Êı¾İ×ö¡°Ä§Êı + °æ±¾ + ³¤¶È¡±ÈıÖØĞ£Ñé */
     if ((data.magic != TOUCH_CAL_MAGIC) ||
         (data.version != TOUCH_CAL_VERSION) ||
         (data.size != (uint16_t)sizeof(TouchCalData_t)))
@@ -187,7 +187,7 @@ static bool Touch_LoadCalibration(void)
         DBG_PRINTF("[TOUCH] calibration data mismatch, recalibrate\r\n");
         return false;
     }
-    /* æ ¡éªŒæ¯”ä¾‹ç³»æ•°æ˜¯å¦åˆç† */
+    /* Ğ£Ñé±ÈÀıÏµÊıÊÇ·ñºÏÀí */
     if ((!Touch_ScaleValid(data.kx)) || (!Touch_ScaleValid(data.ky)))
     {
         DBG_PRINTF("[TOUCH] calibration data invalid, recalibrate\r\n");
@@ -203,17 +203,17 @@ static bool Touch_LoadCalibration(void)
     return true;
 }
 
-/** @brief æŠŠæ ¡å‡†å‚æ•°å†™åˆ°å¤–éƒ¨ Flash: /data/touch_cal.bin
- * @return true å·²è½ç›˜; false èµ„æºå±‚ä¸å¯ç”¨æˆ–å†™å…¥å¤±è´¥(å‚æ•°åªåœ¨ RAM é‡Œæœ‰æ•ˆ)
- * @note littlefs å†™å…¥æ˜¯å†™æ—¶å¤åˆ¶: ä¸­é€”æ‰ç”µä¿ç•™æ—§å€¼, ä¸ä¼šå†™å‡ºåŠä¸ªæ–‡ä»¶;
- *       æ“¦é™¤å•ä½æ˜¯ 4KB æ‰‡åŒº(å‡ å ms), ä¸åƒå†…éƒ¨ Flash é‚£æ ·è¦æ“¦ 128KB
+/** @brief °ÑĞ£×¼²ÎÊıĞ´µ½Íâ²¿ Flash: /data/touch_cal.bin
+ * @return true ÒÑÂäÅÌ; false ×ÊÔ´²ã²»¿ÉÓÃ»òĞ´ÈëÊ§°Ü(²ÎÊıÖ»ÔÚ RAM ÀïÓĞĞ§)
+ * @note littlefs Ğ´ÈëÊÇĞ´Ê±¸´ÖÆ: ÖĞÍ¾µôµç±£Áô¾ÉÖµ, ²»»áĞ´³ö°ë¸öÎÄ¼ş;
+ *       ²Á³ıµ¥Î»ÊÇ 4KB ÉÈÇø(¼¸Ê® ms), ²»ÏñÄÚ²¿ Flash ÄÇÑùÒª²Á 128KB
  */
 static bool Touch_SaveCalibration(void)
 {
     TouchCalData_t data = {0};
     int err = ASSET_OK;
 
-    /* å¡«å……å­—èŠ‚ä¹Ÿç½® 0, è½ç›˜å†…å®¹ç¡®å®š */
+    /* Ìî³ä×Ö½ÚÒ²ÖÃ 0, ÂäÅÌÄÚÈİÈ·¶¨ */
     memset(&data, 0, sizeof(data));
     data.magic = TOUCH_CAL_MAGIC;
     data.version = TOUCH_CAL_VERSION;
@@ -223,7 +223,7 @@ static bool Touch_SaveCalibration(void)
     data.bx = calibration_params.bx;
     data.by = calibration_params.by;
 
-    /* å†™å…¥æ ¡å‡†å‚æ•° */
+    /* Ğ´ÈëĞ£×¼²ÎÊı */
     err = Asset_SaveData(TOUCH_CAL_NAME, &data, (uint32_t)sizeof(data));
     if (err != ASSET_OK)
     {
@@ -234,15 +234,15 @@ static bool Touch_SaveCalibration(void)
     return true;
 }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 
 // /**
-//  * @brief æŠ¢åœ¨ LCD åˆå§‹åŒ–ä¹‹å‰æŠŠè§¦æ‘¸ç‰‡é€‰(CS)å›ºå®šä¸ºé«˜, è®© XPT2046 å…¨ç¨‹ä¸è¢«é€‰ä¸­
-//  * @note  å¿…é¡»åœ¨ LCD_Init() ä¹‹å‰è°ƒç”¨ã€‚MCU å¤ä½å PE0 æ˜¯**æµ®ç©ºè¾“å…¥**, è€Œ LCD_Init()
-//  *        ä¼šåˆå§‹åŒ– SPI3 å¹¶å¾€æ€»çº¿ä¸Šæ‰“å¤§é‡ ST7789 åˆå§‹åŒ–æ—¶é’Ÿ; åªè¦è¿™æ—¶ CS æ°å¥½ä¸ºä½,
-//  *        XPT2046 å°±ä¼šæŠŠè¿™äº› LCD å‘½ä»¤å½“æˆè‡ªå·±çš„å‘½ä»¤æ”¶è¿›å», å†…éƒ¨çŠ¶æ€æœºé”™ä½ä¹‹å
-//  *        **åªæœ‰æ‰ç”µæ‰èƒ½æ¢å¤** â€”â€” è¿™æ­£æ˜¯"Keil ä¸‹è½½å®Œè§¦æ‘¸å°±å¤±çµã€æ‹”ç”µæºæ‰æ­£å¸¸"çš„åŸå› :
-//  *        ä¸‹è½½åªå¤ä½ STM32, è§¦æ‘¸æ§åˆ¶å™¨ä¸€ç›´æœ‰ç”µ; æ‹”ç”µæºä¼šè®©å®ƒä¸€èµ·æ‰ç”µå¤ä½
+//  * @brief ÇÀÔÚ LCD ³õÊ¼»¯Ö®Ç°°Ñ´¥ÃşÆ¬Ñ¡(CS)¹Ì¶¨Îª¸ß, ÈÃ XPT2046 È«³Ì²»±»Ñ¡ÖĞ
+//  * @note  ±ØĞëÔÚ LCD_Init() Ö®Ç°µ÷ÓÃ¡£MCU ¸´Î»ºó PE0 ÊÇ**¸¡¿ÕÊäÈë**, ¶ø LCD_Init()
+//  *        »á³õÊ¼»¯ SPI3 ²¢Íù×ÜÏßÉÏ´ò´óÁ¿ ST7789 ³õÊ¼»¯Ê±ÖÓ; Ö»ÒªÕâÊ± CS Ç¡ºÃÎªµÍ,
+//  *        XPT2046 ¾Í»á°ÑÕâĞ© LCD ÃüÁîµ±³É×Ô¼ºµÄÃüÁîÊÕ½øÈ¥, ÄÚ²¿×´Ì¬»ú´íÎ»Ö®ºó
+//  *        **Ö»ÓĞµôµç²ÅÄÜ»Ö¸´** ¡ª¡ª ÕâÕıÊÇ"Keil ÏÂÔØÍê´¥Ãş¾ÍÊ§Áé¡¢°ÎµçÔ´²ÅÕı³£"µÄÔ­Òò:
+//  *        ÏÂÔØÖ»¸´Î» STM32, ´¥Ãş¿ØÖÆÆ÷Ò»Ö±ÓĞµç; °ÎµçÔ´»áÈÃËüÒ»Æğµôµç¸´Î»
 //  */
 // void Touch_Park(void)
 // {
@@ -253,7 +253,7 @@ bool Touch_Init(void)
 {
     Touch_GPIO_Init();
 
-    /* SPI3 ç”± LCD_Init() åˆå§‹åŒ–: æ²¡åˆå§‹åŒ–å°±é€šä¿¡ä¼šå¡åœ¨ç­‰ TXE, è¿™é‡Œæå‰æ‹¦ä¸‹æ¥ */
+    /* SPI3 ÓÉ LCD_Init() ³õÊ¼»¯: Ã»³õÊ¼»¯¾ÍÍ¨ĞÅ»á¿¨ÔÚµÈ TXE, ÕâÀïÌáÇ°À¹ÏÂÀ´ */
     if ((TOUCH_SPI->CR1 & SPI_CR1_SPE) == 0)
     {
         s_touch_ready = false;
@@ -263,15 +263,15 @@ bool Touch_Init(void)
 
     s_touch_ready = true;
 
-    // /* å…ˆæŠŠ XPT2046 çš„çŠ¶æ€æœºæ‹‰å›å·²çŸ¥çŠ¶æ€, å†è¯»æ ¡å‡†ä¸åæ ‡ */
+    // /* ÏÈ°Ñ XPT2046 µÄ×´Ì¬»úÀ­»ØÒÑÖª×´Ì¬, ÔÙ¶ÁĞ£×¼Óë×ø±ê */
     // Touch_SpiResync();
 
-    /* æ ¡å‡†å‚æ•°åœ¨å¤–éƒ¨ Flash ä¸Š: èµ„æºå±‚æ²¡æŒ‚è½½å¥½æ—¶è¯»ä¸åˆ°ä¹Ÿå­˜ä¸äº†,
-     * ä»ç„¶å¯ä»¥è¯»åŸå§‹åæ ‡, åªæ˜¯è¦é‡æ–°æ ¡å‡† */
+    /* Ğ£×¼²ÎÊıÔÚÍâ²¿ Flash ÉÏ: ×ÊÔ´²ãÃ»¹ÒÔØºÃÊ±¶Á²»µ½Ò²´æ²»ÁË,
+     * ÈÔÈ»¿ÉÒÔ¶ÁÔ­Ê¼×ø±ê, Ö»ÊÇÒªÖØĞÂĞ£×¼ */
     if (!Asset_Ready())
         DBG_PRINTF("[TOUCH] asset layer not ready, calibration unavailable\r\n");
 
-    /* ä» Flash è¯»å›æ ¡å‡†å‚æ•° */
+    /* ´Ó Flash ¶Á»ØĞ£×¼²ÎÊı */
     (void)Touch_LoadCalibration();
     DBG_PRINTF("[TOUCH] init done, calibrated=%d\r\n", (int)calibration_params.calibrated);
     if (calibration_params.calibrated)
@@ -287,8 +287,8 @@ bool Touch_Init(void)
 }
 
 /**
- * @brief  æ£€æµ‹æ˜¯å¦æœ‰è§¦æ‘¸åŠ¨ä½œ
- * @retval true-æœ‰è§¦æ‘¸, false-æ— è§¦æ‘¸
+ * @brief  ¼ì²âÊÇ·ñÓĞ´¥Ãş¶¯×÷
+ * @retval true-ÓĞ´¥Ãş, false-ÎŞ´¥Ãş
  */
 bool Touch_IsPressed(void)
 {
@@ -296,23 +296,23 @@ bool Touch_IsPressed(void)
 }
 
 /**
- * @brief  è¯»å–è§¦æ‘¸å±çš„åŸå§‹åæ ‡(ä¸€æ¬¡ CS å‘¨æœŸå†…è¯»å®Œ X/Y)
- * @param  x: æŒ‡å‘Xè½´åæ ‡çš„æŒ‡é’ˆ
- * @param  y: æŒ‡å‘Yè½´åæ ‡çš„æŒ‡é’ˆ
- * @retval true-è¯»å–æˆåŠŸ, false-æœªåˆå§‹åŒ–æˆ–å‚æ•°ä¸ºç©º
+ * @brief  ¶ÁÈ¡´¥ÃşÆÁµÄÔ­Ê¼×ø±ê(Ò»´Î CS ÖÜÆÚÄÚ¶ÁÍê X/Y)
+ * @param  x: Ö¸ÏòXÖá×ø±êµÄÖ¸Õë
+ * @param  y: Ö¸ÏòYÖá×ø±êµÄÖ¸Õë
+ * @retval true-¶ÁÈ¡³É¹¦, false-Î´³õÊ¼»¯»ò²ÎÊıÎª¿Õ
  */
 bool Touch_ReadRaw(uint16_t *x, uint16_t *y)
 {
     if ((x == NULL) || (y == NULL) || (!s_touch_ready))
         return false;
 
-    /* æŠ¢æ€»çº¿é” */
+    /* ÇÀ×ÜÏßËø */
     LCD_Bus_Acquire();
 
-    /* æ¸…ç©ºæ¥æ”¶ç¼“å†²åŒº
-     * æ‹‰ä½ CS é€‰ä¸­è§¦æ‘¸
-     * è¯»å–x, yè½´åæ ‡
-     * æ‹‰é«˜ CS é‡Šæ”¾è§¦æ‘¸ */
+    /* Çå¿Õ½ÓÊÕ»º³åÇø
+     * À­µÍ CS Ñ¡ÖĞ´¥Ãş
+     * ¶ÁÈ¡x, yÖá×ø±ê
+     * À­¸ß CS ÊÍ·Å´¥Ãş */
     Touch_SpiClearRx();
     TOUCH_CS_LOW();
     *x = Touch_ReadAd(TOUCH_CMD_SCREEN_X);
@@ -320,34 +320,34 @@ bool Touch_ReadRaw(uint16_t *x, uint16_t *y)
     *y = Touch_ReadAd(TOUCH_CMD_SCREEN_Y);
     TOUCH_CS_HIGH();
 
-    /* é‡Šæ”¾æ€»çº¿é” */
+    /* ÊÍ·Å×ÜÏßËø */
     LCD_Bus_Release();
 
     return true;
 }
 
 /**
- * @brief  è¯»å–è§¦æ‘¸å±çš„æ»¤æ³¢åæ ‡(å¤šæ¬¡é‡‡æ ·, å»æ‰æœ€å¤§æœ€å°å€¼åå¹³å‡)
- * @param  x: æŒ‡å‘Xè½´åæ ‡çš„æŒ‡é’ˆ
- * @param  y: æŒ‡å‘Yè½´åæ ‡çš„æŒ‡é’ˆ
- * @retval true-åæ ‡å¯ä¿¡, false-é‡‡æ ·é€”ä¸­æ¾æ‰‹/æŠ–åŠ¨è¿‡å¤§/æœªåˆå§‹åŒ–
+ * @brief  ¶ÁÈ¡´¥ÃşÆÁµÄÂË²¨×ø±ê(¶à´Î²ÉÑù, È¥µô×î´ó×îĞ¡ÖµºóÆ½¾ù)
+ * @param  x: Ö¸ÏòXÖá×ø±êµÄÖ¸Õë
+ * @param  y: Ö¸ÏòYÖá×ø±êµÄÖ¸Õë
+ * @retval true-×ø±ê¿ÉĞÅ, false-²ÉÑùÍ¾ÖĞËÉÊÖ/¶¶¶¯¹ı´ó/Î´³õÊ¼»¯
  */
 bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
 {
-    uint16_t xs[TOUCH_MAX_SAMPLES] = {0}; // Xè½´åæ ‡æ ·æœ¬
-    uint16_t ys[TOUCH_MAX_SAMPLES] = {0}; // Yè½´åæ ‡æ ·æœ¬
+    uint16_t xs[TOUCH_MAX_SAMPLES] = {0}; // XÖá×ø±êÑù±¾
+    uint16_t ys[TOUCH_MAX_SAMPLES] = {0}; // YÖá×ø±êÑù±¾
     uint32_t x_sum = 0, y_sum = 0;
-    bool released = false; // æ˜¯å¦æ¾æ‰‹
+    bool released = false; // ÊÇ·ñËÉÊÖ
 
     if ((x == NULL) || (y == NULL) || (!s_touch_ready))
         return false;
 
-    /* æŠ¢æ€»çº¿é”
-     * æ¸…ç©ºæ¥æ”¶ç¼“å†²åŒº
-     * æ‹‰ä½ CS é€‰ä¸­è§¦æ‘¸
-     * è¯»å–x, yè½´åæ ‡ï¼ˆé‡‡æ ·è¿‡ç¨‹ä¸­æ£€æµ‹æ˜¯å¦æœ‰æ¾æ‰‹ï¼‰
-     * æ‹‰é«˜ CS é‡Šæ”¾è§¦æ‘¸
-     * é‡Šæ”¾æ€»çº¿é” */
+    /* ÇÀ×ÜÏßËø
+     * Çå¿Õ½ÓÊÕ»º³åÇø
+     * À­µÍ CS Ñ¡ÖĞ´¥Ãş
+     * ¶ÁÈ¡x, yÖá×ø±ê£¨²ÉÑù¹ı³ÌÖĞ¼ì²âÊÇ·ñÓĞËÉÊÖ£©
+     * À­¸ß CS ÊÍ·Å´¥Ãş
+     * ÊÍ·Å×ÜÏßËø */
     LCD_Bus_Acquire();
     Touch_SpiClearRx();
     TOUCH_CS_LOW();
@@ -359,10 +359,10 @@ bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
         ys[i] = Touch_ReadAd(TOUCH_CMD_SCREEN_Y);
         delay_us(TOUCH_CMD_GAP_US);
 
-        /* é‡‡æ ·é€”ä¸­æ¾æ‰‹: è¿™æ‰¹æ•°æ®ä¸å¯ä¿¡ */
+        /* ²ÉÑùÍ¾ÖĞËÉÊÖ: ÕâÅúÊı¾İ²»¿ÉĞÅ */
         if (!Touch_IsPressed())
         {
-            released = true; // æ ‡è®°ä¸ºæ¾æ‰‹
+            released = true; // ±ê¼ÇÎªËÉÊÖ
             break;
         }
     }
@@ -370,11 +370,11 @@ bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
     TOUCH_CS_HIGH();
     LCD_Bus_Release();
 
-    /* é‡‡æ ·é€”ä¸­æ¾æ‰‹: è¿™æ‰¹æ•°æ®ä¸å¯ä¿¡ */
+    /* ²ÉÑùÍ¾ÖĞËÉÊÖ: ÕâÅúÊı¾İ²»¿ÉĞÅ */
     if (released)
         return false;
 
-    /* å†’æ³¡æ’åº */
+    /* Ã°ÅİÅÅĞò */
     for (uint16_t i = 0; i < (TOUCH_MAX_SAMPLES - 1U); i++)
     {
         for (uint16_t j = 0; j < (TOUCH_MAX_SAMPLES - 1U - i); j++)
@@ -394,12 +394,12 @@ bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
         }
     }
 
-    /* è·¨åº¦å¤ªå¤§è¯´æ˜æ‰‹æŒ‡åœ¨æ»‘åŠ¨æˆ–å¹²æ‰°ä¸¥é‡, è¿™ä¸€å¸§ä¸¢æ‰ */
+    /* ¿ç¶ÈÌ«´óËµÃ÷ÊÖÖ¸ÔÚ»¬¶¯»ò¸ÉÈÅÑÏÖØ, ÕâÒ»Ö¡¶ªµô */
     if (((uint16_t)(xs[TOUCH_MAX_SAMPLES - 1U] - xs[0]) > TOUCH_SAMPLE_SPAN_MAX) ||
         ((uint16_t)(ys[TOUCH_MAX_SAMPLES - 1U] - ys[0]) > TOUCH_SAMPLE_SPAN_MAX))
         return false;
 
-    /* å»æ‰æœ€å¤§å€¼å’Œæœ€å°å€¼, å–å¹³å‡ */
+    /* È¥µô×î´óÖµºÍ×îĞ¡Öµ, È¡Æ½¾ù */
     for (uint16_t i = 1U; i < (TOUCH_MAX_SAMPLES - 1U); i++)
     {
         x_sum += xs[i];
@@ -412,18 +412,18 @@ bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
 }
 
 /**
- * @brief  è·å–è§¦æ‘¸ç‚¹ä¿¡æ¯(æŒ‰ä¸‹çŠ¶æ€ + åæ ‡)
- * @param  touch: å­˜å‚¨è§¦æ‘¸ä¿¡æ¯çš„ç»“æ„ä½“æŒ‡é’ˆ, ä¼  NULL æ—¶å†™å…¥å…¨å±€ touch_state
- * @retval true-æœ¬æ¬¡æ‹¿åˆ°æœ‰æ•ˆåæ ‡, false-æœªæŒ‰ä¸‹æˆ–åæ ‡ä¸å¯ä¿¡
+ * @brief  »ñÈ¡´¥ÃşµãĞÅÏ¢(°´ÏÂ×´Ì¬ + ×ø±ê)
+ * @param  touch: ´æ´¢´¥ÃşĞÅÏ¢µÄ½á¹¹ÌåÖ¸Õë, ´« NULL Ê±Ğ´ÈëÈ«¾Ö touch_state
+ * @retval true-±¾´ÎÄÃµ½ÓĞĞ§×ø±ê, false-Î´°´ÏÂ»ò×ø±ê²»¿ÉĞÅ
  */
 bool Touch_GetPoint(TouchState_t *touch)
 {
     TouchState_t *data = (touch != NULL) ? touch : &touch_state;
-    uint16_t x_raw, y_raw = 0; // æ»¤æ³¢åçš„åŸå§‹åæ ‡
+    uint16_t x_raw, y_raw = 0; // ÂË²¨ºóµÄÔ­Ê¼×ø±ê
 
     data->pressed = Touch_IsPressed();
 
-    /* æœªæŒ‰ä¸‹æˆ–æœªåˆå§‹åŒ–: ç›´æ¥è¿”å› */
+    /* Î´°´ÏÂ»òÎ´³õÊ¼»¯: Ö±½Ó·µ»Ø */
     if ((!data->pressed) || (!s_touch_ready))
     {
         data->x = 0;
@@ -433,8 +433,8 @@ bool Touch_GetPoint(TouchState_t *touch)
         return false;
     }
 
-    /* è¯»å–æ»¤æ³¢åçš„åæ ‡
-     * é‡‡æ ·é€”ä¸­æ¾æ‰‹æˆ–æŠ–åŠ¨è¿‡å¤§: è¿™ä¸€å¸§ä¸æ›´æ–°åæ ‡ */
+    /* ¶ÁÈ¡ÂË²¨ºóµÄ×ø±ê
+     * ²ÉÑùÍ¾ÖĞËÉÊÖ»ò¶¶¶¯¹ı´ó: ÕâÒ»Ö¡²»¸üĞÂ×ø±ê */
     if (!Touch_ReadFiltered(&x_raw, &y_raw))
     {
         data->x = 0;
@@ -447,14 +447,14 @@ bool Touch_GetPoint(TouchState_t *touch)
     data->x = x_raw;
     data->y = y_raw;
 
-    /* è®¡ç®—æ ¡å‡†åçš„åæ ‡ */
+    /* ¼ÆËãĞ£×¼ºóµÄ×ø±ê */
     if (calibration_params.calibrated)
     {
-        /* ç”¨ int32 ä¸­è½¬: å±å¹•åæ ‡å¯èƒ½æ˜¯è´Ÿçš„(è¿˜æ²¡é’³ä½), ç›´æ¥å¡è¿› int16 ä¼šæº¢å‡º */
+        /* ÓÃ int32 ÖĞ×ª: ÆÁÄ»×ø±ê¿ÉÄÜÊÇ¸ºµÄ(»¹Ã»Ç¯Î»), Ö±½ÓÈû½ø int16 »áÒç³ö */
         int32_t xd = (int32_t)(calibration_params.kx * (float)x_raw + (float)calibration_params.bx);
         int32_t yd = (int32_t)(calibration_params.ky * (float)y_raw + (float)calibration_params.by);
 
-        /* åæ ‡èŒƒå›´é™åˆ¶ */
+        /* ×ø±ê·¶Î§ÏŞÖÆ */
         if (xd < 0)
             xd = 0;
         else if (xd >= (int32_t)TOUCH_WIDTH)
@@ -465,11 +465,11 @@ bool Touch_GetPoint(TouchState_t *touch)
         else if (yd >= (int32_t)TOUCH_HEIGHT)
             yd = (int32_t)TOUCH_HEIGHT - 1;
 
-        /* æ ¡å‡†åçš„åæ ‡ */
+        /* Ğ£×¼ºóµÄ×ø±ê */
         data->x_display = (int16_t)xd;
         data->y_display = (int16_t)yd;
     }
-    /* æ²¡æ ¡å‡†è¿‡å°±ç»™å‡ºåŸå§‹åæ ‡, è‡³å°‘èƒ½çœ‹åˆ°æœ‰å“åº” */
+    /* Ã»Ğ£×¼¹ı¾Í¸ø³öÔ­Ê¼×ø±ê, ÖÁÉÙÄÜ¿´µ½ÓĞÏìÓ¦ */
     else
     {
         data->x_display = (int16_t)x_raw;
@@ -479,19 +479,19 @@ bool Touch_GetPoint(TouchState_t *touch)
     return true;
 }
 
-/** @brief è®¾ç½®æ ¡å‡†ç‚¹çš„ç»˜åˆ¶å›è°ƒ(ç•Œé¢å±‚ç”¨æ¥åœ¨å±å¹•ä¸Šç”»å‡ºè¦ç‚¹å‡»çš„ä½ç½®)
- * @param cb å›è°ƒå‡½æ•°; ä¼  NULL è¡¨ç¤ºåªèµ°ä¸²å£æç¤º */
+/** @brief ÉèÖÃĞ£×¼µãµÄ»æÖÆ»Øµ÷(½çÃæ²ãÓÃÀ´ÔÚÆÁÄ»ÉÏ»­³öÒªµã»÷µÄÎ»ÖÃ)
+ * @param cb »Øµ÷º¯Êı; ´« NULL ±íÊ¾Ö»×ß´®¿ÚÌáÊ¾ */
 void Touch_SetPoints_RegisterCallback(touch_calpointcb_t cb)
 {
     s_calpoint_cb = cb;
 }
 
 /**
- * @brief  äº”ç‚¹æ ¡å‡†è§¦æ‘¸å±, æˆåŠŸåæŠŠå‚æ•°å†™å…¥ Flash
- * @retval true-æ ¡å‡†å®Œæˆå¹¶ä¿å­˜, false-è¶…æ—¶/é‡‡æ ·å¼‚å¸¸/ä¿å­˜å¤±è´¥
- * @note   æ ¡å‡†å…¬å¼:
- *          x = kx * åŸå§‹ x + åç§»é‡ x
- *          y = ky * åŸå§‹ y + åç§»é‡ y
+ * @brief  ÎåµãĞ£×¼´¥ÃşÆÁ, ³É¹¦ºó°Ñ²ÎÊıĞ´Èë Flash
+ * @retval true-Ğ£×¼Íê³É²¢±£´æ, false-³¬Ê±/²ÉÑùÒì³£/±£´æÊ§°Ü
+ * @note   Ğ£×¼¹«Ê½:
+ *          x = kx * Ô­Ê¼ x + Æ«ÒÆÁ¿ x
+ *          y = ky * Ô­Ê¼ y + Æ«ÒÆÁ¿ y
  */
 bool Touch_Calibrate(void)
 {
@@ -510,51 +510,51 @@ bool Touch_Calibrate(void)
 
     DBG_PRINTF("[TOUCH] calibration start: click the 5 points in order\r\n");
 
-    /*ä¾æ¬¡åˆ’å‡º 5 ä¸ªæ ¡å‡†ç‚¹ */
+    /*ÒÀ´Î»®³ö 5 ¸öĞ£×¼µã */
     while (i < 5U)
     {
         DBG_PRINTF("[TOUCH] click point %u at (%u,%u)\r\n", (unsigned)(i + 1U),
                (unsigned)cal_points[i][0], (unsigned)cal_points[i][1]);
 
-        /* è®©ç•Œé¢æŠŠè¿™ä¸ªæ ¡å‡†ç‚¹ç”»å‡ºæ¥(æ¸…å± + ç”»åå­—) */
+        /* ÈÃ½çÃæ°ÑÕâ¸öĞ£×¼µã»­³öÀ´(ÇåÆÁ + »­Ê®×Ö) */
         if (s_calpoint_cb != NULL)
             s_calpoint_cb(cal_points[i][0], cal_points[i][1]);
 
-        /* ç­‰æŒ‰ä¸‹; å¸¦è¶…æ—¶, é¿å…æ­»ç­‰ */
+        /* µÈ°´ÏÂ; ´ø³¬Ê±, ±ÜÃâËÀµÈ */
         if (!Touch_WaitState(true, TOUCH_CAL_PRESS_TIMEOUT_MS))
         {
             DBG_PRINTF("[TOUCH] calibration timeout: no press detected\r\n");
             return false;
         }
-        /* ç­‰è§¦æ‘¸ç¨³å®š */
+        /* µÈ´¥ÃşÎÈ¶¨ */
         Touch_Idle(20);
 
         if (!Touch_ReadFiltered(&raw_x[i], &raw_y[i]))
         {
             DBG_PRINTF("[TOUCH] sample rejected, click the same point again\r\n");
-            continue; // i ä¸é€’å¢, é‡ç‚¹è¿™ä¸ªç‚¹
+            continue; // i ²»µİÔö, ÖØµãÕâ¸öµã
         }
 
         DBG_PRINTF("[TOUCH] point %u raw = (%u,%u)\r\n", (unsigned)(i + 1U),
                (unsigned)raw_x[i], (unsigned)raw_y[i]);
 
-        /* ç­‰æ¾å¼€; å¸¦è¶…æ—¶, é¿å…æ­»ç­‰ */
+        /* µÈËÉ¿ª; ´ø³¬Ê±, ±ÜÃâËÀµÈ */
         if (!Touch_WaitState(false, TOUCH_CAL_RELEASE_TIMEOUT_MS))
         {
             DBG_PRINTF("[TOUCH] calibration timeout: release not detected\r\n");
             return false;
         }
-        /* ç­‰æ¾æ‰‹ç¨³å®š */
+        /* µÈËÉÊÖÎÈ¶¨ */
         Touch_Idle(20);
 
         i++;
     }
 
-    /* å·¦å³/ä¸Šä¸‹ä¸¤ç«¯çš„åŸå§‹åæ ‡å¹³å‡(ç”¨ float ç®—, é¿å…æ•´æ•°é™¤æ³•ä¸¢æ‰ 0.5 ä¸ª LSB) */
-    lx = ((float)raw_x[0] + (float)raw_x[3]) * 0.5f; // å·¦ä¸Š+å·¦ä¸‹
-    rx = ((float)raw_x[1] + (float)raw_x[2]) * 0.5f; // å³ä¸Š+å³ä¸‹
-    ty = ((float)raw_y[0] + (float)raw_y[1]) * 0.5f; // å·¦ä¸Š+å³ä¸Š
-    by = ((float)raw_y[2] + (float)raw_y[3]) * 0.5f; // å³ä¸‹+å·¦ä¸‹
+    /* ×óÓÒ/ÉÏÏÂÁ½¶ËµÄÔ­Ê¼×ø±êÆ½¾ù(ÓÃ float Ëã, ±ÜÃâÕûÊı³ı·¨¶ªµô 0.5 ¸ö LSB) */
+    lx = ((float)raw_x[0] + (float)raw_x[3]) * 0.5f; // ×óÉÏ+×óÏÂ
+    rx = ((float)raw_x[1] + (float)raw_x[2]) * 0.5f; // ÓÒÉÏ+ÓÒÏÂ
+    ty = ((float)raw_y[0] + (float)raw_y[1]) * 0.5f; // ×óÉÏ+ÓÒÉÏ
+    by = ((float)raw_y[2] + (float)raw_y[3]) * 0.5f; // ÓÒÏÂ+×óÏÂ
     x_span = rx - lx;
     y_span = by - ty;
 
@@ -569,11 +569,11 @@ bool Touch_Calibrate(void)
         return false;
     }
 
-    /* æ¯”ä¾‹ç³»æ•°: ä¸¤ç«¯ä¹‹é—´å¯¹åº” (å®½/é«˜ - 2*20) åƒç´  */
+    /* ±ÈÀıÏµÊı: Á½¶ËÖ®¼ä¶ÔÓ¦ (¿í/¸ß - 2*20) ÏñËØ */
     kx = ((float)TOUCH_WIDTH - 40.0f) / x_span;
     ky = ((float)TOUCH_HEIGHT - 40.0f) / y_span;
 
-    /* åç§»é‡: è®©æœ€å·¦/æœ€ä¸Šçš„åŸå§‹åæ ‡è½åœ¨å±å¹•çš„ 20 åƒç´ å¤„  */
+    /* Æ«ÒÆÁ¿: ÈÃ×î×ó/×îÉÏµÄÔ­Ê¼×ø±êÂäÔÚÆÁÄ»µÄ 20 ÏñËØ´¦  */
     bx_f = 20.0f - (kx * lx);
     by_f = 20.0f - (ky * ty);
 
@@ -585,14 +585,14 @@ bool Touch_Calibrate(void)
         return false;
     }
 
-    /* æ ¡å‡†å®Œæˆ,ä¿å­˜å‚æ•°åˆ°å¤–éƒ¨ flash */
+    /* Ğ£×¼Íê³É,±£´æ²ÎÊıµ½Íâ²¿ flash */
     calibration_params.kx = kx;
     calibration_params.ky = ky;
     calibration_params.bx = Touch_RoundToI16(bx_f);
     calibration_params.by = Touch_RoundToI16(by_f);
-    calibration_params.calibrated = true; // æ ¡å‡†æˆåŠŸ, æ ‡è®°ä¸ºå·²æ ¡å‡†
+    calibration_params.calibrated = true; // Ğ£×¼³É¹¦, ±ê¼ÇÎªÒÑĞ£×¼
 
-    /* ç”¨ä¸­å¿ƒç‚¹æ ¡éªŒä¸€ä¸‹(å®ƒä¸å‚ä¸æ‹Ÿåˆ): è¯¯å·®å¤§è¯´æ˜è½´äº¤æ¢/æ–¹å‘åäº† */
+    /* ÓÃÖĞĞÄµãĞ£ÑéÒ»ÏÂ(Ëü²»²ÎÓëÄâºÏ): Îó²î´óËµÃ÷Öá½»»»/·½Ïò·´ÁË */
     DBG_PRINTF("[TOUCH] center check: expect (%u,%u) got (%.1f,%.1f)\r\n",
            (unsigned)(TOUCH_WIDTH / 2U), (unsigned)(TOUCH_HEIGHT / 2U),
            (kx * (float)raw_x[4] + bx_f), (ky * (float)raw_y[4] + by_f));

@@ -1,50 +1,50 @@
 #include "lfs_operation.h"
 #include "BuildConfig.h"
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static void put_u16(uint8_t *p, uint16_t v);
 static uint16_t get_u16(const uint8_t *p);
 
 /**
- * @brief ä¿å­˜ 16 ä½å¤§ç«¯è¯»å†™, ä¿è¯å­˜/å–ä½¿ç”¨åŒä¸€å­—èŠ‚åº
- * @param p è¾“å‡ºç¼“å†²åŒºï¼Œè‡³å°‘ 2 å­—èŠ‚
- * @param v å¾…å†™å…¥çš„ 16 ä½æ•´æ•°
+ * @brief ±£´æ 16 Î»´ó¶Ë¶ÁĞ´, ±£Ö¤´æ/È¡Ê¹ÓÃÍ¬Ò»×Ö½ÚĞò
+ * @param p Êä³ö»º³åÇø£¬ÖÁÉÙ 2 ×Ö½Ú
+ * @param v ´ıĞ´ÈëµÄ 16 Î»ÕûÊı
  * */
 static void put_u16(uint8_t *p, uint16_t v)
 {
-    p[0] = (uint8_t)(v >> 8);    // é«˜å­—èŠ‚
-    p[1] = (uint8_t)(v & 0xFFU); // ä½å­—èŠ‚
+    p[0] = (uint8_t)(v >> 8);    // ¸ß×Ö½Ú
+    p[1] = (uint8_t)(v & 0xFFU); // µÍ×Ö½Ú
 }
 
-/* ä» 2 å­—èŠ‚ç¼“å†²åŒºæŒ‰å¤§ç«¯æ ¼å¼è¯»å– 16 ä½æ•´æ•° */
+/* ´Ó 2 ×Ö½Ú»º³åÇø°´´ó¶Ë¸ñÊ½¶ÁÈ¡ 16 Î»ÕûÊı */
 static uint16_t get_u16(const uint8_t *p)
 {
     return (uint16_t)(((uint16_t)p[0] << 8) | (uint16_t)p[1]);
 }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 
 /**
- * @brief ä¿å­˜å›¾åƒåˆ° littlefs æ–‡ä»¶ç³»ç»Ÿã€‚
+ * @brief ±£´æÍ¼Ïñµ½ littlefs ÎÄ¼şÏµÍ³¡£
  *
- * æ–‡ä»¶æ ¼å¼ï¼š
+ * ÎÄ¼ş¸ñÊ½£º
  *   +--------+--------+----------------------------+
- *   | width  | height | åƒç´ æ•°æ® (RGB565)           |
- *   | 2 å­—èŠ‚ | 2 å­—èŠ‚ | width*height*2 å­—èŠ‚         |
+ *   | width  | height | ÏñËØÊı¾İ (RGB565)           |
+ *   | 2 ×Ö½Ú | 2 ×Ö½Ú | width*height*2 ×Ö½Ú         |
  *   +--------+--------+----------------------------+
  *
- * @param path  ç›®æ ‡æ–‡ä»¶è·¯å¾„
- * @param data  åƒç´ æ•°æ®æŒ‡é’ˆ(RGB565, ä½å­—èŠ‚åœ¨å‰)
- * @param w,h   å›¾åƒå®½åº¦, å›¾åƒé«˜åº¦
- * @return 0 æˆåŠŸï¼›å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
+ * @param path  Ä¿±êÎÄ¼şÂ·¾¶
+ * @param data  ÏñËØÊı¾İÖ¸Õë(RGB565, µÍ×Ö½ÚÔÚÇ°)
+ * @param w,h   Í¼Ïñ¿í¶È, Í¼Ïñ¸ß¶È
+ * @return 0 ³É¹¦£»ÆäËûÖµÎª littlefs ´íÎóÂë
  */
 int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
 {
-    lfs_file_t file;             // æ–‡ä»¶å¥æŸ„
-    uint8_t header[HEADER_SIZE]; // æ–‡ä»¶å¤´ç¼“å†²åŒºï¼šwidth(2) + height(2)
-    uint32_t data_size;          // åƒç´ æ•°æ®å¤§å°
-    lfs_ssize_t ret;             // å•æ¬¡è¯»å†™è¿”å›çš„å®é™…å­—èŠ‚æ•°ï¼Œè´Ÿæ•°è¡¨ç¤ºé”™è¯¯
-    int err;                     // é”™è¯¯ç 
+    lfs_file_t file;             // ÎÄ¼ş¾ä±ú
+    uint8_t header[HEADER_SIZE]; // ÎÄ¼şÍ·»º³åÇø£ºwidth(2) + height(2)
+    uint32_t data_size;          // ÏñËØÊı¾İ´óĞ¡
+    lfs_ssize_t ret;             // µ¥´Î¶ÁĞ´·µ»ØµÄÊµ¼Ê×Ö½ÚÊı£¬¸ºÊı±íÊ¾´íÎó
+    int err;                     // ´íÎóÂë
 
     if ((path == NULL) || (data == NULL) || (w == 0U) || (h == 0U))
     {
@@ -52,9 +52,9 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
         return LFS_ERR_INVAL;
     }
 
-    data_size = (uint32_t)w * (uint32_t)h * IMAGE_BYTES_PER_PIXEL; // åƒç´ æ•°æ®å¤§å°
+    data_size = (uint32_t)w * (uint32_t)h * IMAGE_BYTES_PER_PIXEL; // ÏñËØÊı¾İ´óĞ¡
 
-    /* æ‰“å¼€æ–‡ä»¶ï¼Œå†™å…¥æ¨¡å¼ï¼Œåˆ›å»ºå¹¶æˆªæ–­æ–‡ä»¶ */
+    /* ´ò¿ªÎÄ¼ş£¬Ğ´ÈëÄ£Ê½£¬´´½¨²¢½Ø¶ÏÎÄ¼ş */
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
     if (err != LFS_ERR_OK)
     {
@@ -62,7 +62,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
         return err;
     }
 
-    /* æ–‡ä»¶å¤´: width(2) + height(2), å¤§ç«¯ */
+    /* ÎÄ¼şÍ·: width(2) + height(2), ´ó¶Ë */
     put_u16(&header[0], w);
     put_u16(&header[2], h);
     ret = lfs_file_write(&g_lfs, &file, header, HEADER_SIZE);
@@ -73,7 +73,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }
 
-    /* å†™å…¥åƒç´ æ•°æ® */
+    /* Ğ´ÈëÏñËØÊı¾İ */
     ret = lfs_file_write(&g_lfs, &file, data, data_size);
     if (ret != (lfs_ssize_t)data_size)
     {
@@ -82,7 +82,7 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
         return (ret < 0) ? (int)ret : LFS_ERR_IO;
     }
 
-    /* close å†…éƒ¨ä¼š sync, å¯èƒ½åœ¨è¿™é‡Œæ‰æš´éœ²ç©ºé—´ä¸è¶³ç­‰é”™è¯¯ */
+    /* close ÄÚ²¿»á sync, ¿ÉÄÜÔÚÕâÀï²Å±©Â¶¿Õ¼ä²»×ãµÈ´íÎó */
     err = lfs_file_close(&g_lfs, &file);
     if (err != LFS_ERR_OK)
     {
@@ -94,18 +94,18 @@ int SaveImage(const char *path, const uint8_t *data, uint16_t w, uint16_t h)
 }
 
 /**
- * @brief ä» littlefs æ–‡ä»¶ç³»ç»ŸåŠ è½½å›¾åƒã€‚
- * æµç¨‹ï¼š
- *   1. è¯»å–æ–‡ä»¶å¤´ï¼Œå¾—åˆ° width / heightï¼›
- *   2. æ ¡éªŒå®½é«˜åˆæ³•æ€§ï¼Œé¿å…ç•¸å½¢æ–‡ä»¶å¯¼è‡´æº¢å‡ºï¼›
- *   3. æ£€æŸ¥ç›®æ ‡ç¼“å†²åŒºå¤§å°ï¼›
- *   4. è¯»å–åƒç´ æ•°æ®ã€‚
- * @param path     æºæ–‡ä»¶è·¯å¾„
- * @param w,h    è¾“å‡ºå‚æ•°ï¼šå›¾åƒå®½åº¦, å›¾åƒé«˜åº¦
- * @param buf      è¾“å‡ºç¼“å†²åŒº
- * @param buf_size è¾“å‡ºç¼“å†²åŒºå¤§å°
+ * @brief ´Ó littlefs ÎÄ¼şÏµÍ³¼ÓÔØÍ¼Ïñ¡£
+ * Á÷³Ì£º
+ *   1. ¶ÁÈ¡ÎÄ¼şÍ·£¬µÃµ½ width / height£»
+ *   2. Ğ£Ñé¿í¸ßºÏ·¨ĞÔ£¬±ÜÃâ»ûĞÎÎÄ¼şµ¼ÖÂÒç³ö£»
+ *   3. ¼ì²éÄ¿±ê»º³åÇø´óĞ¡£»
+ *   4. ¶ÁÈ¡ÏñËØÊı¾İ¡£
+ * @param path     Ô´ÎÄ¼şÂ·¾¶
+ * @param w,h    Êä³ö²ÎÊı£ºÍ¼Ïñ¿í¶È, Í¼Ïñ¸ß¶È
+ * @param buf      Êä³ö»º³åÇø
+ * @param buf_size Êä³ö»º³åÇø´óĞ¡
  *
- * @return 0 æˆåŠŸï¼›å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
+ * @return 0 ³É¹¦£»ÆäËûÖµÎª littlefs ´íÎóÂë
  */
 int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t buf_size)
 {
@@ -122,7 +122,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
         return LFS_ERR_INVAL;
     }
 
-    /* æ‰“å¼€æ–‡ä»¶ï¼Œåªè¯»æ¨¡å¼ */
+    /* ´ò¿ªÎÄ¼ş£¬Ö»¶ÁÄ£Ê½ */
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY);
     if (err != LFS_ERR_OK)
     {
@@ -130,7 +130,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
         return err;
     }
 
-    /* è¯»å–æ–‡ä»¶å¤´, æ ¡éªŒæ–‡ä»¶å¤´å¤§å° */
+    /* ¶ÁÈ¡ÎÄ¼şÍ·, Ğ£ÑéÎÄ¼şÍ·´óĞ¡ */
     ret = lfs_file_read(&g_lfs, &file, header, HEADER_SIZE);
     if (ret != (lfs_ssize_t)HEADER_SIZE)
     {
@@ -142,7 +142,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
     width = get_u16(&header[0]);
     height = get_u16(&header[2]);
 
-    /* å…ˆæ ¡éªŒæ–‡ä»¶å¤´å†ç®—å°ºå¯¸, å¦åˆ™ width*height å¯èƒ½æº¢å‡º */
+    /* ÏÈĞ£ÑéÎÄ¼şÍ·ÔÙËã³ß´ç, ·ñÔò width*height ¿ÉÄÜÒç³ö */
     if ((width == 0U) || (height == 0U) ||
         ((uint32_t)width * (uint32_t)height > IMAGE_PIXEL_MAX))
     {
@@ -151,7 +151,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
         return LFS_ERR_INVAL;
     }
 
-    /* è®¡ç®—åƒç´ æ•°æ®å­—èŠ‚æ•°ï¼Œå¹¶æ£€æŸ¥ç›®æ ‡ç¼“å†²åŒºæ˜¯å¦è¶³å¤Ÿå¤§ */
+    /* ¼ÆËãÏñËØÊı¾İ×Ö½ÚÊı£¬²¢¼ì²éÄ¿±ê»º³åÇøÊÇ·ñ×ã¹»´ó */
     data_size = (uint32_t)width * (uint32_t)height * IMAGE_BYTES_PER_PIXEL;
     if (data_size > buf_size)
     {
@@ -160,7 +160,7 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
         return LFS_ERR_NOSPC;
     }
 
-    /* è¯»å–åƒç´ æ•°æ® */
+    /* ¶ÁÈ¡ÏñËØÊı¾İ */
     ret = lfs_file_read(&g_lfs, &file, buf, data_size);
     if (ret != (lfs_ssize_t)data_size)
     {
@@ -178,12 +178,12 @@ int LoadImage(const char *path, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t
 }
 
 /**
- * @brief ä¿å­˜å­—ä½“äºŒè¿›åˆ¶æ•°æ®åˆ° littlefs æ–‡ä»¶ç³»ç»Ÿã€‚
- * @param w,h   å›¾åƒå®½é«˜(åƒç´ )
- * @param data å­—ä½“æ•°æ®æŒ‡é’ˆ
- * @param size æ•°æ®å­—èŠ‚æ•°
- * @return 0 æˆåŠŸï¼›å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
- * @note æ•°æ®æœ¬ä½“ä¸è§£æï¼ŒåŸæ ·å†™å…¥ã€‚
+ * @brief ±£´æ×ÖÌå¶ş½øÖÆÊı¾İµ½ littlefs ÎÄ¼şÏµÍ³¡£
+ * @param w,h   Í¼Ïñ¿í¸ß(ÏñËØ)
+ * @param data ×ÖÌåÊı¾İÖ¸Õë
+ * @param size Êı¾İ×Ö½ÚÊı
+ * @return 0 ³É¹¦£»ÆäËûÖµÎª littlefs ´íÎóÂë
+ * @note Êı¾İ±¾Ìå²»½âÎö£¬Ô­ÑùĞ´Èë¡£
  */
 int SaveFont(const char *path, const uint8_t *data, uint32_t size)
 {
@@ -197,7 +197,7 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
         return LFS_ERR_INVAL;
     }
 
-    /* åªå†™ + åˆ›å»º + æˆªæ–­ */
+    /* Ö»Ğ´ + ´´½¨ + ½Ø¶Ï */
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
     if (err != LFS_ERR_OK)
     {
@@ -205,7 +205,7 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
         return err;
     }
 
-    /* å†™å…¥å­—ä½“æ•°æ® */
+    /* Ğ´Èë×ÖÌåÊı¾İ */
     ret = lfs_file_write(&g_lfs, &file, data, size);
     if (ret != (lfs_ssize_t)size)
     {
@@ -225,16 +225,16 @@ int SaveFont(const char *path, const uint8_t *data, uint32_t size)
 }
 
 /**
- * @brief ä» littlefs æ–‡ä»¶ç³»ç»Ÿè¯»å–å­—ä½“äºŒè¿›åˆ¶æ•°æ®ã€‚
- * æµç¨‹ï¼š
- *   1. æ‰“å¼€æ–‡ä»¶ï¼›
- *   2. ç”¨ lfs_file_size è·å–æ–‡ä»¶å®é™…å¤§å°ï¼›
- *   3. è‹¥å¤§äºç¼“å†²åŒºï¼Œè¿”å› LFS_ERR_NOSPCï¼Œä¸åšéƒ¨åˆ†è¯»å–ï¼›
- *   4. è¯»å–å…¨éƒ¨å†…å®¹ã€‚
- * @param path     æºæ–‡ä»¶è·¯å¾„
- * @param buf      è¾“å‡ºç¼“å†²åŒº
- * @param buf_size è¾“å‡ºç¼“å†²åŒºå¤§å°
- * @return >= 0 å®é™…è¯»å–å­—èŠ‚æ•°ï¼›< 0 littlefs é”™è¯¯ç 
+ * @brief ´Ó littlefs ÎÄ¼şÏµÍ³¶ÁÈ¡×ÖÌå¶ş½øÖÆÊı¾İ¡£
+ * Á÷³Ì£º
+ *   1. ´ò¿ªÎÄ¼ş£»
+ *   2. ÓÃ lfs_file_size »ñÈ¡ÎÄ¼şÊµ¼Ê´óĞ¡£»
+ *   3. Èô´óÓÚ»º³åÇø£¬·µ»Ø LFS_ERR_NOSPC£¬²»×ö²¿·Ö¶ÁÈ¡£»
+ *   4. ¶ÁÈ¡È«²¿ÄÚÈİ¡£
+ * @param path     Ô´ÎÄ¼şÂ·¾¶
+ * @param buf      Êä³ö»º³åÇø
+ * @param buf_size Êä³ö»º³åÇø´óĞ¡
+ * @return >= 0 Êµ¼Ê¶ÁÈ¡×Ö½ÚÊı£»< 0 littlefs ´íÎóÂë
  */
 int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
 {
@@ -249,7 +249,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
         return LFS_ERR_INVAL;
     }
 
-    /* åªè¯»æ‰“å¼€æ–‡ä»¶ */
+    /* Ö»¶Á´ò¿ªÎÄ¼ş */
     err = lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY);
     if (err != LFS_ERR_OK)
     {
@@ -257,7 +257,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
         return err;
     }
 
-    /* è·å–æ–‡ä»¶å®é™…å¤§å° */
+    /* »ñÈ¡ÎÄ¼şÊµ¼Ê´óĞ¡ */
     size = lfs_file_size(&g_lfs, &file);
     if (size > buf_size)
     {
@@ -267,7 +267,7 @@ int LoadFont(const char *path, uint8_t *buf, uint32_t buf_size)
         return LFS_ERR_NOSPC;
     }
 
-    /* è¯»å–å­—ä½“æ•°æ® ï¼Œä¸€æ¬¡æ€§è¯»å–æ•´ä¸ªæ–‡ä»¶ */
+    /* ¶ÁÈ¡×ÖÌåÊı¾İ £¬Ò»´ÎĞÔ¶ÁÈ¡Õû¸öÎÄ¼ş */
     ret = lfs_file_read(&g_lfs, &file, buf, size);
     if (ret != (lfs_ssize_t)size)
     {

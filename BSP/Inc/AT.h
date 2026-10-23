@@ -9,64 +9,64 @@
 #include "Usart.h"
 #include "Secrets.h"
 
-#define AT_USART1_GPIO_PORT          GPIOA       // USART1_TXå’ŒUSART1_RXè¿æ¥åœ¨GPIOAä¸Š
+#define AT_USART1_GPIO_PORT          GPIOA       // USART1_TXºÍUSART1_RXÁ¬½ÓÔÚGPIOAÉÏ
 #define AT_USART1_GPIO_PIN_TX        GPIO_Pin_9  // USART1_TX
 #define AT_USART1_GPIO_PIN_RX        GPIO_Pin_10 // USART1_RX
 
-/* AT æ¨¡ç»„å›å¤çŠ¶æ€ */
+/* AT Ä£×é»Ø¸´×´Ì¬ */
 typedef enum
 {
-    AT_ACK_NONE,  // æœ¬è¡Œæ— å›å¤
-    AT_ACK_OK,    // æˆåŠŸ
-    AT_ACK_ERROR, // é”™è¯¯
-    AT_ACK_BUSY,  // ç¹å¿™
-    AT_ACK_READY, // å°±ç»ª
+    AT_ACK_NONE,  // ±¾ĞĞÎŞ»Ø¸´
+    AT_ACK_OK,    // ³É¹¦
+    AT_ACK_ERROR, // ´íÎó
+    AT_ACK_BUSY,  // ·±Ã¦
+    AT_ACK_READY, // ¾ÍĞ÷
 } AT_ACK_t;
 
-/* AT æ¨¡ç»„å›å¤åŒ¹é…ç»“æ„ä½“ */
+/* AT Ä£×é»Ø¸´Æ¥Åä½á¹¹Ìå */
 typedef struct
 {
     AT_ACK_t ack;
     const char *string;
 } AT_ACK_Match_t;
 
-/* AT+CWSTATE? / AT+CWJAP? â€”â€” WiFi è¿æ¥ä¿¡æ¯ */
+/* AT+CWSTATE? / AT+CWJAP? ¡ª¡ª WiFi Á¬½ÓĞÅÏ¢ */
 typedef struct
 {
-    char ssid[64];  // SSID, ç½‘ç»œåç§°  (sscanf %63)
-    char bssid[18]; // BSSID, MACåœ°å€ (sscanf %17)
-    int channel;    // ä¿¡é“
-    int rssi;       // ä¿¡å·å¼ºåº¦(dBm)
-    bool connected; // æ˜¯å¦å·²è¿æ¥
+    char ssid[64];  // SSID, ÍøÂçÃû³Æ  (sscanf %63)
+    char bssid[18]; // BSSID, MACµØÖ· (sscanf %17)
+    int channel;    // ĞÅµÀ
+    int rssi;       // ĞÅºÅÇ¿¶È(dBm)
+    bool connected; // ÊÇ·ñÒÑÁ¬½Ó
 } AT_WiFi_Info_t;
 
-/* HTTP å¤©æ°”æ¥å£ â€”â€” åŸå¸‚ / å¤©æ°” / æ¸©åº¦ */
+/* HTTP ÌìÆø½Ó¿Ú ¡ª¡ª ³ÇÊĞ / ÌìÆø / ÎÂ¶È */
 typedef struct
 {
-    char city[32];      // åŸå¸‚                    (sscanf %31)
-    char location[128]; // ä½ç½®è·¯å¾„(åŸå¸‚,çœä»½,å›½å®¶)  (sscanf %127)
-    char weather[32];   // å¤©æ°”æè¿°                (sscanf %31)
-    int weather_code;   // å¤©æ°”ç 
-    float temperature;  // æ¸©åº¦(æ‘„æ°åº¦)
+    char city[32];      // ³ÇÊĞ                    (sscanf %31)
+    char location[128]; // Î»ÖÃÂ·¾¶(³ÇÊĞ,Ê¡·İ,¹ú¼Ò)  (sscanf %127)
+    char weather[32];   // ÌìÆøÃèÊö                (sscanf %31)
+    int weather_code;   // ÌìÆøÂë
+    float temperature;  // ÎÂ¶È(ÉãÊÏ¶È)
 } AT_Weather_Info_t;
 
-/* AT+CIPSNTPTIME? â€”â€” UTC æ—¶é—´ */
+/* AT+CIPSNTPTIME? ¡ª¡ª UTC Ê±¼ä */
 typedef struct
 {
-    uint16_t year;   // å¹´ä»½
-    uint8_t month;   // æœˆä»½ 1~12
-    uint8_t day;     // æ—¥æœŸ 1~31
-    uint8_t hour;    // å°æ—¶
-    uint8_t minute;  // åˆ†é’Ÿ
-    uint8_t second;  // ç§’
-    uint8_t weekday; // æ˜ŸæœŸ 1=å‘¨ä¸€ ... 7=å‘¨æ—¥
+    uint16_t year;   // Äê·İ
+    uint8_t month;   // ÔÂ·İ 1~12
+    uint8_t day;     // ÈÕÆÚ 1~31
+    uint8_t hour;    // Ğ¡Ê±
+    uint8_t minute;  // ·ÖÖÓ
+    uint8_t second;  // Ãë
+    uint8_t weekday; // ĞÇÆÚ 1=ÖÜÒ» ... 7=ÖÜÈÕ
 } AT_Date_Info_t;
 
-// /* é«˜å¾·é€†åœ°ç†ç¼–ç  â€”â€” çœ / å¸‚(UTF-8 åŸæ–‡) */
+// /* ¸ßµÂÄæµØÀí±àÂë ¡ª¡ª Ê¡ / ÊĞ(UTF-8 Ô­ÎÄ) */
 // typedef struct
 // {
-//     char city[32];     // åŸå¸‚ (sscanf %31)
-//     char province[32]; // çœä»½ (sscanf %31)
+//     char city[32];     // ³ÇÊĞ (sscanf %31)
+//     char province[32]; // Ê¡·İ (sscanf %31)
 // } AT_Location_Info_t;
 
 bool AT_Init(void);

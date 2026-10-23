@@ -21,14 +21,14 @@
 
 typedef enum
 {
-    BM_TEST_MODULE_OLED = 1,     // OLED æµ‹è¯•
-    BM_TEST_MODULE_LIGHT = 2,    // å…‰æ•ç”µé˜»æµ‹è¯•
-    BM_TEST_MODULE_DS1302 = 3,   // DS1302 å¤–éƒ¨RTCæµ‹è¯•
-    BM_TEST_MODULE_W25Q64 = 4,   // W25Q64 SPI Flash è£¸é©±åŠ¨æµ‹è¯•
-    BM_TEST_MODULE_LFS = 5,      // littlefs æ–‡ä»¶ç³»ç»Ÿæµ‹è¯•
-    BM_TEST_MODULE_GNSS = 6,     // ATGM336H åŒ—æ–—+GPS å®šä½æ¨¡å—æµ‹è¯•
-    BM_TEST_MODULE_KEYBOARD = 7, // é”®ç›˜æµ‹è¯•
-    BM_TEST_MODULE_TOUCH = 8,    // LCD + è§¦æ‘¸å±æµ‹è¯•(å«äº”ç‚¹æ ¡å‡†)
+    BM_TEST_MODULE_OLED = 1,     // OLED ²âÊÔ
+    BM_TEST_MODULE_LIGHT = 2,    // ¹âÃôµç×è²âÊÔ
+    BM_TEST_MODULE_DS1302 = 3,   // DS1302 Íâ²¿RTC²âÊÔ
+    BM_TEST_MODULE_W25Q64 = 4,   // W25Q64 SPI Flash ÂãÇý¶¯²âÊÔ
+    BM_TEST_MODULE_LFS = 5,      // littlefs ÎÄ¼þÏµÍ³²âÊÔ
+    BM_TEST_MODULE_GNSS = 6,     // ATGM336H ±±¶·+GPS ¶¨Î»Ä£¿é²âÊÔ
+    BM_TEST_MODULE_KEYBOARD = 7, // ¼üÅÌ²âÊÔ
+    BM_TEST_MODULE_TOUCH = 8,    // LCD + ´¥ÃþÆÁ²âÊÔ(º¬ÎåµãÐ£×¼)
 } BM_TEST_MODULE_t;
 
 void BareMetal_Module_Test(void);

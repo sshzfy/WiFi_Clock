@@ -8,7 +8,7 @@ static void DHT22_Task(void *pvParameters)
 
     bool first_run = true;
 
-    /* ç¬¬ä¸€æ¬¡è¿è¡Œ: ç«‹å³é‡‡é›† */
+    /* µÚÒ»´ÎÔËĞĞ: Á¢¼´²É¼¯ */
     if (first_run)
     {
         first_run = false;
@@ -17,22 +17,22 @@ static void DHT22_Task(void *pvParameters)
 
     for (;;)
     {
-        /* ç­‰å¾…è¶…æ—¶(=é‡‡é›†å‘¨æœŸ); åŒæ—¶ç­‰å¾…"é€€å‡ºä½åŠŸè€—ç«‹å³è¡¥é‡‡"è¯·æ±‚ */
+        /* µÈ´ı³¬Ê±(=²É¼¯ÖÜÆÚ); Í¬Ê±µÈ´ı"ÍË³öµÍ¹¦ºÄÁ¢¼´²¹²É"ÇëÇó */
         EventBits_t bits = xEventGroupWaitBits(Task_Events(), EV_DHT22_UPDATE_NOW, pdTRUE, pdFALSE, pdMS_TO_TICKS(DHT22_PERIOD_S * 1000));
 
-        bool force = (bits & EV_DHT22_UPDATE_NOW) != 0; // æ˜¯å¦ç«‹å³è¡¥é‡‡
+        bool force = (bits & EV_DHT22_UPDATE_NOW) != 0; // ÊÇ·ñÁ¢¼´²¹²É
 
-        /* ä½åŠŸè€—æœŸé—´: åªæœ‰æ”¶åˆ°"ç«‹å³è¡¥é‡‡"è¯·æ±‚æ‰é‡‡é›†, å¦åˆ™è·³è¿‡ */
+        /* µÍ¹¦ºÄÆÚ¼ä: Ö»ÓĞÊÕµ½"Á¢¼´²¹²É"ÇëÇó²Å²É¼¯, ·ñÔòÌø¹ı */
         if (APP_IS_LOWPOWER() && !force)
             continue;
 
-        /* DHT22 è¯»å–, æˆåŠŸå¤±è´¥éƒ½ä¼šåˆ·æ–°room_info */
+        /* DHT22 ¶ÁÈ¡, ³É¹¦Ê§°Ü¶¼»áË¢ĞÂroom_info */
         if (Service_Room_Update())
             xEventGroupSetBits(Task_Events(), EV_DHT22);
     }
 }
 
-/* DHT22 æ¸©æ¹¿åº¦é‡‡é›†ä»»åŠ¡(ä¼˜å…ˆçº§é«˜äºUI, ä¿æŠ¤usçº§ä½æ“ä½œæ—¶åº) */
+/* DHT22 ÎÂÊª¶È²É¼¯ÈÎÎñ(ÓÅÏÈ¼¶¸ßÓÚUI, ±£»¤us¼¶Î»²Ù×÷Ê±Ğò) */
 void DHT22_Task_Start(void)
 {
     xTaskCreate(DHT22_Task, "dht22", DHT22_TASK_STACK_SIZE, NULL, DHT22_TASK_PRIORITY, NULL);

@@ -522,7 +522,7 @@ static uint8_t lv_txt_utf8_size(const char * str)
 /**
  * Convert a Unicode letter to UTF-8.
  * @param letter_uni a Unicode letter
- * @return UTF-8 coded character in Little Endian to be compatible with C chars (e.g. 'Á', 'Ű')
+ * @return UTF-8 coded character in Little Endian to be compatible with C chars (e.g. 'U+00C1', 'U+0170')
  */
 static uint32_t lv_txt_unicode_to_utf8(uint32_t letter_uni)
 {
@@ -556,7 +556,7 @@ static uint32_t lv_txt_unicode_to_utf8(uint32_t letter_uni)
 }
 
 /**
- * Convert a wide character, e.g. 'Á' little endian to be UTF-8 compatible
+ * Convert a wide character, e.g. 'U+00C1' little endian to be UTF-8 compatible
  * @param c a wide character or a  Little endian number
  * @return `c` in big endian
  */
@@ -691,7 +691,7 @@ static uint32_t lv_txt_utf8_prev(const char * txt, uint32_t * i)
 
 /**
  * Convert a character index (in an UTF-8 text) to byte index.
- * E.g. in "AÁRT" index of 'R' is 2th char but start at byte 3 because 'Á' is 2 bytes long
+ * E.g. in "AU+00C1RT" index of 'R' is 2th char but start at byte 3 because 'U+00C1' is 2 bytes long
  * @param txt a '\0' terminated UTF-8 string
  * @param utf8_id character index
  * @return byte index of the 'utf8_id'th letter
@@ -711,7 +711,7 @@ static uint32_t lv_txt_utf8_get_byte_id(const char * txt, uint32_t utf8_id)
 
 /**
  * Convert a byte index (in an UTF-8 text) to character index.
- * E.g. in "AÁRT" index of 'R' is 2th char but start at byte 3 because 'Á' is 2 bytes long
+ * E.g. in "AU+00C1RT" index of 'R' is 2th char but start at byte 3 because 'U+00C1' is 2 bytes long
  * @param txt a '\0' terminated UTF-8 string
  * @param byte_id byte index
  * @return character index of the letter at 'byte_id'th position
@@ -731,7 +731,7 @@ static uint32_t lv_txt_utf8_get_char_id(const char * txt, uint32_t byte_id)
 
 /**
  * Get the number of characters (and NOT bytes) in a string. Decode it with UTF-8 if enabled.
- * E.g.: "ÁBC" is 3 characters (but 4 bytes)
+ * E.g.: "U+00C1BC" is 3 characters (but 4 bytes)
  * @param txt a '\0' terminated char string
  * @return number of characters
  */
@@ -767,7 +767,7 @@ static uint8_t lv_txt_iso8859_1_size(const char * str)
 /**
  * Convert a Unicode letter to ISO8859-1.
  * @param letter_uni a Unicode letter
- * @return ISO8859-1 coded character in Little Endian to be compatible with C chars (e.g. 'Á', 'Ű')
+ * @return ISO8859-1 coded character in Little Endian to be compatible with C chars (e.g. 'U+00C1', 'U+0170')
  */
 static uint32_t lv_txt_unicode_to_iso8859_1(uint32_t letter_uni)
 {
@@ -823,7 +823,7 @@ static uint32_t lv_txt_iso8859_1_prev(const char * txt, uint32_t * i)
 
 /**
  * Convert a character index (in an ISO8859-1 text) to byte index.
- * E.g. in "AÁRT" index of 'R' is 2th char but start at byte 3 because 'Á' is 2 bytes long
+ * E.g. in "AU+00C1RT" index of 'R' is 2th char but start at byte 3 because 'U+00C1' is 2 bytes long
  * @param txt a '\0' terminated UTF-8 string
  * @param utf8_id character index
  * @return byte index of the 'utf8_id'th letter
@@ -836,7 +836,7 @@ static uint32_t lv_txt_iso8859_1_get_byte_id(const char * txt, uint32_t utf8_id)
 
 /**
  * Convert a byte index (in an ISO8859-1 text) to character index.
- * E.g. in "AÁRT" index of 'R' is 2th char but start at byte 3 because 'Á' is 2 bytes long
+ * E.g. in "AU+00C1RT" index of 'R' is 2th char but start at byte 3 because 'U+00C1' is 2 bytes long
  * @param txt a '\0' terminated UTF-8 string
  * @param byte_id byte index
  * @return character index of the letter at 'byte_id'th position
@@ -849,7 +849,7 @@ static uint32_t lv_txt_iso8859_1_get_char_id(const char * txt, uint32_t byte_id)
 
 /**
  * Get the number of characters (and NOT bytes) in a string. Decode it with UTF-8 if enabled.
- * E.g.: "ÁBC" is 3 characters (but 4 bytes)
+ * E.g.: "U+00C1BC" is 3 characters (but 4 bytes)
  * @param txt a '\0' terminated char string
  * @return number of characters
  */

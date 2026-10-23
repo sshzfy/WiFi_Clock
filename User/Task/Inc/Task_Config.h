@@ -1,16 +1,16 @@
 #ifndef __TASK_CONFIG_H__
 #define __TASK_CONFIG_H__
 
-/* ================ ä»»åŠ¡ä¼˜å…ˆçº§ä¸Žæ ˆå¤§å°(å•ä½: word) ================
- * ä¼˜å…ˆçº§æ•°å€¼è¶Šå¤§è¶Šé«˜(configMAX_PRIORITIES = 5, å¯ç”¨ 0~4)ã€‚
- * DHT22 ä¼˜å…ˆçº§å¿…é¡»é«˜äºŽ UI: DHT22 çš„ä½æ“ä½œæ—¶åºåœ¨ us çº§, è¢« UI æŠ¢å ä¼šè¯»å¤±è´¥ã€‚
- * net(2) ä½ŽäºŽ UI(3): net æ¯æ‹åªåšä¸€æ¬¡åˆ¤æ–­å°±è®©å‡º, ä¸ä¼šé¥¿æ­»æ˜¾ç¤º; åè¿‡æ¥è¯´
- * ä¸€æ¬¡ AT äº‹åŠ¡æœ€é•¿ 10s, ä¼˜å…ˆçº§é«˜äºŽ UI ä¼šæŠŠåˆ·å±æŒ¡ä½ã€‚
+/* ================ ÈÎÎñÓÅÏÈ¼¶ÓëÕ»´óÐ¡(µ¥Î»: word) ================
+ * ÓÅÏÈ¼¶ÊýÖµÔ½´óÔ½¸ß(configMAX_PRIORITIES = 5, ¿ÉÓÃ 0~4)¡£
+ * DHT22 ÓÅÏÈ¼¶±ØÐë¸ßÓÚ UI: DHT22 µÄÎ»²Ù×÷Ê±ÐòÔÚ us ¼¶, ±» UI ÇÀÕ¼»á¶ÁÊ§°Ü¡£
+ * net(2) µÍÓÚ UI(3): net Ã¿ÅÄÖ»×öÒ»´ÎÅÐ¶Ï¾ÍÈÃ³ö, ²»»á¶öËÀÏÔÊ¾; ·´¹ýÀ´Ëµ
+ * Ò»´Î AT ÊÂÎñ×î³¤ 10s, ÓÅÏÈ¼¶¸ßÓÚ UI »á°ÑË¢ÆÁµ²×¡¡£
  * ================================ */
 #define UI_TASK_PRIORITY                    3
-#define UI_TASK_STACK_SIZE                  512 // 512 * 4 = 2KB, æ¯”å…¶å®ƒä»»åŠ¡å¤§: LVGL çš„æŒ‰é”®å¤„ç†ä¸Žåˆ·å±éƒ½è·‘åœ¨è¿™ä¸ªä»»åŠ¡é‡Œ
+#define UI_TASK_STACK_SIZE                  512 // 512 * 4 = 2KB, ±ÈÆäËüÈÎÎñ´ó: LVGL µÄ°´¼ü´¦ÀíÓëË¢ÆÁ¶¼ÅÜÔÚÕâ¸öÈÎÎñÀï
 
-#define UI_BOOT_NET_TIMEOUT_MS              (60000UL) // å¼€æœºé˜¶æ®µç­‰ EV_NET_READY çš„ä¸Šé™(ms)
+#define UI_BOOT_NET_TIMEOUT_MS              (60000UL) // ¿ª»ú½×¶ÎµÈ EV_NET_READY µÄÉÏÏÞ(ms)
 
 #define NET_TASK_PRIORITY                   2
 #define NET_TASK_STACK_SIZE                 256 // 256 * 4 = 1KB
@@ -24,33 +24,33 @@
 #define KEY_TASK_PRIORITY                   2
 #define KEY_TASK_STACK_SIZE                 128 // 128 * 4 = 512B
 
-/* ================ å‘¨æœŸå‚æ•°(å•ä½: ç§’) ================ */
+/* ================ ÖÜÆÚ²ÎÊý(µ¥Î»: Ãë) ================ */
 #define SNTP_PERIOD_S           (4UL * 60UL * 60UL) // SNTP 4h
-#define WEATHER_PERIOD_S        (60UL * 60UL)       // å¤©æ°” 1h
-#define WIFI_PERIOD_S           (10UL * 60UL)       // WiFiæ£€æŸ¥ 10min
-#define DHT22_PERIOD_S          (5UL * 60UL)        // æˆ¿é—´æ¸©æ¹¿åº¦ 5min
-#define RETRY_SNTP_S            (5UL)               // SNTPé‡è¯• 5s
-#define RETRY_WEATHER_S         (60UL)              // å¤©æ°”é‡è¯• 60s
-#define RETRY_WIFI_S            (10UL)              // WiFié‡è¯• 10s
+#define WEATHER_PERIOD_S        (60UL * 60UL)       // ÌìÆø 1h
+#define WIFI_PERIOD_S           (10UL * 60UL)       // WiFi¼ì²é 10min
+#define DHT22_PERIOD_S          (5UL * 60UL)        // ·¿¼äÎÂÊª¶È 5min
+#define RETRY_SNTP_S            (5UL)               // SNTPÖØÊÔ 5s
+#define RETRY_WEATHER_S         (60UL)              // ÌìÆøÖØÊÔ 60s
+#define RETRY_WIFI_S            (10UL)              // WiFiÖØÊÔ 10s
 
-/* ================ æ˜¼å¤œåˆ‡æ¢ä¸Žä½ŽåŠŸè€— ================ */
-#define RTC_LP_CLK_SOURCE        (1)      // ä½ŽåŠŸè€—æ¨¡å¼æ—¶é’Ÿæºé€‰æ‹©: 1=DS1302, 0=è½¯ä»¶æ—¶é’Ÿ
-#define DEBOUNCE_MS              (2000UL) // æ˜¼å¤œåˆ‡æ¢åŽ»æŠ– 2s
-#define EV_LP_UI_TICK_MS         (2000UL) // ä½ŽåŠŸè€—UIäº‹ä»¶ç­‰å¾…(ms), å¤œé—´åªæ˜¾ç¤ºåˆ°åˆ†é’Ÿ
-#define UI_TOUCH_POLL_MS         (50UL)   // ç™½å¤©ä¸»ç•Œé¢çš„è§¦æ‘¸è½®è¯¢èŠ‚æ‹(ms): å¿…é¡»æ˜Žæ˜¾å°äºŽä¸€æ¬¡ç‚¹å‡»çš„æŒç»­æ—¶é—´(çº¦100~200ms), å¦åˆ™æ•´æ®µç‚¹å‡»ä¼šè½åœ¨ä¸¤æ¬¡é‡‡æ ·ä¹‹é—´è¢«æ¼æŽ‰
+/* ================ ÖçÒ¹ÇÐ»»ÓëµÍ¹¦ºÄ ================ */
+#define RTC_LP_CLK_SOURCE        (1)      // µÍ¹¦ºÄÄ£Ê½Ê±ÖÓÔ´Ñ¡Ôñ: 1=DS1302, 0=Èí¼þÊ±ÖÓ
+#define DEBOUNCE_MS              (2000UL) // ÖçÒ¹ÇÐ»»È¥¶¶ 2s
+#define EV_LP_UI_TICK_MS         (2000UL) // µÍ¹¦ºÄUIÊÂ¼þµÈ´ý(ms), Ò¹¼äÖ»ÏÔÊ¾µ½·ÖÖÓ
+#define UI_TOUCH_POLL_MS         (50UL)   // °×ÌìÖ÷½çÃæµÄ´¥ÃþÂÖÑ¯½ÚÅÄ(ms): ±ØÐëÃ÷ÏÔÐ¡ÓÚÒ»´Îµã»÷µÄ³ÖÐøÊ±¼ä(Ô¼100~200ms), ·ñÔòÕû¶Îµã»÷»áÂäÔÚÁ½´Î²ÉÑùÖ®¼ä±»Â©µô
 
-/* ================ æŒ‰é”®æ‰‹åŠ¿å‚æ•°(ç”± Key_Task è¯†åˆ«) ================ */
-#define KEY_LONG_PRESS_MS          (800UL) // æŒ‰ä½è¾¾åˆ°è¯¥æ—¶é•¿å³è§¦å‘é•¿æŒ‰(ä¸ç­‰æ¾å¼€)
-#define KEY_MULTI_GAP_MS           (300UL) // è¿žå‡»çª—å£: è¶…æ—¶å³ç»“ç®—ç´¯è®¡å‡»æ•°
-#define KEY_CLICK_MAX              (3U)    // æœ€å¤šè¯†åˆ«åˆ°ä¸‰å‡», è¾¾åˆ°å³ç«‹å³ç»“ç®—
-#define KEY_RELEASE_POLL_MS        (20UL)  // é•¿æŒ‰è§¦å‘åŽç­‰å¾…æ¾å¼€çš„è½®è¯¢æ­¥é•¿
+/* ================ °´¼üÊÖÊÆ²ÎÊý(ÓÉ Key_Task Ê¶±ð) ================ */
+#define KEY_LONG_PRESS_MS          (800UL) // °´×¡´ïµ½¸ÃÊ±³¤¼´´¥·¢³¤°´(²»µÈËÉ¿ª)
+#define KEY_MULTI_GAP_MS           (300UL) // Á¬»÷´°¿Ú: ³¬Ê±¼´½áËãÀÛ¼Æ»÷Êý
+#define KEY_CLICK_MAX              (3U)    // ×î¶àÊ¶±ðµ½Èý»÷, ´ïµ½¼´Á¢¼´½áËã
+#define KEY_RELEASE_POLL_MS        (20UL)  // ³¤°´´¥·¢ºóµÈ´ýËÉ¿ªµÄÂÖÑ¯²½³¤
 
-/* ================ å†…å­˜ç›‘æµ‹ä»»åŠ¡(Task_Monitor.c) ================ */
-#define MONITOR_TASK_PRIORITY      1           // æœ€ä½Žå¯ç”¨ä¼˜å…ˆçº§, åªæ‰“å°ä¸å‚ä¸Žå®žæ—¶è·¯å¾„
-#define MONITOR_TASK_STACK_SIZE    128         // word: å« printf æ ¼å¼åŒ–ä½™é‡
-#define MONITOR_PERIOD_MS          (5000UL)    // æ­£å¸¸çŠ¶æ€çš„æŠ¥å‘Šå‘¨æœŸ
-#define MONITOR_LP_PERIOD_MS       (60000UL)   // ä½ŽåŠŸè€—(å¤œé—´)åªè½®è¯¢ä¸æ‰“å°, é¿å…ä¸²å£æ´»åŠ¨æŠ¬é«˜åŠŸè€—
-#define MONITOR_FIRST_DELAY_MS     (15000UL)   // é¦–æ¬¡æŠ¥å‘Šå‰é™ç½®: ç­‰å¼€æœºä»»åŠ¡å»ºé½, å³°å€¼æ‰æœ‰å‚è€ƒä»·å€¼
-#define MONITOR_MAX_TASKS          16          // ä»»åŠ¡å¿«ç…§ä¸Šé™(é™æ€æ•°ç»„, ä¸å å †)
+/* ================ ÄÚ´æ¼à²âÈÎÎñ(Task_Monitor.c) ================ */
+#define MONITOR_TASK_PRIORITY      1           // ×îµÍ¿ÉÓÃÓÅÏÈ¼¶, Ö»´òÓ¡²»²ÎÓëÊµÊ±Â·¾¶
+#define MONITOR_TASK_STACK_SIZE    128         // word: º¬ printf ¸ñÊ½»¯ÓàÁ¿
+#define MONITOR_PERIOD_MS          (5000UL)    // Õý³£×´Ì¬µÄ±¨¸æÖÜÆÚ
+#define MONITOR_LP_PERIOD_MS       (60000UL)   // µÍ¹¦ºÄ(Ò¹¼ä)Ö»ÂÖÑ¯²»´òÓ¡, ±ÜÃâ´®¿Ú»î¶¯Ì§¸ß¹¦ºÄ
+#define MONITOR_FIRST_DELAY_MS     (15000UL)   // Ê×´Î±¨¸æÇ°¾²ÖÃ: µÈ¿ª»úÈÎÎñ½¨Æë, ·åÖµ²ÅÓÐ²Î¿¼¼ÛÖµ
+#define MONITOR_MAX_TASKS          16          // ÈÎÎñ¿ìÕÕÉÏÏÞ(¾²Ì¬Êý×é, ²»Õ¼¶Ñ)
 
 #endif /* __TASK_CONFIG_H__ */

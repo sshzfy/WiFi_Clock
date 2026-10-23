@@ -1,7 +1,7 @@
 /**
  * @file lv_port_indev.h
  *
- * LVGL è¾“å…¥ç«¯å£(XPT2046 å››çº¿ç”µé˜»è§¦æ‘¸å±)
+ * LVGL ÊäÈë¶Ë¿Ú(XPT2046 ËÄÏßµç×è´¥ÃşÆÁ)
  */
 #ifndef LV_PORT_INDEV_H
 #define LV_PORT_INDEV_H
@@ -23,10 +23,10 @@ extern "C" {
  * GLOBAL PROTOTYPES
  **********************/
 
-/* æ³¨å†ŒæŒ‡é’ˆè¾“å…¥è®¾å¤‡: å¿…é¡»åœ¨ lv_init() ä¹‹åè°ƒç”¨ */
+/* ×¢²áÖ¸ÕëÊäÈëÉè±¸: ±ØĞëÔÚ lv_init() Ö®ºóµ÷ÓÃ */
 void lv_port_indev_init(void);
 
-/* å–è§¦æ‘¸è¾“å…¥è®¾å¤‡å¥æŸ„(æœªåˆå§‹åŒ–æ—¶ä¸º NULL) */
+/* È¡´¥ÃşÊäÈëÉè±¸¾ä±ú(Î´³õÊ¼»¯Ê±Îª NULL) */
 lv_indev_t *lv_port_indev_get(void);
 
 #ifdef __cplusplus

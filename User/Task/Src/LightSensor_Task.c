@@ -1,50 +1,50 @@
 #include "LightSensor_Task.h"
 
-/* ==================== ä»»åŠ¡é—´å…±äº«çŠ¶æ€(ä»…æœ¬æ–‡ä»¶å†…) ==================== */
-static TaskHandle_t s_light_task = NULL;         // å…‰æ•ä»»åŠ¡å¥æŸ„, ä¾›ä¸­æ–­å›è°ƒä¸æŒ‰é”®è¯·æ±‚é€šçŸ¥
-static volatile bool s_key_toggle_night = false; // æŒ‰é”®è¯·æ±‚: åˆ‡æ¢æ˜¼å¤œ(ç”±æœ¬ä»»åŠ¡ç»Ÿä¸€è£å†³)
-static bool s_night = false;                     // å½“å‰æ˜¼å¤œæ¨¡å¼(åˆå€¼ä¸UIé»˜è®¤çš„ç™½å¤©ä¸€è‡´)
-static bool s_baseline_dark = false;             // è‡ªåŠ¨åˆ¤å®šåŸºçº¿ = å½“å‰å·²ç”Ÿæ•ˆçš„å…‰ç…§çŠ¶æ€
+/* ==================== ÈÎÎñ¼ä¹²Ïí×´Ì¬(½ö±¾ÎÄ¼şÄÚ) ==================== */
+static TaskHandle_t s_light_task = NULL;         // ¹âÃôÈÎÎñ¾ä±ú, ¹©ÖĞ¶Ï»Øµ÷Óë°´¼üÇëÇóÍ¨Öª
+static volatile bool s_key_toggle_night = false; // °´¼üÇëÇó: ÇĞ»»ÖçÒ¹(ÓÉ±¾ÈÎÎñÍ³Ò»²Ã¾ö)
+static bool s_night = false;                     // µ±Ç°ÖçÒ¹Ä£Ê½(³õÖµÓëUIÄ¬ÈÏµÄ°×ÌìÒ»ÖÂ)
+static bool s_baseline_dark = false;             // ×Ô¶¯ÅĞ¶¨»ùÏß = µ±Ç°ÒÑÉúĞ§µÄ¹âÕÕ×´Ì¬
 
-/** @brief å…‰æ•ä¸­æ–­å›è°ƒ(ISRä¸Šä¸‹æ–‡): ä»…é€šçŸ¥ä»»åŠ¡, å»æŠ–åœ¨ä»»åŠ¡å†…å®Œæˆ
- *  @note ä»…é€šçŸ¥ä»»åŠ¡, ä¸å¤„ç†ä¸­æ–­é€»è¾‘
+/** @brief ¹âÃôÖĞ¶Ï»Øµ÷(ISRÉÏÏÂÎÄ): ½öÍ¨ÖªÈÎÎñ, È¥¶¶ÔÚÈÎÎñÄÚÍê³É
+ *  @note ½öÍ¨ÖªÈÎÎñ, ²»´¦ÀíÖĞ¶ÏÂß¼­
  */
 static void Light_IRQ_Notify(void)
 {
-    BaseType_t woken = pdFALSE; // æ˜¯å¦å”¤é†’äº†æ›´é«˜ä¼˜å…ˆçº§çš„ä»»åŠ¡
+    BaseType_t woken = pdFALSE; // ÊÇ·ñ»½ĞÑÁË¸ü¸ßÓÅÏÈ¼¶µÄÈÎÎñ
 
     if (s_light_task != NULL)
     {
-        /* é€šçŸ¥æ­£åœ¨é˜»å¡çš„ä»»åŠ¡,è§£é™¤é˜»å¡çŠ¶æ€
-         * å¹¶è¯·æ±‚ä¸€æ¬¡ä¸Šä¸‹æ–‡åˆ‡æ¢ */
+        /* Í¨ÖªÕıÔÚ×èÈûµÄÈÎÎñ,½â³ı×èÈû×´Ì¬
+         * ²¢ÇëÇóÒ»´ÎÉÏÏÂÎÄÇĞ»» */
         vTaskNotifyGiveFromISR(s_light_task, &woken);
         portYIELD_FROM_ISR(woken);
     }
 }
 
-/** @brief æäº¤ä¸€æ¬¡æ˜¼å¤œåˆ‡æ¢: ç½®äº‹ä»¶ä½é€šçŸ¥ UI, å¹¶ç­‰å¾… UI ç¡®è®¤ */
+/** @brief Ìá½»Ò»´ÎÖçÒ¹ÇĞ»»: ÖÃÊÂ¼şÎ»Í¨Öª UI, ²¢µÈ´ı UI È·ÈÏ */
 static void App_Apply_Night(bool night)
 {
-    /* é€šçŸ¥UIåˆ‡æ¢æ˜¼å¤œ
-     * å¹¶ç­‰å¾…UIç¡®è®¤ */
+    /* Í¨ÖªUIÇĞ»»ÖçÒ¹
+     * ²¢µÈ´ıUIÈ·ÈÏ */
     xEventGroupSetBits(Task_Events(), night ? EV_LOWERPOWER : EV_WAKEUP);
     xEventGroupWaitBits(Task_Events(), EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000));
 }
 
-/** @brief å¤„ç†æŒ‰é”®çš„"æ‰‹åŠ¨åˆ‡æ¢æ˜¼å¤œ"è¯·æ±‚
- *  @details ç¿»è½¬çŠ¶æ€, å¹¶æŠŠå½“å‰å…‰ç…§è®°ä¸ºè‡ªåŠ¨åˆ¤å®šåŸºçº¿, ä½¿å…‰æ•ä¸ä¼šç«‹åˆ»æŠŠå®ƒæ”¹å›å»;
- *           åªæœ‰ç¯å¢ƒå…‰çœŸæ­£å˜åŒ–å, è‡ªåŠ¨è·Ÿéšæ‰é‡æ–°ç”Ÿæ•ˆ
- *  @return true=æœ¬æ¬¡å¤„ç†äº†æŒ‰é”®è¯·æ±‚
+/** @brief ´¦Àí°´¼üµÄ"ÊÖ¶¯ÇĞ»»ÖçÒ¹"ÇëÇó
+ *  @details ·­×ª×´Ì¬, ²¢°Ñµ±Ç°¹âÕÕ¼ÇÎª×Ô¶¯ÅĞ¶¨»ùÏß, Ê¹¹âÃô²»»áÁ¢¿Ì°ÑËü¸Ä»ØÈ¥;
+ *           Ö»ÓĞ»·¾³¹âÕæÕı±ä»¯ºó, ×Ô¶¯¸úËæ²ÅÖØĞÂÉúĞ§
+ *  @return true=±¾´Î´¦ÀíÁË°´¼üÇëÇó
  */
 static bool Light_HandleKey(void)
 {
-    /* æ— æŒ‰é”®è¯·æ±‚ */
+    /* ÎŞ°´¼üÇëÇó */
     if (!s_key_toggle_night)
         return false;
 
-    s_key_toggle_night = false;              // æ¸…é™¤è¯·æ±‚æ ‡å¿—
-    s_night = !s_night;                      // åˆ‡æ¢æ˜¼å¤œçŠ¶æ€
-    s_baseline_dark = Light_Sensor_IsDark(); // è®°å½•å½“å‰å…‰ç…§çŠ¶æ€, ä½œä¸ºè‡ªåŠ¨åˆ¤å®šåŸºçº¿
+    s_key_toggle_night = false;              // Çå³ıÇëÇó±êÖ¾
+    s_night = !s_night;                      // ÇĞ»»ÖçÒ¹×´Ì¬
+    s_baseline_dark = Light_Sensor_IsDark(); // ¼ÇÂ¼µ±Ç°¹âÕÕ×´Ì¬, ×÷Îª×Ô¶¯ÅĞ¶¨»ùÏß
     DBG_PRINTF("[LIGHT] key switch -> %s\r\n", s_night ? "night" : "day");
     App_Apply_Night(s_night);
     return true;
@@ -56,72 +56,72 @@ static void LightSensor_Task(void *pvParameters)
 
     DBG_PRINTF("[LIGHT] LightSensor_Task start\r\n");
 
-    s_light_task = xTaskGetCurrentTaskHandle(); // ä¿å­˜å½“å‰ä»»åŠ¡å¥æŸ„, ç”¨äºä¸­æ–­å›è°ƒ
+    s_light_task = xTaskGetCurrentTaskHandle(); // ±£´æµ±Ç°ÈÎÎñ¾ä±ú, ÓÃÓÚÖĞ¶Ï»Øµ÷
 
-    /* æ³¨å†Œä¸­æ–­å›è°ƒå‡½æ•° */
+    /* ×¢²áÖĞ¶Ï»Øµ÷º¯Êı */
     Light_Sensor_RegisterCallback(Light_IRQ_Notify);
-    /* åˆå§‹åŒ–å…‰æ•ä¼ æ„Ÿå™¨ */
+    /* ³õÊ¼»¯¹âÃô´«¸ĞÆ÷ */
     Light_Sensor_Init();
 
-    /* ä¸¢å¼ƒå°±ç»ªå‰é—ç•™çš„æŒ‰é”®è¯·æ±‚, é¿å…å®ƒæŠŠä¸‹é¢çš„"åŸºçº¿å–å"è¯¯å½“æˆç¯å¢ƒå…‰å˜åŒ–çš„ä¾æ® */
+    /* ¶ªÆú¾ÍĞ÷Ç°ÒÅÁôµÄ°´¼üÇëÇó, ±ÜÃâËü°ÑÏÂÃæµÄ"»ùÏßÈ¡·´"Îóµ±³É»·¾³¹â±ä»¯µÄÒÀ¾İ */
     s_key_toggle_night = false;
 
-    /* åŸºçº¿å–å: ä½¿ç¬¬4æ­¥çš„"ä¸åŸºçº¿ç›¸åŒåˆ™è·³è¿‡"ä¸æˆç«‹, å¼ºåˆ¶ä¸Šç”µå…ˆåˆ¤å®šä¸€æ¬¡ */
-    s_baseline_dark = !Light_Sensor_IsDark(); // ç¬¬ä¸€æ¬¡ä¸Šç”µå€¼ä¸º true, ä½¿ç¬¬4æ­¥çš„"ä¸åŸºçº¿ç›¸åŒåˆ™è·³è¿‡"ä¸æˆç«‹
+    /* »ùÏßÈ¡·´: Ê¹µÚ4²½µÄ"Óë»ùÏßÏàÍ¬ÔòÌø¹ı"²»³ÉÁ¢, Ç¿ÖÆÉÏµçÏÈÅĞ¶¨Ò»´Î */
+    s_baseline_dark = !Light_Sensor_IsDark(); // µÚÒ»´ÎÉÏµçÖµÎª true, Ê¹µÚ4²½µÄ"Óë»ùÏßÏàÍ¬ÔòÌø¹ı"²»³ÉÁ¢
 
     DBG_PRINTF("[LIGHT] task ready: DO_state=%d dark=%d\r\n",
                (int)Light_Sensor_DO_State, (int)Light_Sensor_IsDark());
 
     for (;;)
     {
-        /* 1. æŒ‰é”®ä¼˜å…ˆ: å¤„ç†ä¸Šä¸€è½®é—ç•™çš„åˆ‡æ¢è¯·æ±‚, å¤„ç†å®Œé‡æ–°ç­‰å¾… */
+        /* 1. °´¼üÓÅÏÈ: ´¦ÀíÉÏÒ»ÂÖÒÅÁôµÄÇĞ»»ÇëÇó, ´¦ÀíÍêÖØĞÂµÈ´ı */
         if (Light_HandleKey())
             continue;
 
-        /* 2. ç­‰äº‹ä»¶: å…‰ç…§ä¸­æ–­ / æŒ‰é”®å”¤é†’ / 1000ms è½®è¯¢å…œåº•(EXTI å¤±æ•ˆæ—¶ä»èƒ½åˆ‡æ¢) */
+        /* 2. µÈÊÂ¼ş: ¹âÕÕÖĞ¶Ï / °´¼ü»½ĞÑ / 1000ms ÂÖÑ¯¶µµ×(EXTI Ê§Ğ§Ê±ÈÔÄÜÇĞ»») */
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
 
-        /* 3. ç­‰å¾…æœŸé—´å¯èƒ½è¢«æŒ‰é”®å”¤é†’ */
+        /* 3. µÈ´ıÆÚ¼ä¿ÉÄÜ±»°´¼ü»½ĞÑ */
         if (Light_HandleKey())
             continue;
 
-        /* 4. å…‰ç…§ä¸åŸºçº¿ä¸€è‡´(å«è¾¹æ²¿æŠ–åŠ¨), æ— éœ€å¤„ç† */
+        /* 4. ¹âÕÕÓë»ùÏßÒ»ÖÂ(º¬±ßÑØ¶¶¶¯), ÎŞĞè´¦Àí */
         if (Light_Sensor_IsDark() == s_baseline_dark)
             continue;
 
-        /* 5. 2s å»æŠ–: æœŸé—´å†æ¥å…‰ç…§è¾¹æ²¿åˆ™é‡æ–°è®¡æ—¶, æ¥æŒ‰é”®åˆ™ç«‹å³ç»“æŸ */
+        /* 5. 2s È¥¶¶: ÆÚ¼äÔÙÀ´¹âÕÕ±ßÑØÔòÖØĞÂ¼ÆÊ±, À´°´¼üÔòÁ¢¼´½áÊø */
         TickType_t t0 = xTaskGetTickCount();
         for (;;)
         {
-            TickType_t remain = pdMS_TO_TICKS(DEBOUNCE_MS) - (xTaskGetTickCount() - t0); // å»æŠ–æ—¶é—´å‰©ä½™
+            TickType_t remain = pdMS_TO_TICKS(DEBOUNCE_MS) - (xTaskGetTickCount() - t0); // È¥¶¶Ê±¼äÊ£Óà
             if ((int32_t)remain <= 0)
                 break;
-            if (ulTaskNotifyTake(pdTRUE, remain) > 0) /* åœ¨å‰©ä½™å»æŠ–æ—¶é—´å†…æœ‰é€šçŸ¥ */
+            if (ulTaskNotifyTake(pdTRUE, remain) > 0) /* ÔÚÊ£ÓàÈ¥¶¶Ê±¼äÄÚÓĞÍ¨Öª */
             {
                 if (s_key_toggle_night)
-                    break;                // æŒ‰é”®è¯·æ±‚ä¼˜å…ˆ: ç«‹å³ç»“æŸå»æŠ–(é€€å‡ºå½“å‰å¾ªç¯)
-                t0 = xTaskGetTickCount(); // æ–°è¾¹æ²¿, é‡æ–°å»æŠ–
+                    break;                // °´¼üÇëÇóÓÅÏÈ: Á¢¼´½áÊøÈ¥¶¶(ÍË³öµ±Ç°Ñ­»·)
+                t0 = xTaskGetTickCount(); // ĞÂ±ßÑØ, ÖØĞÂÈ¥¶¶
             }
         }
 
-        /* 6. è‹¥å› æŒ‰é”®ç»“æŸå»æŠ–, å›é¡¶éƒ¨äº¤ç»™ç¬¬1æ­¥ç»Ÿä¸€å¤„ç† */
+        /* 6. ÈôÒò°´¼ü½áÊøÈ¥¶¶, »Ø¶¥²¿½»¸øµÚ1²½Í³Ò»´¦Àí */
         if (s_key_toggle_night)
             continue;
 
-        /* 7. å»æŠ–åå†ç¡®è®¤ä¸€æ¬¡, ç”µå¹³å›åˆ°åŸºçº¿åˆ™æœ¬æ¬¡åˆ¤å®šä½œåºŸ */
-        bool dark = Light_Sensor_IsDark(); // ç¡®è®¤å½“å‰å…‰ç…§çŠ¶æ€
+        /* 7. È¥¶¶ºóÔÙÈ·ÈÏÒ»´Î, µçÆ½»Øµ½»ùÏßÔò±¾´ÎÅĞ¶¨×÷·Ï */
+        bool dark = Light_Sensor_IsDark(); // È·ÈÏµ±Ç°¹âÕÕ×´Ì¬
         if (dark == s_baseline_dark)
             continue;
 
-        s_baseline_dark = dark; // æ›´æ–°è‡ªåŠ¨åˆ¤å®šåŸºçº¿
+        s_baseline_dark = dark; // ¸üĞÂ×Ô¶¯ÅĞ¶¨»ùÏß
         DBG_PRINTF("[LIGHT] auto: level=%s, mode=%s\r\n",
                    dark ? "dark" : "bright", s_night ? "night" : "day");
 
-        if (dark != s_night) /* å½“å‰å…‰ç…§çŠ¶æ€å’Œå½“å‰æ˜¼å¤œæ¨¡å¼ä¸åŒ */
+        if (dark != s_night) /* µ±Ç°¹âÕÕ×´Ì¬ºÍµ±Ç°ÖçÒ¹Ä£Ê½²»Í¬ */
         {
-            s_night = dark; // æ›´æ–°æ˜¼å¤œæ¨¡å¼
+            s_night = dark; // ¸üĞÂÖçÒ¹Ä£Ê½
             DBG_PRINTF("[LIGHT] auto request %s\r\n", s_night ? "NIGHT" : "DAY");
-            App_Apply_Night(s_night); /* æäº¤ä¸€æ¬¡æ˜¼å¤œåˆ‡æ¢ */
+            App_Apply_Night(s_night); /* Ìá½»Ò»´ÎÖçÒ¹ÇĞ»» */
         }
     }
 }
@@ -135,5 +135,5 @@ void LightSensor_Task_RequestToggleNight(void)
 {
     s_key_toggle_night = true;
     if (s_light_task != NULL)
-        xTaskNotifyGive(s_light_task); /* é€šçŸ¥å…‰æ•ä»»åŠ¡åˆ‡æ¢æ˜¼å¤œ */
+        xTaskNotifyGive(s_light_task); /* Í¨Öª¹âÃôÈÎÎñÇĞ»»ÖçÒ¹ */
 }

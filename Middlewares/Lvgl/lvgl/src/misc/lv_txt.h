@@ -102,7 +102,7 @@ uint32_t _lv_txt_get_next_line(const char * txt, const lv_font_t * font, lv_coor
 /**
  * Give the length of a text with a given font
  * @param txt a '\0' terminate string
- * @param length length of 'txt' in byte count and not characters (Á is 1 character but 2 bytes in
+ * @param length length of 'txt' in byte count and not characters (U+00C1 is 1 character but 2 bytes in
  * UTF-8)
  * @param font pointer to a font
  * @param letter_space letter space
@@ -197,12 +197,12 @@ extern uint8_t (*_lv_txt_encoded_size)(const char *);
 /**
  * Convert a Unicode letter to encoded
  * @param letter_uni a Unicode letter
- * @return Encoded character in Little Endian to be compatible with C chars (e.g. 'Á', 'Ü')
+ * @return Encoded character in Little Endian to be compatible with C chars (e.g. 'U+00C1', 'U+00DC')
  */
 extern uint32_t (*_lv_txt_unicode_to_encoded)(uint32_t);
 
 /**
- * Convert a wide character, e.g. 'Á' little endian to be compatible with the encoded format.
+ * Convert a wide character, e.g. 'U+00C1' little endian to be compatible with the encoded format.
  * @param c a wide character
  * @return `c` in the encoded format
  */
@@ -229,7 +229,7 @@ extern uint32_t (*_lv_txt_encoded_prev)(const char *, uint32_t *);
 
 /**
  * Convert a letter index (in the encoded text) to byte index.
- * E.g. in UTF-8 "AÁRT" index of 'R' is 2 but start at byte 3 because 'Á' is 2 bytes long
+ * E.g. in UTF-8 "AU+00C1RT" index of 'R' is 2 but start at byte 3 because 'U+00C1' is 2 bytes long
  * @param txt a '\0' terminated UTF-8 string
  * @param enc_id letter index
  * @return byte index of the 'enc_id'th letter
@@ -238,7 +238,7 @@ extern uint32_t (*_lv_txt_encoded_get_byte_id)(const char *, uint32_t);
 
 /**
  * Convert a byte index (in an encoded text) to character index.
- * E.g. in UTF-8 "AÁRT" index of 'R' is 2 but start at byte 3 because 'Á' is 2 bytes long
+ * E.g. in UTF-8 "AU+00C1RT" index of 'R' is 2 but start at byte 3 because 'U+00C1' is 2 bytes long
  * @param txt a '\0' terminated UTF-8 string
  * @param byte_id byte index
  * @return character index of the letter at 'byte_id'th position
@@ -247,7 +247,7 @@ extern uint32_t (*_lv_txt_encoded_get_char_id)(const char *, uint32_t);
 
 /**
  * Get the number of characters (and NOT bytes) in a string.
- * E.g. in UTF-8 "ÁBC" is 3 characters (but 4 bytes)
+ * E.g. in UTF-8 "U+00C1BC" is 3 characters (but 4 bytes)
  * @param txt a '\0' terminated char string
  * @return number of characters
  */

@@ -5,72 +5,72 @@
 #include "BuildConfig.h"
 
 /* ============================================================
- * å­—ä½“èµ„æºå¸ƒå±€
+ * ×ÖÌå×ÊÔ´²¼¾Ö
  * ------------------------------------------------------------
- * æ‰€æœ‰å­—æ¨¡(ASCII è¡¨ä¸Žæ±‰å­—åº“)éƒ½å·²è¿ç§»åˆ° W25Q64 çš„ littlefs æ–‡ä»¶,
- * MCU Flash é‡Œåªä¿ç•™æœ¬æ–‡ä»¶ä¸­çš„"æ–‡ä»¶ ID + å°ºå¯¸"æè¿°ã€‚
- * å®šä½æ–¹å¼éƒ½æ˜¯ O(1), ä¸å†æŒ‰åå­—çº¿æ€§æŸ¥æ‰¾:
+ * ËùÓÐ×ÖÄ£(ASCII ±íÓëºº×Ö¿â)¶¼ÒÑÇ¨ÒÆµ½ W25Q64 µÄ littlefs ÎÄ¼þ,
+ * MCU Flash ÀïÖ»±£Áô±¾ÎÄ¼þÖÐµÄ"ÎÄ¼þ ID + ³ß´ç"ÃèÊö¡£
+ * ¶¨Î»·½Ê½¶¼ÊÇ O(1), ²»ÔÙ°´Ãû×ÖÏßÐÔ²éÕÒ:
  *
  *   ASCII : off = (ch - 0x20) * ob * size,  ob = ((size/2)+7)/8
- *   æ±‰å­—  : off = ((åŒºç -0xB0)*94 + (ä½ç -0xA1)) * cn_bytes
+ *   ºº×Ö  : off = ((ÇøÂë-0xB0)*94 + (Î»Âë-0xA1)) * cn_bytes
  *
- * ç‚¹é˜µæ ¼å¼: æ¨ªå‘å–æ¨¡, è¡Œä¼˜å…ˆ, æ¯è¡Œ ob=(gw+7)/8 å­—èŠ‚,
- *           æ¯å­—èŠ‚ä½Žä½ bit0 å¯¹åº”æœ€å·¦ä¾§åƒç´ ã€‚
+ * µãÕó¸ñÊ½: ºáÏòÈ¡Ä£, ÐÐÓÅÏÈ, Ã¿ÐÐ ob=(gw+7)/8 ×Ö½Ú,
+ *           Ã¿×Ö½ÚµÍÎ» bit0 ¶ÔÓ¦×î×ó²àÏñËØ¡£
  * ============================================================ */
 
-/* èµ„æºæ–‡ä»¶ ID, ä¸Ž Asset.c é‡Œçš„è·¯å¾„è¡¨ä¸€ä¸€å¯¹åº” */
+/* ×ÊÔ´ÎÄ¼þ ID, Óë Asset.c ÀïµÄÂ·¾¶±íÒ»Ò»¶ÔÓ¦ */
 typedef enum
 {
-    ASSET_FID_CN16 = 0, /* /font/cn16.bin   16x16 æ±‰å­—åº“(3755 å­—) */
-    ASSET_FID_CN22,     /* /font/cn22.bin   22x22 æ±‰å­—åº“(3755 å­—) */
-    ASSET_FID_AS12,     /* /font/as12.bin   12 å· ASCII */
-    ASSET_FID_AS16,     /* /font/as16.bin   16 å· ASCII */
-    ASSET_FID_AS16B,    /* /font/as16b.bin  16 å· ASCII(B) */
-    ASSET_FID_AS22,     /* /font/as22.bin   22 å· ASCII */
-    ASSET_FID_AS22B,    /* /font/as22b.bin  22 å· ASCII(B) */
-    ASSET_FID_AS32,     /* /font/as32.bin   32 å· ASCII */
-    ASSET_FID_AS32B,    /* /font/as32b.bin  32 å· ASCII(B) */
-    ASSET_FID_AS48,     /* /font/as48.bin   48 å· ASCII */
-    ASSET_FID_AS48B,    /* /font/as48b.bin  48 å· ASCII(B) */
-    ASSET_FID_COUNT     /* å­—åº“èµ„æº ID æ•°é‡ */
+    ASSET_FID_CN16 = 0, /* /font/cn16.bin   16x16 ºº×Ö¿â(3755 ×Ö) */
+    ASSET_FID_CN22,     /* /font/cn22.bin   22x22 ºº×Ö¿â(3755 ×Ö) */
+    ASSET_FID_AS12,     /* /font/as12.bin   12 ºÅ ASCII */
+    ASSET_FID_AS16,     /* /font/as16.bin   16 ºÅ ASCII */
+    ASSET_FID_AS16B,    /* /font/as16b.bin  16 ºÅ ASCII(B) */
+    ASSET_FID_AS22,     /* /font/as22.bin   22 ºÅ ASCII */
+    ASSET_FID_AS22B,    /* /font/as22b.bin  22 ºÅ ASCII(B) */
+    ASSET_FID_AS32,     /* /font/as32.bin   32 ºÅ ASCII */
+    ASSET_FID_AS32B,    /* /font/as32b.bin  32 ºÅ ASCII(B) */
+    ASSET_FID_AS48,     /* /font/as48.bin   48 ºÅ ASCII */
+    ASSET_FID_AS48B,    /* /font/as48b.bin  48 ºÅ ASCII(B) */
+    ASSET_FID_COUNT     /* ×Ö¿â×ÊÔ´ ID ÊýÁ¿ */
 } Asset_FontId_t;
 
-#define ASSET_FID_NONE        0xFFU // è¯¥å­—ä½“æ²¡æœ‰è¿™ä¸€ç±»å­—æ¨¡
+#define ASSET_FID_NONE        0xFFU // ¸Ã×ÖÌåÃ»ÓÐÕâÒ»Àà×ÖÄ£
 
 typedef struct
 {
-    uint16_t size;    // å­—ä½“å¤§å°(åƒç´ é«˜)
-    uint8_t ascii_id; // ASCII è¡¨èµ„æº ID; ASSET_FID_NONE = æ— 
-    uint8_t cn_id;    // æ±‰å­—åº“èµ„æº ID; ASSET_FID_NONE = çº¯ASCIIå­—ä½“
-    uint8_t cn_bytes; // æ±‰å­—æ¯å­—å­—èŠ‚æ•°(16å·=32, 22å·=66); 0 = æ— æ±‰å­—
-    uint8_t reserved; // å¯¹é½å¡«å……
+    uint16_t size;    // ×ÖÌå´óÐ¡(ÏñËØ¸ß)
+    uint8_t ascii_id; // ASCII ±í×ÊÔ´ ID; ASSET_FID_NONE = ÎÞ
+    uint8_t cn_id;    // ºº×Ö¿â×ÊÔ´ ID; ASSET_FID_NONE = ´¿ASCII×ÖÌå
+    uint8_t cn_bytes; // ºº×ÖÃ¿×Ö×Ö½ÚÊý(16ºÅ=32, 22ºÅ=66); 0 = ÎÞºº×Ö
+    uint8_t reserved; // ¶ÔÆëÌî³ä
 } Font_t;
 
-/* å„èµ„æºæ–‡ä»¶çš„å­—èŠ‚æ•°, ä¾›çƒ§å½•ä¸Žå¼€æœºè‡ªæ£€ä½¿ç”¨ */
-#define ASSET_GLYPH_COUNT 3755U /* GB2312 ä¸€çº§å­—åº“å­—æ•° */
+/* ¸÷×ÊÔ´ÎÄ¼þµÄ×Ö½ÚÊý, ¹©ÉÕÂ¼Óë¿ª»ú×Ô¼ìÊ¹ÓÃ */
+#define ASSET_GLYPH_COUNT 3755U /* GB2312 Ò»¼¶×Ö¿â×ÖÊý */
 
 #define ASSET_CN16_SIZE          (ASSET_GLYPH_COUNT * 32U) // 120160
 #define ASSET_CN22_SIZE          (ASSET_GLYPH_COUNT * 66U) // 247830
-#define ASSET_AS12_SIZE          (95U * 12U * 1U)          // 12 å· ASCII
-#define ASSET_AS16_SIZE          (95U * 16U * 1U)          // 16 å· ASCII
-#define ASSET_AS16B_SIZE         (95U * 16U * 1U)          // 16 å· ASCII(åŠ ç²—)
-#define ASSET_AS22_SIZE          (95U * 22U * 2U)          // 22 å· ASCII
-#define ASSET_AS22B_SIZE         (95U * 22U * 2U)          // 22 å· ASCII(åŠ ç²—)
-#define ASSET_AS32_SIZE          (95U * 32U * 2U)          // 32 å· ASCII
-#define ASSET_AS32B_SIZE         (95U * 32U * 2U)          // 32 å· ASCII(åŠ ç²—)
-#define ASSET_AS48_SIZE          (95U * 48U * 3U)          // 48 å· ASCII
-#define ASSET_AS48B_SIZE         (95U * 48U * 3U)          // 48 å· ASCII(åŠ ç²—)
+#define ASSET_AS12_SIZE          (95U * 12U * 1U)          // 12 ºÅ ASCII
+#define ASSET_AS16_SIZE          (95U * 16U * 1U)          // 16 ºÅ ASCII
+#define ASSET_AS16B_SIZE         (95U * 16U * 1U)          // 16 ºÅ ASCII(¼Ó´Ö)
+#define ASSET_AS22_SIZE          (95U * 22U * 2U)          // 22 ºÅ ASCII
+#define ASSET_AS22B_SIZE         (95U * 22U * 2U)          // 22 ºÅ ASCII(¼Ó´Ö)
+#define ASSET_AS32_SIZE          (95U * 32U * 2U)          // 32 ºÅ ASCII
+#define ASSET_AS32B_SIZE         (95U * 32U * 2U)          // 32 ºÅ ASCII(¼Ó´Ö)
+#define ASSET_AS48_SIZE          (95U * 48U * 3U)          // 48 ºÅ ASCII
+#define ASSET_AS48B_SIZE         (95U * 48U * 3U)          // 48 ºÅ ASCII(¼Ó´Ö)
 
-/* ASCII å•å­—ç¬¦ç‚¹é˜µå­—èŠ‚æ•° = ob * size */
+/* ASCII µ¥×Ö·ûµãÕó×Ö½ÚÊý = ob * size */
 #define ASSET_ASCII_GLYPH_BYTES(sz)        (((((sz) / 2U) + 7U) / 8U) * (sz))
 
-/* å…¨éƒ¨å­—æ¨¡é‡Œçš„æœ€å¤§å•å­—èŠ‚æ•°: 48 å· ASCII = 3 å­—èŠ‚/è¡Œ * 48 è¡Œ = 144 */
+/* È«²¿×ÖÄ£ÀïµÄ×î´óµ¥×Ö½ÚÊý: 48 ºÅ ASCII = 3 ×Ö½Ú/ÐÐ * 48 ÐÐ = 144 */
 #define ASSET_GLYPH_BYTES_MAX (ASSET_ASCII_GLYPH_BYTES(48U))
 
 /* ------------------------------------------------------------
- * èµ„æºæ•°æ®æœ¬ä½“å£°æ˜Ž
- * åªåœ¨çƒ§å½•å›ºä»¶(RESOURCE_DATA_IN_ROM=1)é‡Œç¼–è¯‘, æ­£å¼å›ºä»¶ä¸å¼•ç”¨,
- * å› æ­¤è¿™äº›è¡¨ä¸ä¼šå ç”¨ MCU Flashã€‚æ•°æ®ä»å®Œæ•´å¤‡ä»½åœ¨æºç ä¸­ã€‚
+ * ×ÊÔ´Êý¾Ý±¾ÌåÉùÃ÷
+ * Ö»ÔÚÉÕÂ¼¹Ì¼þ(RESOURCE_DATA_IN_ROM=1)Àï±àÒë, ÕýÊ½¹Ì¼þ²»ÒýÓÃ,
+ * Òò´ËÕâÐ©±í²»»áÕ¼ÓÃ MCU Flash¡£Êý¾ÝÈÔÍêÕû±¸·ÝÔÚÔ´ÂëÖÐ¡£
  * ------------------------------------------------------------ */
 #if (RESOURCE_DATA_IN_ROM == 1)
 extern const unsigned char Font_12_Table[ASSET_AS12_SIZE];
@@ -87,7 +87,7 @@ extern const unsigned char Chinese_Font16_Data[ASSET_CN16_SIZE];
 extern const unsigned char Chinese_Font22_Data[ASSET_CN22_SIZE];
 #endif /* RESOURCE_DATA_IN_ROM */
 
-/* å­—ä½“ç»“æž„ */
+/* ×ÖÌå½á¹¹ */
 extern const Font_t Font_12;
 extern const Font_t Font_16;
 extern const Font_t Font_16B;

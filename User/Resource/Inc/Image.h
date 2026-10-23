@@ -5,102 +5,102 @@
 #include "BuildConfig.h"
 
 /* ============================================================
- * å›¾ç‰‡èµ„æºæè¿°
+ * Í¼Æ¬×ÊÔ´ÃèÊö
  * ------------------------------------------------------------
- * åƒç´ æ•°æ®(RGB565, å°ç«¯) å…¨éƒ¨å­˜æ”¾åœ¨ W25Q64 çš„ littlefs æ–‡ä»¶é‡Œ,
- * MCU Flash é‡Œåªä¿ç•™å®½é«˜ä¸æ–‡ä»¶è·¯å¾„ã€‚æ–‡ä»¶æ ¼å¼ä¸º:
- *   width(2, å¤§ç«¯) + height(2, å¤§ç«¯) + åƒç´ æ•°æ®
- * è¯»å–æ—¶è·³è¿‡ 4 å­—èŠ‚å¤´å³å¯, æ ¼å¼ä¸ LFS_Operation çš„ SaveImage ä¸€è‡´ã€‚
+ * ÏñËØÊı¾İ(RGB565, Ğ¡¶Ë) È«²¿´æ·ÅÔÚ W25Q64 µÄ littlefs ÎÄ¼şÀï,
+ * MCU Flash ÀïÖ»±£Áô¿í¸ßÓëÎÄ¼şÂ·¾¶¡£ÎÄ¼ş¸ñÊ½Îª:
+ *   width(2, ´ó¶Ë) + height(2, ´ó¶Ë) + ÏñËØÊı¾İ
+ * ¶ÁÈ¡Ê±Ìø¹ı 4 ×Ö½ÚÍ·¼´¿É, ¸ñÊ½Óë LFS_Operation µÄ SaveImage Ò»ÖÂ¡£
  * ============================================================ */
 
 typedef struct
 {
     uint16_t width;
     uint16_t height;
-    const char *path; // W25Q64 ä¸Šçš„ littlefs è·¯å¾„
+    const char *path; // W25Q64 ÉÏµÄ littlefs Â·¾¶
 } Image_t;
 
-/* å…¨éƒ¨å›¾ç‰‡èµ„æºæ¸…å•, ä¾› Asset è‡ªæ£€ä¸ Provision çƒ§å½•éå† */
-extern const Image_t *const g_AllImages[]; // å›¾ç‰‡èµ„æºæ¸…å•
-extern const uint32_t g_AllImageCount;     // å›¾ç‰‡èµ„æºæ€»æ•°
+/* È«²¿Í¼Æ¬×ÊÔ´Çåµ¥, ¹© Asset ×Ô¼ìÓë Provision ÉÕÂ¼±éÀú */
+extern const Image_t *const g_AllImages[]; // Í¼Æ¬×ÊÔ´Çåµ¥
+extern const uint32_t g_AllImageCount;     // Í¼Æ¬×ÊÔ´×ÜÊı
 
 /* ------------------------------------------------------------
- * èµ„æºæ•°æ®æœ¬ä½“å£°æ˜
- * åªåœ¨çƒ§å½•å›ºä»¶(RESOURCE_DATA_IN_ROM=1)é‡Œç¼–è¯‘, æ­£å¼å›ºä»¶ä¸å¼•ç”¨ã€‚
+ * ×ÊÔ´Êı¾İ±¾ÌåÉùÃ÷
+ * Ö»ÔÚÉÕÂ¼¹Ì¼ş(RESOURCE_DATA_IN_ROM=1)Àï±àÒë, ÕıÊ½¹Ì¼ş²»ÒıÓÃ¡£
  * ------------------------------------------------------------ */
 #if (RESOURCE_DATA_IN_ROM == 1)
-extern const unsigned char gImage_Boot_Page_Waitconnect[153600]; // å¼€æœºé¡µé¢, ç­‰å¾…è¿æ¥
-extern const unsigned char gImage_Main_Page[153600];             // ä¸»é¡µé¢
+extern const unsigned char gImage_Boot_Page_Waitconnect[153600]; // ¿ª»úÒ³Ãæ, µÈ´ıÁ¬½Ó
+extern const unsigned char gImage_Main_Page[153600];             // Ö÷Ò³Ãæ
 
-extern const unsigned char gImage_err[3200];         // é”™è¯¯å›¾ç‰‡
-extern const unsigned char gImage_wifi[800];         // WiFiå›¾æ ‡
-extern const unsigned char gImage_wifi_off[800];     // æ— WiFiå›¾æ ‡
-extern const unsigned char gImage_location[800];     // å®šä½å›¾æ ‡
-extern const unsigned char gImage_no_location[800];  // æ— å®šä½å›¾æ ‡
-extern const unsigned char gImage_temperature[5000]; // æ¸©åº¦å›¾æ ‡
-extern const unsigned char gImage_humidity[5000];    // æ¹¿åº¦å›¾æ ‡
-extern const unsigned char gImage_thermometer[5000]; // æ¸©æ¹¿åº¦è®¡
+extern const unsigned char gImage_err[3200];         // ´íÎóÍ¼Æ¬
+extern const unsigned char gImage_wifi[800];         // WiFiÍ¼±ê
+extern const unsigned char gImage_wifi_off[800];     // ÎŞWiFiÍ¼±ê
+extern const unsigned char gImage_location[800];     // ¶¨Î»Í¼±ê
+extern const unsigned char gImage_no_location[800];  // ÎŞ¶¨Î»Í¼±ê
+extern const unsigned char gImage_temperature[5000]; // ÎÂ¶ÈÍ¼±ê
+extern const unsigned char gImage_humidity[5000];    // Êª¶ÈÍ¼±ê
+extern const unsigned char gImage_thermometer[5000]; // ÎÂÊª¶È¼Æ
 
-extern const unsigned char gImage_sunny[5000];                   // æ™´,code:0
-extern const unsigned char gImage_star[5000];                    // æ™´(å¤œ),code:1
-extern const unsigned char gImage_overcast[5000];                // é˜´,code:9
-extern const unsigned char gImage_cloudy[5000];                  // å¤šäº‘,code:4
-extern const unsigned char gImage_light_rain[5000];              // å°é›¨,code:13
-extern const unsigned char gImage_moderate_rain[5000];           // ä¸­é›¨,code:14
-extern const unsigned char gImage_heavy_rain[5000];              // å¤§é›¨,code:15
-extern const unsigned char gImage_storm[5000];                   // æš´é›¨,code:16
-extern const unsigned char gImage_heavy_storm[5000];             // å¤§æš´é›¨,code:17
-extern const unsigned char gImage_severe_storm[5000];            // æç«¯æš´é›¨,code:18
-extern const unsigned char gImage_ice_rain[5000];                // å†°é›¹,code:19
-extern const unsigned char gImage_shower[5000];                  // é˜µé›¨,code:10
-extern const unsigned char gImage_thundershower[5000];           // é›·é˜µé›¨,code:11
-extern const unsigned char gImage_thundershower_with_hail[5000]; // é›·é›¨å†°é›¹,code:12
-extern const unsigned char gImage_sleet[5000];                   // é›ª,code:14
-extern const unsigned char gImage_snow_flurry[5000];             // é›ª,code:15
-extern const unsigned char gImage_light_snow[5000];              // å°é›ª,code:16
-extern const unsigned char gImage_moderate_snow[5000];           // ä¸­é›ª,code:17
-extern const unsigned char gImage_heavy_snow[5000];              // å¤§é›ª,code:18
-extern const unsigned char gImage_snowstorm[5000];               // é›ª,code:19
-extern const unsigned char gImage_foggy[5000];                   // é›¾,code:20
-extern const unsigned char gImage_haze[5000];                    // é›¾,code:21
+extern const unsigned char gImage_sunny[5000];                   // Çç,code:0
+extern const unsigned char gImage_star[5000];                    // Çç(Ò¹),code:1
+extern const unsigned char gImage_overcast[5000];                // Òõ,code:9
+extern const unsigned char gImage_cloudy[5000];                  // ¶àÔÆ,code:4
+extern const unsigned char gImage_light_rain[5000];              // Ğ¡Óê,code:13
+extern const unsigned char gImage_moderate_rain[5000];           // ÖĞÓê,code:14
+extern const unsigned char gImage_heavy_rain[5000];              // ´óÓê,code:15
+extern const unsigned char gImage_storm[5000];                   // ±©Óê,code:16
+extern const unsigned char gImage_heavy_storm[5000];             // ´ó±©Óê,code:17
+extern const unsigned char gImage_severe_storm[5000];            // ¼«¶Ë±©Óê,code:18
+extern const unsigned char gImage_ice_rain[5000];                // ±ù±¢,code:19
+extern const unsigned char gImage_shower[5000];                  // ÕóÓê,code:10
+extern const unsigned char gImage_thundershower[5000];           // À×ÕóÓê,code:11
+extern const unsigned char gImage_thundershower_with_hail[5000]; // À×Óê±ù±¢,code:12
+extern const unsigned char gImage_sleet[5000];                   // Ñ©,code:14
+extern const unsigned char gImage_snow_flurry[5000];             // Ñ©,code:15
+extern const unsigned char gImage_light_snow[5000];              // Ğ¡Ñ©,code:16
+extern const unsigned char gImage_moderate_snow[5000];           // ÖĞÑ©,code:17
+extern const unsigned char gImage_heavy_snow[5000];              // ´óÑ©,code:18
+extern const unsigned char gImage_snowstorm[5000];               // Ñ©,code:19
+extern const unsigned char gImage_foggy[5000];                   // Îí,code:20
+extern const unsigned char gImage_haze[5000];                    // Îí,code:21
 #endif /* RESOURCE_DATA_IN_ROM */
 
-/* å¼€æœºå¼•ç”¨å›¾ç‰‡ */
-extern const Image_t Image_err;             // é”™è¯¯å›¾ç‰‡
-extern const Image_t Boot_Page_Waitconnect; // å¼€æœºé¡µé¢, ç­‰å¾…è¿æ¥
-extern const Image_t Image_Main_Page;       // ä¸»é¡µé¢å…¨å±åº•å›¾
+/* ¿ª»úÒıÓÃÍ¼Æ¬ */
+extern const Image_t Image_err;             // ´íÎóÍ¼Æ¬
+extern const Image_t Boot_Page_Waitconnect; // ¿ª»úÒ³Ãæ, µÈ´ıÁ¬½Ó
+extern const Image_t Image_Main_Page;       // Ö÷Ò³ÃæÈ«ÆÁµ×Í¼
 
-/* ä¸»é¡µé¢å¼•ç”¨å›¾ç‰‡ */
-extern const Image_t Image_wifi;        // WiFiå›¾æ ‡
-extern const Image_t Image_wifi_off;    // æ— WiFiå›¾æ ‡
-extern const Image_t Image_location;    // å®šä½å›¾æ ‡
-extern const Image_t Image_no_location; // æ— å®šä½å›¾æ ‡
-extern const Image_t Image_temperature; // æ¸©åº¦å›¾æ ‡
-extern const Image_t Image_humidity;    // æ¹¿åº¦å›¾æ ‡
-extern const Image_t Image_thermometer; // æ¸©æ¹¿åº¦è®¡
+/* Ö÷Ò³ÃæÒıÓÃÍ¼Æ¬ */
+extern const Image_t Image_wifi;        // WiFiÍ¼±ê
+extern const Image_t Image_wifi_off;    // ÎŞWiFiÍ¼±ê
+extern const Image_t Image_location;    // ¶¨Î»Í¼±ê
+extern const Image_t Image_no_location; // ÎŞ¶¨Î»Í¼±ê
+extern const Image_t Image_temperature; // ÎÂ¶ÈÍ¼±ê
+extern const Image_t Image_humidity;    // Êª¶ÈÍ¼±ê
+extern const Image_t Image_thermometer; // ÎÂÊª¶È¼Æ
 
-/* å¤©æ°”å¼•ç”¨å›¾ç‰‡ */
-extern const Image_t Image_sunny;                   // æ™´,code:0
-extern const Image_t Image_star;                    // æ™´(å¤œ),code:1
-extern const Image_t Image_cloudy;                  // å¤šäº‘,code:4
-extern const Image_t Image_overcast;                // é˜´,code:9
-extern const Image_t Image_shower;                  // é˜µé›¨,code:10
-extern const Image_t Image_thundershower;           // é›·é˜µé›¨,code:11
-extern const Image_t Image_thundershower_with_hail; // é›·é›¨å†°é›¹,code:12
-extern const Image_t Image_light_rain;              // å°é›¨,code:13
-extern const Image_t Image_moderate_rain;           // ä¸­é›¨,code:14
-extern const Image_t Image_heavy_rain;              // å¤§é›¨,code:15
-extern const Image_t Image_storm;                   // æš´é›¨,code:16
-extern const Image_t Image_heavy_storm;             // å¤§æš´é›¨,code:17
-extern const Image_t Image_severe_storm;            // ç‰¹å¤§æš´é›¨,code:18
-extern const Image_t Image_ice_rain;                // å†»é›¨,code:19
-extern const Image_t Image_sleet;                   // é›¨å¤¹é›ª,code:20
-extern const Image_t Image_snow_flurry;             // é˜µé›ª,code:21
-extern const Image_t Image_light_snow;              // å°é›ª,code:22
-extern const Image_t Image_moderate_snow;           // ä¸­é›ª,code:23
-extern const Image_t Image_heavy_snow;              // å¤§é›ª,code:24
-extern const Image_t Image_snowstorm;               // æš´é›ª,code:25
-extern const Image_t Image_foggy;                   // é›¾å¤©,code:30
-extern const Image_t Image_haze;                    // éœ¾å¤©,code:31
+/* ÌìÆøÒıÓÃÍ¼Æ¬ */
+extern const Image_t Image_sunny;                   // Çç,code:0
+extern const Image_t Image_star;                    // Çç(Ò¹),code:1
+extern const Image_t Image_cloudy;                  // ¶àÔÆ,code:4
+extern const Image_t Image_overcast;                // Òõ,code:9
+extern const Image_t Image_shower;                  // ÕóÓê,code:10
+extern const Image_t Image_thundershower;           // À×ÕóÓê,code:11
+extern const Image_t Image_thundershower_with_hail; // À×Óê±ù±¢,code:12
+extern const Image_t Image_light_rain;              // Ğ¡Óê,code:13
+extern const Image_t Image_moderate_rain;           // ÖĞÓê,code:14
+extern const Image_t Image_heavy_rain;              // ´óÓê,code:15
+extern const Image_t Image_storm;                   // ±©Óê,code:16
+extern const Image_t Image_heavy_storm;             // ´ó±©Óê,code:17
+extern const Image_t Image_severe_storm;            // ÌØ´ó±©Óê,code:18
+extern const Image_t Image_ice_rain;                // ¶³Óê,code:19
+extern const Image_t Image_sleet;                   // Óê¼ĞÑ©,code:20
+extern const Image_t Image_snow_flurry;             // ÕóÑ©,code:21
+extern const Image_t Image_light_snow;              // Ğ¡Ñ©,code:22
+extern const Image_t Image_moderate_snow;           // ÖĞÑ©,code:23
+extern const Image_t Image_heavy_snow;              // ´óÑ©,code:24
+extern const Image_t Image_snowstorm;               // ±©Ñ©,code:25
+extern const Image_t Image_foggy;                   // ÎíÌì,code:30
+extern const Image_t Image_haze;                    // ö²Ìì,code:31
 
 #endif /* __IMAGE_H__ */

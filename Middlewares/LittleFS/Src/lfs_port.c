@@ -1,91 +1,91 @@
 #include "lfs_port.h"
 
-/* ================ LittleFS ç§»æ¤ ================
- * littlefs ä¸ç›´æ¥æ“ä½œ Flashï¼Œè€Œæ˜¯é€šè¿‡ lfs_config ä¸­æ³¨å†Œçš„
- * read / prog / erase / sync å››ä¸ªå›è°ƒè®¿é—®åº•å±‚å­˜å‚¨
- * æœ¬æ–‡ä»¶è´Ÿè´£ï¼š
- *   1. å®šä¹‰å…¨å±€ littlefs å®ä¾‹ g_lfs
- *   2. æä¾› W25Q64 çš„è¯»ã€å†™ã€æ“¦é™¤ã€åŒæ­¥å›è°ƒ
- *   3. æä¾›æŒ‚è½½ã€å¸è½½ã€è‡ªåŠ¨æ ¼å¼åŒ–ã€å¼ºåˆ¶æ ¼å¼åŒ–æ¥å£
- *   4. è®°å½•æŒ‚è½½çŠ¶æ€, å¹¶æä¾›æ•´æ£µæ–‡ä»¶æ ‘çš„è®¿é—®äº’æ–¥
+/* ================ LittleFS ÒÆÖ² ================
+ * littlefs ²»Ö±½Ó²Ù×÷ Flash£¬¶øÊÇÍ¨¹ı lfs_config ÖĞ×¢²áµÄ
+ * read / prog / erase / sync ËÄ¸ö»Øµ÷·ÃÎÊµ×²ã´æ´¢
+ * ±¾ÎÄ¼ş¸ºÔğ£º
+ *   1. ¶¨ÒåÈ«¾Ö littlefs ÊµÀı g_lfs
+ *   2. Ìá¹© W25Q64 µÄ¶Á¡¢Ğ´¡¢²Á³ı¡¢Í¬²½»Øµ÷
+ *   3. Ìá¹©¹ÒÔØ¡¢Ğ¶ÔØ¡¢×Ô¶¯¸ñÊ½»¯¡¢Ç¿ÖÆ¸ñÊ½»¯½Ó¿Ú
+ *   4. ¼ÇÂ¼¹ÒÔØ×´Ì¬, ²¢Ìá¹©Õû¿ÃÎÄ¼şÊ÷µÄ·ÃÎÊ»¥³â
  * ================================ */
 
-lfs_t g_lfs; // littlefs å…¨å±€å®ä¾‹, ä¿å­˜æŒ‚è½½åçš„æ–‡ä»¶ç³»ç»Ÿè¿è¡Œæ—¶çŠ¶æ€
+lfs_t g_lfs; // littlefs È«¾ÖÊµÀı, ±£´æ¹ÒÔØºóµÄÎÄ¼şÏµÍ³ÔËĞĞÊ±×´Ì¬
 
-static uint8_t s_lfs_read_buffer[LFS_CACHE_SIZE];          // read_buffer      : è¯»ç¼“å­˜ï¼Œå¤§å°å¿…é¡» >= cache_sizeï¼›
-static uint8_t s_lfs_prog_buffer[LFS_CACHE_SIZE];          // prog_buffer      : å†™ç¼“å­˜ï¼Œå¤§å°å¿…é¡» >= cache_sizeï¼›
-static uint8_t s_lfs_lookahead_buffer[LFS_LOOKAHEAD_SIZE]; // lookahead_buffer : å—åˆ†é…é¢„è¯»ä½å›¾ï¼Œå¤§å°å¿…é¡»ä¸º 8 çš„å€æ•°ã€‚
+static uint8_t s_lfs_read_buffer[LFS_CACHE_SIZE];          // read_buffer      : ¶Á»º´æ£¬´óĞ¡±ØĞë >= cache_size£»
+static uint8_t s_lfs_prog_buffer[LFS_CACHE_SIZE];          // prog_buffer      : Ğ´»º´æ£¬´óĞ¡±ØĞë >= cache_size£»
+static uint8_t s_lfs_lookahead_buffer[LFS_LOOKAHEAD_SIZE]; // lookahead_buffer : ¿é·ÖÅäÔ¤¶ÁÎ»Í¼£¬´óĞ¡±ØĞëÎª 8 µÄ±¶Êı¡£
 
-static bool s_mounted = false; // å½“å‰ g_lfs æ˜¯å¦å¤„äºå·²æŒ‚è½½çŠ¶æ€
+static bool s_mounted = false; // µ±Ç° g_lfs ÊÇ·ñ´¦ÓÚÒÑ¹ÒÔØ×´Ì¬
 #if (USE_FREERTOS == 1)
-static SemaphoreHandle_t s_lfs_mtx = NULL; // littlefs è®¿é—®é”(é€’å½’): ä¿æŠ¤æ•´æ£µæ–‡ä»¶æ ‘ä¸ SPI1
+static SemaphoreHandle_t s_lfs_mtx = NULL; // littlefs ·ÃÎÊËø(µİ¹é): ±£»¤Õû¿ÃÎÄ¼şÊ÷Óë SPI1
 #endif
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static int lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
 static int lfs_program(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
 static int lfs_erase(const struct lfs_config *c, lfs_block_t block);
 static int lfs_sync(const struct lfs_config *c);
 
-/* ================ littlefs é…ç½®å¯¹è±¡ ================ */
+/* ================ littlefs ÅäÖÃ¶ÔÏó ================ */
 const struct lfs_config g_lfs_config =
     {
-        /* åº•å±‚æ“ä½œå‡½æ•° */
-        .read = lfs_read,    // è¯»å›è°ƒ, ä» W25Q64 è¯»å–æ•°æ®
-        .prog = lfs_program, // å†™å›è°ƒ, å‘ W25Q64 å†™å…¥æ•°æ®
-        .erase = lfs_erase,  // æ“¦é™¤å›è°ƒ, æ“¦é™¤ W25Q64 ä¸€ä¸ªé€»è¾‘å—
-        .sync = lfs_sync,    // åŒæ­¥å›è°ƒ, W25Q64 åº•å±‚å·²é˜»å¡ç­‰å¾…ï¼Œç©ºå®ç°å³å¯
-        /* ç²’åº¦é…ç½® */
-        .read_size = LFS_READ_SIZE,     // æœ€å°è¯»å–å¤§å°
-        .prog_size = LFS_PROGRAM_SIZE,  // æœ€å°ç¼–ç¨‹å¤§å°
-        .block_size = LFS_BLOCK_SIZE,   // æ“¦é™¤å—å¤§å° = 4KB æ‰‡åŒº
-        .block_count = LFS_BLOCK_COUNT, // å—æ•°é‡ = 8MB/4KB = 2048
-        /* ç¼“å­˜é…ç½® */
-        .cache_size = LFS_CACHE_SIZE,         // ç¼“å­˜å¤§å°
-        .lookahead_size = LFS_LOOKAHEAD_SIZE, // é¢„è¯»å¤§å°(å¿…é¡»ä¸º8çš„å€æ•°)
-        .block_cycles = LFS_BLOCK_CYCLES,     // ç£¨æŸå‡è¡¡å‘¨æœŸ
-        /* ç¼“å­˜åŒºé…ç½® */
-        .read_buffer = s_lfs_read_buffer,           // è¯»ç¼“å­˜
-        .prog_buffer = s_lfs_prog_buffer,           // å†™ç¼“å­˜
-        .lookahead_buffer = s_lfs_lookahead_buffer, // é¢„è¯»ç¼“å­˜
+        /* µ×²ã²Ù×÷º¯Êı */
+        .read = lfs_read,    // ¶Á»Øµ÷, ´Ó W25Q64 ¶ÁÈ¡Êı¾İ
+        .prog = lfs_program, // Ğ´»Øµ÷, Ïò W25Q64 Ğ´ÈëÊı¾İ
+        .erase = lfs_erase,  // ²Á³ı»Øµ÷, ²Á³ı W25Q64 Ò»¸öÂß¼­¿é
+        .sync = lfs_sync,    // Í¬²½»Øµ÷, W25Q64 µ×²ãÒÑ×èÈûµÈ´ı£¬¿ÕÊµÏÖ¼´¿É
+        /* Á£¶ÈÅäÖÃ */
+        .read_size = LFS_READ_SIZE,     // ×îĞ¡¶ÁÈ¡´óĞ¡
+        .prog_size = LFS_PROGRAM_SIZE,  // ×îĞ¡±à³Ì´óĞ¡
+        .block_size = LFS_BLOCK_SIZE,   // ²Á³ı¿é´óĞ¡ = 4KB ÉÈÇø
+        .block_count = LFS_BLOCK_COUNT, // ¿éÊıÁ¿ = 8MB/4KB = 2048
+        /* »º´æÅäÖÃ */
+        .cache_size = LFS_CACHE_SIZE,         // »º´æ´óĞ¡
+        .lookahead_size = LFS_LOOKAHEAD_SIZE, // Ô¤¶Á´óĞ¡(±ØĞëÎª8µÄ±¶Êı)
+        .block_cycles = LFS_BLOCK_CYCLES,     // Ä¥Ëğ¾ùºâÖÜÆÚ
+        /* »º´æÇøÅäÖÃ */
+        .read_buffer = s_lfs_read_buffer,           // ¶Á»º´æ
+        .prog_buffer = s_lfs_prog_buffer,           // Ğ´»º´æ
+        .lookahead_buffer = s_lfs_lookahead_buffer, // Ô¤¶Á»º´æ
 };
 
 /**
- * @brief è¯»å›è°ƒ
- * @param c      littlefs é…ç½®å¯¹è±¡ï¼ŒåŒ…å« block_size ç­‰ä¿¡æ¯
- * @param block  é€»è¾‘å—å·ï¼Œä» 0 å¼€å§‹
- * @param off    å—å†…å­—èŠ‚åç§»ï¼ŒèŒƒå›´ [0, block_size)
- * @param buffer è¾“å‡ºç¼“å†²åŒºï¼Œç”¨äºæ¥æ”¶è¯»åˆ°çš„æ•°æ®
- * @param size   è¦è¯»å–çš„å­—èŠ‚æ•°
- * @return LFS_ERR_OK è¡¨ç¤ºè¯»å–æˆåŠŸ
+ * @brief ¶Á»Øµ÷
+ * @param c      littlefs ÅäÖÃ¶ÔÏó£¬°üº¬ block_size µÈĞÅÏ¢
+ * @param block  Âß¼­¿éºÅ£¬´Ó 0 ¿ªÊ¼
+ * @param off    ¿éÄÚ×Ö½ÚÆ«ÒÆ£¬·¶Î§ [0, block_size)
+ * @param buffer Êä³ö»º³åÇø£¬ÓÃÓÚ½ÓÊÕ¶Áµ½µÄÊı¾İ
+ * @param size   Òª¶ÁÈ¡µÄ×Ö½ÚÊı
+ * @return LFS_ERR_OK ±íÊ¾¶ÁÈ¡³É¹¦
  * @note
- *   W25Q64 æ”¯æŒä»»æ„åœ°å€è¯»å–ï¼Œå› æ­¤è¿™é‡Œç›´æ¥æŠŠé€»è¾‘å—å·æ¢ç®—æˆç‰©ç†åœ°å€ï¼š
+ *   W25Q64 Ö§³ÖÈÎÒâµØÖ·¶ÁÈ¡£¬Òò´ËÕâÀïÖ±½Ó°ÑÂß¼­¿éºÅ»»Ëã³ÉÎïÀíµØÖ·£º
  *   addr = block * block_size + off
- *   ç”±äº LFS_BLOCK_SIZE ç­‰äº W25Q64 çš„æ‰‡åŒºå¤§å° 4096ï¼Œ
- *   æ‰€ä»¥ block å·æœ¬è´¨ä¸Šå°±æ˜¯æ‰‡åŒºå·ã€‚
+ *   ÓÉÓÚ LFS_BLOCK_SIZE µÈÓÚ W25Q64 µÄÉÈÇø´óĞ¡ 4096£¬
+ *   ËùÒÔ block ºÅ±¾ÖÊÉÏ¾ÍÊÇÉÈÇøºÅ¡£
  */
 static int lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
 {
-    uint32_t addr = (uint32_t)block * c->block_size + off; // è®¡ç®—ç‰©ç†åœ°å€
+    uint32_t addr = (uint32_t)block * c->block_size + off; // ¼ÆËãÎïÀíµØÖ·
     W25Q64_Read(addr, (uint8_t *)buffer, size);
 
     return LFS_ERR_OK;
 }
 
 /**
- * @brief å†™å›è°ƒ
- * @param c      littlefs é…ç½®å¯¹è±¡
- * @param block  é€»è¾‘å—å·
- * @param off    å—å†…å­—èŠ‚åç§»
- * @param buffer è¾“å…¥ç¼“å†²åŒºï¼Œä¿å­˜è¦å†™å…¥çš„æ•°æ®
- * @param size   è¦ç¼–ç¨‹çš„å­—èŠ‚æ•°
- * @return LFS_ERR_OK æˆåŠŸï¼›LFS_ERR_IO åº•å±‚å¿™ç­‰å¾…è¶…æ—¶æˆ–å†™å¤±è´¥
+ * @brief Ğ´»Øµ÷
+ * @param c      littlefs ÅäÖÃ¶ÔÏó
+ * @param block  Âß¼­¿éºÅ
+ * @param off    ¿éÄÚ×Ö½ÚÆ«ÒÆ
+ * @param buffer ÊäÈë»º³åÇø£¬±£´æÒªĞ´ÈëµÄÊı¾İ
+ * @param size   Òª±à³ÌµÄ×Ö½ÚÊı
+ * @return LFS_ERR_OK ³É¹¦£»LFS_ERR_IO µ×²ãÃ¦µÈ´ı³¬Ê±»òĞ´Ê§°Ü
  * @note
- *   littlefs ä¿è¯ï¼š
- *   1. å†™å…¥åŒºåŸŸå·²ç»æ“¦é™¤ï¼›
- *   2. size æ˜¯ prog_size çš„æ•´æ•°å€ï¼›
- *   3. å› ä¸º prog_size = 16 èƒ½æ•´é™¤ W25Q64 é¡µå¤§å° 256ï¼Œ
- *      æ‰€ä»¥å•æ¬¡å†™å…¥ä¸ä¼šè·¨é¡µã€‚
+ *   littlefs ±£Ö¤£º
+ *   1. Ğ´ÈëÇøÓòÒÑ¾­²Á³ı£»
+ *   2. size ÊÇ prog_size µÄÕûÊı±¶£»
+ *   3. ÒòÎª prog_size = 16 ÄÜÕû³ı W25Q64 Ò³´óĞ¡ 256£¬
+ *      ËùÒÔµ¥´ÎĞ´Èë²»»á¿çÒ³¡£
  */
 static int lfs_program(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size)
 {
@@ -100,13 +100,13 @@ static int lfs_program(const struct lfs_config *c, lfs_block_t block, lfs_off_t 
 }
 
 /**
- * @brief æ“¦é™¤å›è°ƒ
- * @param c      littlefs é…ç½®å¯¹è±¡
- * @param block  è¦æ“¦é™¤çš„é€»è¾‘å—å·
- * @return LFS_ERR_OK æˆåŠŸï¼›LFS_ERR_IO åº•å±‚å¿™ç­‰å¾…è¶…æ—¶æˆ–æ“¦é™¤å¤±è´¥
+ * @brief ²Á³ı»Øµ÷
+ * @param c      littlefs ÅäÖÃ¶ÔÏó
+ * @param block  Òª²Á³ıµÄÂß¼­¿éºÅ
+ * @return LFS_ERR_OK ³É¹¦£»LFS_ERR_IO µ×²ãÃ¦µÈ´ı³¬Ê±»ò²Á³ıÊ§°Ü
  * @note
- *   LFS_BLOCK_SIZE = 4096ï¼Œæ­£å¥½ç­‰äº W25Q64 çš„æœ€å°æ“¦é™¤å•ä½ï¼šæ‰‡åŒºã€‚
- *   å› æ­¤ä¸€ä¸ª littlefs é€»è¾‘å—å¯¹åº”ä¸€ä¸ª W25Q64 æ‰‡åŒºã€‚
+ *   LFS_BLOCK_SIZE = 4096£¬ÕıºÃµÈÓÚ W25Q64 µÄ×îĞ¡²Á³ıµ¥Î»£ºÉÈÇø¡£
+ *   Òò´ËÒ»¸ö littlefs Âß¼­¿é¶ÔÓ¦Ò»¸ö W25Q64 ÉÈÇø¡£
  */
 static int lfs_erase(const struct lfs_config *c, lfs_block_t block)
 {
@@ -120,8 +120,8 @@ static int lfs_erase(const struct lfs_config *c, lfs_block_t block)
     return LFS_ERR_OK;
 }
 
-/* åŒæ­¥å›è°ƒ, W25Q64 çš„è¯»ã€å†™ã€æ“¦é™¤æ“ä½œåœ¨åº•å±‚éƒ½å·²ç»é˜»å¡ç­‰å¾… BUSY ç»“æŸï¼Œ
- * åº•å±‚å‡½æ•°è¿”å›æ—¶ï¼Œæ“ä½œå·²ç»å®Œæˆï¼Œè¿™é‡Œæ— éœ€é¢å¤–å¤„ç†ã€‚
+/* Í¬²½»Øµ÷, W25Q64 µÄ¶Á¡¢Ğ´¡¢²Á³ı²Ù×÷ÔÚµ×²ã¶¼ÒÑ¾­×èÈûµÈ´ı BUSY ½áÊø£¬
+ * µ×²ãº¯Êı·µ»ØÊ±£¬²Ù×÷ÒÑ¾­Íê³É£¬ÕâÀïÎŞĞè¶îÍâ´¦Àí¡£
  */
 static int lfs_sync(const struct lfs_config *c)
 {
@@ -130,9 +130,9 @@ static int lfs_sync(const struct lfs_config *c)
     return LFS_ERR_OK;
 }
 
-/* ================ æŒ‚è½½çŠ¶æ€ä¸è®¿é—®äº’æ–¥ ================ */
+/* ================ ¹ÒÔØ×´Ì¬Óë·ÃÎÊ»¥³â ================ */
 
-/* ç¡®ä¿è®¿é—®é”å·²ç»åˆ›å»º */
+/* È·±£·ÃÎÊËøÒÑ¾­´´½¨ */
 static void LittleFS_LockInit(void)
 {
 #if (USE_FREERTOS == 1)
@@ -143,11 +143,11 @@ static void LittleFS_LockInit(void)
 #endif
 }
 
-/* è·å– littlefs è®¿é—®é”(é€’å½’, å¯åµŒå¥—) */
+/* »ñÈ¡ littlefs ·ÃÎÊËø(µİ¹é, ¿ÉÇ¶Ì×) */
 void LittleFS_Lock(void)
 {
 #if (USE_FREERTOS == 1)
-    /* å…œåº•: æ­£å¸¸è·¯å¾„åœ¨ LittleFS_Init() æˆ–é¦–æ¬¡è®¿é—®æ—¶åˆ›å»º */
+    /* ¶µµ×: Õı³£Â·¾¶ÔÚ LittleFS_Init() »òÊ×´Î·ÃÎÊÊ±´´½¨ */
     if (s_lfs_mtx == NULL)
     {
         s_lfs_mtx = xSemaphoreCreateRecursiveMutex();
@@ -171,13 +171,13 @@ void LittleFS_Unlock(void)
 }
 
 /**
- * @brief çœŸæ­£çš„æŒ‚è½½åŠ¨ä½œ
- * @note  è°ƒç”¨è€…å¿…é¡»å·²æŒæœ‰ LittleFS_Lock(), å› æ­¤æœ¬å‡½æ•°ä¸åŠ é”
- * @return LFS_ERR_OK å·²æŒ‚è½½æˆ–æœ¬æ¬¡æŒ‚è½½æˆåŠŸ; å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
+ * @brief ÕæÕıµÄ¹ÒÔØ¶¯×÷
+ * @note  µ÷ÓÃÕß±ØĞëÒÑ³ÖÓĞ LittleFS_Lock(), Òò´Ë±¾º¯Êı²»¼ÓËø
+ * @return LFS_ERR_OK ÒÑ¹ÒÔØ»ò±¾´Î¹ÒÔØ³É¹¦; ÆäËûÖµÎª littlefs ´íÎóÂë
  */
 static int LittleFS_MountLocked(void)
 {
-    /* å·²æŒ‚è½½: ç›´æ¥å¤ç”¨, ä¸é‡å¤ mount */
+    /* ÒÑ¹ÒÔØ: Ö±½Ó¸´ÓÃ, ²»ÖØ¸´ mount */
     if (s_mounted)
     {
         return LFS_ERR_OK;
@@ -192,13 +192,13 @@ static int LittleFS_MountLocked(void)
     return err;
 }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 
 /**
- * @brief å¹‚ç­‰æŒ‚è½½ littlefs
- * @return LFS_ERR_OK æˆåŠŸ; å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
- * @note  èµ„æºå±‚ä¸è£¸æœºæµ‹è¯•å…±ç”¨åŒä¸€ä¸ª g_lfs, é‡å¤æŒ‚è½½ä¼šæŠŠå·²æ‰“å¼€çš„
- *        æ–‡ä»¶å¥æŸ„å’Œç¼“å­˜å†²æ‰, æ‰€ä»¥ç»Ÿä¸€èµ°æœ¬æ¥å£ã€‚
+ * @brief ÃİµÈ¹ÒÔØ littlefs
+ * @return LFS_ERR_OK ³É¹¦; ÆäËûÖµÎª littlefs ´íÎóÂë
+ * @note  ×ÊÔ´²ãÓëÂã»ú²âÊÔ¹²ÓÃÍ¬Ò»¸ö g_lfs, ÖØ¸´¹ÒÔØ»á°ÑÒÑ´ò¿ªµÄ
+ *        ÎÄ¼ş¾ä±úºÍ»º´æ³åµô, ËùÒÔÍ³Ò»×ß±¾½Ó¿Ú¡£
  */
 int LittleFS_Mount(void)
 {
@@ -211,9 +211,9 @@ int LittleFS_Mount(void)
 }
 
 /**
- * @brief å¸è½½ littlefs
- * @return LFS_ERR_OK æˆåŠŸ(å«æœ¬æ¥å°±æ²¡æŒ‚è½½); å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
- * @note  è°ƒç”¨å‰å¿…é¡»ç¡®ä¿æ²¡æœ‰å·²æ‰“å¼€çš„æ–‡ä»¶å¥æŸ„(ä¾‹å¦‚ Asset å¸¸å¼€çš„å­—åº“å¥æŸ„)ã€‚
+ * @brief Ğ¶ÔØ littlefs
+ * @return LFS_ERR_OK ³É¹¦(º¬±¾À´¾ÍÃ»¹ÒÔØ); ÆäËûÖµÎª littlefs ´íÎóÂë
+ * @note  µ÷ÓÃÇ°±ØĞëÈ·±£Ã»ÓĞÒÑ´ò¿ªµÄÎÄ¼ş¾ä±ú(ÀıÈç Asset ³£¿ªµÄ×Ö¿â¾ä±ú)¡£
  */
 int LittleFS_Unmount(void)
 {
@@ -241,30 +241,30 @@ bool LittleFS_IsMounted(void)
 }
 
 /**
- * @brief  åˆå§‹åŒ– littlefs
- * å°è¯•æŒ‚è½½ littlefsã€‚
- * å¦‚æœæŒ‚è½½å¤±è´¥ï¼Œåˆ™è®¤ä¸ºå¯èƒ½æ˜¯é¦–æ¬¡ä¸Šç”µæˆ–å°šæœªæ ¼å¼åŒ–ï¼Œ
- * äºæ˜¯æ‰§è¡Œæ ¼å¼åŒ–ï¼Œç„¶åé‡æ–°æŒ‚è½½ã€‚
- * @return 0 æˆåŠŸï¼›å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
+ * @brief  ³õÊ¼»¯ littlefs
+ * ³¢ÊÔ¹ÒÔØ littlefs¡£
+ * Èç¹û¹ÒÔØÊ§°Ü£¬ÔòÈÏÎª¿ÉÄÜÊÇÊ×´ÎÉÏµç»òÉĞÎ´¸ñÊ½»¯£¬
+ * ÓÚÊÇÖ´ĞĞ¸ñÊ½»¯£¬È»ºóÖØĞÂ¹ÒÔØ¡£
+ * @return 0 ³É¹¦£»ÆäËûÖµÎª littlefs ´íÎóÂë
  * @note
- *   è‡ªåŠ¨æ ¼å¼åŒ–é€‚åˆé¦–æ¬¡ä½¿ç”¨æˆ–å¼€å‘é˜¶æ®µã€‚
- *   æ­£å¼å›ºä»¶(Asset å±‚)ä¸ä½¿ç”¨æœ¬å‡½æ•° â€”â€” é‚£é‡Œæ ¼å¼åŒ–ä¼šæ¸…ç©ºå…¨éƒ¨èµ„æº,
- *   æ‰€ä»¥ Asset åªè°ƒç”¨ LittleFS_Mount(), å¤±è´¥å°±æç¤ºé‡æ–°çƒ§å½•ã€‚
+ *   ×Ô¶¯¸ñÊ½»¯ÊÊºÏÊ×´ÎÊ¹ÓÃ»ò¿ª·¢½×¶Î¡£
+ *   ÕıÊ½¹Ì¼ş(Asset ²ã)²»Ê¹ÓÃ±¾º¯Êı ¡ª¡ª ÄÇÀï¸ñÊ½»¯»áÇå¿ÕÈ«²¿×ÊÔ´,
+ *   ËùÒÔ Asset Ö»µ÷ÓÃ LittleFS_Mount(), Ê§°Ü¾ÍÌáÊ¾ÖØĞÂÉÕÂ¼¡£
  */
 int LittleFS_Init(void)
 {
     LittleFS_LockInit();
     LittleFS_Lock();
 
-    /* å°è¯•ç¬¬ä¸€æ¬¡æŒ‚è½½ */
+    /* ³¢ÊÔµÚÒ»´Î¹ÒÔØ */
     int err = LittleFS_MountLocked();
 
     if (err != LFS_ERR_OK)
     {
-        /* é¦–æ¬¡ä¸Šç”µæˆ–ä¹‹å‰ä¸æ˜¯ littlefs æ ¼å¼ ï¼Œéœ€è¦æ ¼å¼åŒ– */
+        /* Ê×´ÎÉÏµç»òÖ®Ç°²»ÊÇ littlefs ¸ñÊ½ £¬ĞèÒª¸ñÊ½»¯ */
         printf("littlefs mount failed, err = %d, formatting\n", err);
 
-        /* æ ¼å¼åŒ–(è¦æ±‚å—è®¾å¤‡æœªæŒ‚è½½) */
+        /* ¸ñÊ½»¯(ÒªÇó¿éÉè±¸Î´¹ÒÔØ) */
         err = lfs_format(&g_lfs, &g_lfs_config);
         if (err != LFS_ERR_OK)
         {
@@ -273,7 +273,7 @@ int LittleFS_Init(void)
             return err;
         }
 
-        /* é‡æ–°æŒ‚è½½ */
+        /* ÖØĞÂ¹ÒÔØ */
         err = LittleFS_MountLocked();
         if (err != LFS_ERR_OK)
         {
@@ -283,13 +283,13 @@ int LittleFS_Init(void)
         }
     }
 
-    /* æ‰“å°æ–‡ä»¶ç³»ç»Ÿå®¹é‡ä¿¡æ¯ï¼Œä¾¿äºç¡®è®¤é…ç½®æ˜¯å¦æ­£ç¡® */
+    /* ´òÓ¡ÎÄ¼şÏµÍ³ÈİÁ¿ĞÅÏ¢£¬±ãÓÚÈ·ÈÏÅäÖÃÊÇ·ñÕıÈ· */
     printf("littlefs init success, block = %u x %u, total = %u KB\n",
            (unsigned)g_lfs_config.block_size,
            (unsigned)g_lfs_config.block_count,
            (unsigned)(g_lfs_config.block_size / 1024U * g_lfs_config.block_count));
 
-    /* æ£€æŸ¥ W25Q64 å¿™ç­‰å¾…è¶…æ—¶è®¡æ•°ã€‚å¦‚æœé 0ï¼Œè¯´æ˜åº•å±‚é©±åŠ¨æ›¾ç»ç­‰å¾… BUSY è¶…æ—¶ï¼Œå¯èƒ½å­˜åœ¨ç¡¬ä»¶æˆ–æ—¶åºé—®é¢˜ã€‚ */
+    /* ¼ì²é W25Q64 Ã¦µÈ´ı³¬Ê±¼ÆÊı¡£Èç¹û·Ç 0£¬ËµÃ÷µ×²ãÇı¶¯Ôø¾­µÈ´ı BUSY ³¬Ê±£¬¿ÉÄÜ´æÔÚÓ²¼ş»òÊ±ĞòÎÊÌâ¡£ */
     if (W25Q64_GetBusyTimeoutCount() != 0U)
     {
         printf("WARN: W25Q64 busy timeout count = %u\n", (unsigned)W25Q64_GetBusyTimeoutCount());
@@ -301,20 +301,20 @@ int LittleFS_Init(void)
 }
 
 /**
- * @brief  å¼ºåˆ¶æ ¼å¼åŒ–å¹¶é‡æ–°æŒ‚è½½
- * æ— è®ºå½“å‰æ˜¯å¦å·²ç»æŒ‚è½½ï¼Œéƒ½å…ˆå¸è½½ï¼Œå†æ‰§è¡Œ lfs_formatï¼Œç„¶åé‡æ–°æŒ‚è½½ã€‚
- * @return 0 æˆåŠŸï¼›å…¶ä»–å€¼ä¸º littlefs é”™è¯¯ç 
+ * @brief  Ç¿ÖÆ¸ñÊ½»¯²¢ÖØĞÂ¹ÒÔØ
+ * ÎŞÂÛµ±Ç°ÊÇ·ñÒÑ¾­¹ÒÔØ£¬¶¼ÏÈĞ¶ÔØ£¬ÔÙÖ´ĞĞ lfs_format£¬È»ºóÖØĞÂ¹ÒÔØ¡£
+ * @return 0 ³É¹¦£»ÆäËûÖµÎª littlefs ´íÎóÂë
  * @note
- *   æ ¼å¼åŒ–ä¼šæ¸…ç©ºæ–‡ä»¶ç³»ç»Ÿæ•°æ®ã€‚
- *   è°ƒç”¨å‰å¿…é¡»ç¡®ä¿æ²¡æœ‰å·²æ‰“å¼€çš„æ–‡ä»¶å¥æŸ„(ä¾‹å¦‚ Asset å¸¸å¼€çš„å­—åº“å¥æŸ„),
- *   å¦åˆ™é‚£äº›å¥æŸ„åœ¨æ ¼å¼åŒ–åä¾ç„¶æŒ‡å‘å·²è¢«å›æ”¶çš„å—ã€‚
+ *   ¸ñÊ½»¯»áÇå¿ÕÎÄ¼şÏµÍ³Êı¾İ¡£
+ *   µ÷ÓÃÇ°±ØĞëÈ·±£Ã»ÓĞÒÑ´ò¿ªµÄÎÄ¼ş¾ä±ú(ÀıÈç Asset ³£¿ªµÄ×Ö¿â¾ä±ú),
+ *   ·ñÔòÄÇĞ©¾ä±úÔÚ¸ñÊ½»¯ºóÒÀÈ»Ö¸ÏòÒÑ±»»ØÊÕµÄ¿é¡£
  */
 int LittleFS_Format(void)
 {
     LittleFS_LockInit();
     LittleFS_Lock();
 
-    /* å·²æŒ‚è½½æ—¶å…ˆå¸è½½: lfs_format è¦æ±‚å—è®¾å¤‡æœªæŒ‚è½½ */
+    /* ÒÑ¹ÒÔØÊ±ÏÈĞ¶ÔØ: lfs_format ÒªÇó¿éÉè±¸Î´¹ÒÔØ */
     if (s_mounted)
     {
         int uerr = lfs_unmount(&g_lfs);
@@ -327,7 +327,7 @@ int LittleFS_Format(void)
         s_mounted = false;
     }
 
-    /* å¼ºåˆ¶æ ¼å¼åŒ– */
+    /* Ç¿ÖÆ¸ñÊ½»¯ */
     int err = lfs_format(&g_lfs, &g_lfs_config);
     if (err != LFS_ERR_OK)
     {
@@ -336,7 +336,7 @@ int LittleFS_Format(void)
         return err;
     }
 
-    /* æ ¼å¼åŒ–åé‡æ–°æŒ‚è½½ */
+    /* ¸ñÊ½»¯ºóÖØĞÂ¹ÒÔØ */
     err = LittleFS_MountLocked();
     if (err != LFS_ERR_OK)
     {

@@ -1,6 +1,6 @@
 #include "Image.h"
 
-/* 寮�鏈洪〉闈? 鏈繛鎺? 绛夊緟杩炴帴 */
+/* 开机页面 未连接 等待连接 */
 #include "BuildConfig.h"
 
 #if (RESOURCE_DATA_IN_ROM == 1) && (PROVISION_BATCH == 2)

@@ -1,7 +1,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-/* main.h åªæ±‡æ€» C æ ‡å‡†åº“å¤´; STM32/FreeRTOS å¤´ç”±å„æ¨¡å— .h è‡ªè¡ŒåŒ…å« */
+/* main.h Ö»»ã×Ü C ±ê×¼¿âÍ·; STM32/FreeRTOS Í·ÓÉ¸÷Ä£¿é .h ×ÔĞĞ°üº¬ */
 #include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>

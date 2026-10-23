@@ -16,7 +16,7 @@
 #include "UI_Mode.h"
 #include "UI_Input.h"
 
-/* äº‹ä»¶ç»„ä¸­ uiTask å…³å¿ƒçš„ä½: å…¶ä½™ä½(å¦‚ ACKã€æ›´æ–°è¯·æ±‚)åªåœ¨åˆ«çš„ä»»åŠ¡ä¹‹é—´ä¼ é€’ */
+/* ÊÂ¼þ×éÖÐ uiTask ¹ØÐÄµÄÎ»: ÆäÓàÎ»(Èç ACK¡¢¸üÐÂÇëÇó)Ö»ÔÚ±ðµÄÈÎÎñÖ®¼ä´«µÝ */
 #define UI_TASK_EVENTS        (EV_WEATHER | EV_DHT22 | EV_WIFI | EV_LOWERPOWER | EV_WAKEUP | \
                                EV_WIFI_KB | EV_LOCATION_KB | EV_MAIN_SCREEN)
 

@@ -14,13 +14,13 @@
 #include "Profiling.h"
 #include "Task_Common.h"
 
-#define TOPBAR_Y                 5U   // å›¾æ ‡è¡Œä¸ä¿¡æ¯è¡Œçš„ y
-#define TOPBAR_WIFI_X            5U   // WiFi å›¾æ ‡ x
-#define TOPBAR_LOC_X             26U  // å®šä½å›¾æ ‡ x
-#define TOPBAR_ICON_SIZE         20U  // å›¾æ ‡è¾¹é•¿
-#define TOPBAR_MARGIN            5U   // ä¿¡æ¯è·å±å¹•å³è¾¹ç¼˜çš„ç•™ç™½
-#define TOPBAR_NAME_CHARS        10U  // WiFi åã€åŸå¸‚åå„æœ€å¤š 10 å­—ç¬¦
-#define TOPBAR_INFO_SIZE         (TOPBAR_NAME_CHARS * 2U + 4U) // "[å,åŸå¸‚]" + '\0' = 24
+#define TOPBAR_Y                 5U   // Í¼±êĞĞÓëĞÅÏ¢ĞĞµÄ y
+#define TOPBAR_WIFI_X            5U   // WiFi Í¼±ê x
+#define TOPBAR_LOC_X             26U  // ¶¨Î»Í¼±ê x
+#define TOPBAR_ICON_SIZE         20U  // Í¼±ê±ß³¤
+#define TOPBAR_MARGIN            5U   // ĞÅÏ¢¾àÆÁÄ»ÓÒ±ßÔµµÄÁô°×
+#define TOPBAR_NAME_CHARS        10U  // WiFi Ãû¡¢³ÇÊĞÃû¸÷×î¶à 10 ×Ö·û
+#define TOPBAR_INFO_SIZE         (TOPBAR_NAME_CHARS * 2U + 4U) // "[Ãû,³ÇÊĞ]" + '\0' = 24
 
 void UI_Day_Enter(void);
 void UI_Day_Leave(void);

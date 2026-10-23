@@ -1,24 +1,24 @@
 #include "Key_Task.h"
 
-static TaskHandle_t s_key_task = NULL; // æŒ‰é”®ä»»åŠ¡å¥æŸ„, ä¾›ä¸­æ–­å›žè°ƒé€šçŸ¥
+static TaskHandle_t s_key_task = NULL; // °´¼üÈÎÎñ¾ä±ú, ¹©ÖÐ¶Ï»Øµ÷Í¨Öª
 
-/** @brief æŒ‰é”®ä¸­æ–­å›žè°ƒ(ISRä¸Šä¸‹æ–‡): ä»…é€šçŸ¥ä»»åŠ¡
- *  @note æŒ‰ä¸‹ä¸Žæ¾å¼€éƒ½ä¼šè§¦å‘, æ‰‹åŠ¿è¯†åˆ«åœ¨ä»»åŠ¡ä¸Šä¸‹æ–‡å®Œæˆ
+/** @brief °´¼üÖÐ¶Ï»Øµ÷(ISRÉÏÏÂÎÄ): ½öÍ¨ÖªÈÎÎñ
+ *  @note °´ÏÂÓëËÉ¿ª¶¼»á´¥·¢, ÊÖÊÆÊ¶±ðÔÚÈÎÎñÉÏÏÂÎÄÍê³É
  */
 static void Key_IRQ_Notify(void)
 {
-    BaseType_t woken = pdFALSE; // æ˜¯å¦å”¤é†’ä»»åŠ¡
+    BaseType_t woken = pdFALSE; // ÊÇ·ñ»½ÐÑÈÎÎñ
 
     if (s_key_task != NULL)
     {
-        /* é€šçŸ¥æ­£åœ¨é˜»å¡žçš„ä»»åŠ¡,è§£é™¤é˜»å¡žçŠ¶æ€
-         * å¹¶è¯·æ±‚ä¸€æ¬¡ä¸Šä¸‹æ–‡åˆ‡æ¢ */
+        /* Í¨ÖªÕýÔÚ×èÈûµÄÈÎÎñ,½â³ý×èÈû×´Ì¬
+         * ²¢ÇëÇóÒ»´ÎÉÏÏÂÎÄÇÐ»» */
         vTaskNotifyGiveFromISR(s_key_task, &woken);
         portYIELD_FROM_ISR(woken);
     }
 }
 
-/** @brief æŠŠç´¯è®¡å‡»æ•°æ˜ å°„ä¸ºæ‰‹åŠ¿æžšä¸¾ */
+/** @brief °ÑÀÛ¼Æ»÷ÊýÓ³ÉäÎªÊÖÊÆÃ¶¾Ù */
 static Key_Gesture_t Key_ClickGesture(uint8_t clicks)
 {
     switch (clicks)
@@ -32,34 +32,34 @@ static Key_Gesture_t Key_ClickGesture(uint8_t clicks)
     }
 }
 
-/** @brief åˆ·æ–°æ‰€æœ‰æ•°æ®ï¼ˆç½‘ç»œ/æ—¶é—´æ—¥æœŸ/å¤©æ°”/å®¤å†…æ¸©æ¹¿åº¦ï¼‰*/
+/** @brief Ë¢ÐÂËùÓÐÊý¾Ý£¨ÍøÂç/Ê±¼äÈÕÆÚ/ÌìÆø/ÊÒÄÚÎÂÊª¶È£©*/
 static void Key_FullRefresh(void)
 {
     xEventGroupSetBits(Task_Events(), EV_NET_UPDATE_NOW | EV_DHT22_UPDATE_NOW);
 }
 
-/** @brief æ‰‹åŠ¿åˆ†å‘ */
+/** @brief ÊÖÊÆ·Ö·¢ */
 void Key_Task_OnGesture(Key_Gesture_t gesture)
 {
     switch (gesture)
     {
-        /* TODO: å¾…åˆ†é… */
+        /* TODO: ´ý·ÖÅä */
     case KEY_GESTURE_CLICK_1:
         break;
-        /* åˆ·æ–°æ‰€æœ‰æ•°æ® */
+        /* Ë¢ÐÂËùÓÐÊý¾Ý */
     case KEY_GESTURE_CLICK_2:
     {
         DBG_PRINTF("[KEY]Refresh all data\r\n");
         Key_FullRefresh();
         break;
     }
-        /* TODO: å¾…åˆ†é… */
+        /* TODO: ´ý·ÖÅä */
     case KEY_GESTURE_CLICK_3:
         break;
-        /* åˆ‡æ¢æ˜¼å¤œ */
+        /* ÇÐ»»ÖçÒ¹ */
     case KEY_GESTURE_LONG:
     {
-        LightSensor_Task_RequestToggleNight(); // äº¤å…‰æ•ä»»åŠ¡ç»Ÿä¸€è£å†³: æ˜¼å¤œçŠ¶æ€æœºåœ¨å®ƒæ‰‹é‡Œ, é¿å…ä¸¤ä¸ªä»»åŠ¡å„è‡ªæ”¹çŠ¶æ€
+        LightSensor_Task_RequestToggleNight(); // ½»¹âÃôÈÎÎñÍ³Ò»²Ã¾ö: ÖçÒ¹×´Ì¬»úÔÚËüÊÖÀï, ±ÜÃâÁ½¸öÈÎÎñ¸÷×Ô¸Ä×´Ì¬
         break;
     }
     case KEY_GESTURE_NONE:
@@ -69,21 +69,21 @@ void Key_Task_OnGesture(Key_Gesture_t gesture)
     }
 }
 
-/** @brief æŒ‰é”®æ‰‹åŠ¿è¯†åˆ«
- *  @details æ—¶åº: ç­‰æŒ‰ä¸‹ â†’ é•¿æŒ‰é˜ˆå€¼å†…æ¾å¼€ç®—çŸ­æŒ‰, è¶…æ—¶å³è§¦å‘é•¿æŒ‰(æŒ‰ä½å³å“åº”)
- *                â†’ è¿žå‡»çª—å£å†…å†æ¬¡æŒ‰ä¸‹åˆ™ç´¯åŠ , çª—å£è¶…æ—¶åŽç»“ç®—ç´¯è®¡å‡»æ•°
+/** @brief °´¼üÊÖÊÆÊ¶±ð
+ *  @details Ê±Ðò: µÈ°´ÏÂ ¡ú ³¤°´ãÐÖµÄÚËÉ¿ªËã¶Ì°´, ³¬Ê±¼´´¥·¢³¤°´(°´×¡¼´ÏìÓ¦)
+ *                ¡ú Á¬»÷´°¿ÚÄÚÔÙ´Î°´ÏÂÔòÀÛ¼Ó, ´°¿Ú³¬Ê±ºó½áËãÀÛ¼Æ»÷Êý
  */
 static void Key_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    uint8_t clicks = 0; // ç´¯è®¡å‡»æ•°
+    uint8_t clicks = 0; // ÀÛ¼Æ»÷Êý
 
-    s_key_task = xTaskGetCurrentTaskHandle(); // ä¿å­˜ä»»åŠ¡å¥æŸ„, ç”¨äºŽä¸­æ–­å›žè°ƒ
+    s_key_task = xTaskGetCurrentTaskHandle(); // ±£´æÈÎÎñ¾ä±ú, ÓÃÓÚÖÐ¶Ï»Øµ÷
 
-    /* æ³¨å†Œä¸­æ–­å›žè°ƒå‡½æ•° */
+    /* ×¢²áÖÐ¶Ï»Øµ÷º¯Êý */
     Key_RegisterCallback(Key_IRQ_Notify);
-    /* åˆå§‹åŒ–æŒ‰é”®(PA0 + EXTI0) */
+    /* ³õÊ¼»¯°´¼ü(PA0 + EXTI0) */
     Key_Init();
 
     DBG_PRINTF("[KEY] Key_Task start\r\n");
@@ -91,33 +91,33 @@ static void Key_Task(void *pvParameters)
 
     for (;;)
     {
-        /* å·²ç´¯è®¡å‡»æ•°æ—¶åªç­‰è¿žå‡»çª—å£, å¦åˆ™æ— é™ç­‰å¾…ä¸‹ä¸€æ¬¡æŒ‰ä¸‹ */
+        /* ÒÑÀÛ¼Æ»÷ÊýÊ±Ö»µÈÁ¬»÷´°¿Ú, ·ñÔòÎÞÏÞµÈ´ýÏÂÒ»´Î°´ÏÂ */
         TickType_t wait = (clicks == 0) ? portMAX_DELAY : pdMS_TO_TICKS(KEY_MULTI_GAP_MS);
 
-        /* è¿žå‡»çª—å£è¶…æ—¶: æœŸé—´æ²¡æœ‰æ–°çš„æŒ‰é”®æŒ‰ä¸‹ â†’ ç»“ç®—å½“å‰ç´¯è®¡å‡»æ•°ã€‚
-         * è‹¥æœ‰æŒ‰é”®æŒ‰ä¸‹, ulTaskNotifyTake ä¼šç«‹å³è¿”å›ž > 0, ä¸è¿›å…¥æ­¤åˆ†æ”¯,
-         * ç”±ä¸‹æ–¹ä»£ç ç»§ç»­è¯†åˆ«å¹¶ç´¯åŠ  clicks, ç›´åˆ°æŸæ¬¡çª—å£è¶…æ—¶æ‰ç»“ç®—ã€‚ */
+        /* Á¬»÷´°¿Ú³¬Ê±: ÆÚ¼äÃ»ÓÐÐÂµÄ°´¼ü°´ÏÂ ¡ú ½áËãµ±Ç°ÀÛ¼Æ»÷Êý¡£
+         * ÈôÓÐ°´¼ü°´ÏÂ, ulTaskNotifyTake »áÁ¢¼´·µ»Ø > 0, ²»½øÈë´Ë·ÖÖ§,
+         * ÓÉÏÂ·½´úÂë¼ÌÐøÊ¶±ð²¢ÀÛ¼Ó clicks, Ö±µ½Ä³´Î´°¿Ú³¬Ê±²Å½áËã¡£ */
         if (ulTaskNotifyTake(pdTRUE, wait) == 0)
         {
             if (clicks > 0)
             {
-                /* è¿žå‡»çª—å£è¶…æ—¶: ç»“ç®— */
+                /* Á¬»÷´°¿Ú³¬Ê±: ½áËã */
                 Key_Task_OnGesture(Key_ClickGesture(clicks));
                 clicks = 0;
             }
             continue;
         }
 
-        /* ç¡®è®¤å½“å‰æ˜¯å¦ä¸ºæŒ‰ä¸‹çŠ¶æ€ */
+        /* È·ÈÏµ±Ç°ÊÇ·ñÎª°´ÏÂ×´Ì¬ */
         if (!Key_IsPressed())
             continue;
 
-        /* é•¿æŒ‰é˜ˆå€¼å†…æ¾å¼€ â†’ çŸ­æŒ‰; è¶…æ—¶ â†’ é•¿æŒ‰ */
+        /* ³¤°´ãÐÖµÄÚËÉ¿ª ¡ú ¶Ì°´; ³¬Ê± ¡ú ³¤°´ */
         if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(KEY_LONG_PRESS_MS)) == 0)
         {
             Key_Task_OnGesture(KEY_GESTURE_LONG);
 
-            /* ç­‰æ¾å¼€, å¹¶æ¸…æŽ‰æ¾å¼€æ—¶çš„æ®‹ç•™é€šçŸ¥, é¿å…å½±å“ä¸‹ä¸€æ¬¡åˆ¤å®š */
+            /* µÈËÉ¿ª, ²¢ÇåµôËÉ¿ªÊ±µÄ²ÐÁôÍ¨Öª, ±ÜÃâÓ°ÏìÏÂÒ»´ÎÅÐ¶¨ */
             while (Key_IsPressed())
                 (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(KEY_RELEASE_POLL_MS));
             (void)ulTaskNotifyTake(pdTRUE, 0);
@@ -126,7 +126,7 @@ static void Key_Task(void *pvParameters)
         }
 
         clicks++;
-        /* è¾¾åˆ°ä¸Šé™: ç«‹å³ç»“ç®— */
+        /* ´ïµ½ÉÏÏÞ: Á¢¼´½áËã */
         if (clicks >= KEY_CLICK_MAX)
         {
             Key_Task_OnGesture(Key_ClickGesture(clicks));

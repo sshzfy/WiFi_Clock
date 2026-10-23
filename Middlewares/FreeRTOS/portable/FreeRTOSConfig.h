@@ -21,9 +21,9 @@
 #define configUSE_EVENT_GROUPS                                      1
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES                       3
 #define configUSE_MUTEXES                                           1
-/* LCD ä¸è§¦æ‘¸å±å…±ç”¨ SPI3, LCD ä¾§çš„æ€»çº¿é”ä¼šè¢«åµŒå¥—ç”³è¯·
- * (ST7789_Draw_Picture â†’ ST7789_DrawImage_Stream â†’ ST7789_SetWindow),
- * éœ€è¦é€’å½’äº’æ–¥é‡ã€‚ */
+/* LCD Óë´¥ÃşÆÁ¹²ÓÃ SPI3, LCD ²àµÄ×ÜÏßËø»á±»Ç¶Ì×ÉêÇë
+ * (ST7789_Draw_Picture ¡ú ST7789_DrawImage_Stream ¡ú ST7789_SetWindow),
+ * ĞèÒªµİ¹é»¥³âÁ¿¡£ */
 #define configUSE_RECURSIVE_MUTEXES                                 1
 #define configUSE_COUNTING_SEMAPHORES                               0
 #define configUSE_ALTERNATIVE_API                                   0 /* Deprecated! */

@@ -1,18 +1,18 @@
 #include "UI_Night.h"
 
-/* ==================== æ¨¡å—å†…çŠ¶æ€(ä»…uiTaskè®¿é—®) ==================== */
-static bool s_oled_inited = false; // OLED æ˜¯å¦å·²åˆå§‹åŒ–(åªåˆå§‹åŒ–ä¸€æ¬¡)
-static bool s_rtc_inited = false;  // DS1302 æ˜¯å¦å·²åˆå§‹åŒ–
-static uint8_t s_last_hour = 0xFF; // ä¸Šæ¬¡æ˜¾ç¤ºçš„å°æ—¶
-static uint8_t s_last_min = 0xFF;  // ä¸Šæ¬¡æ˜¾ç¤ºçš„åˆ†é’Ÿ
-static uint8_t s_last_day = 0xFF;  // ä¸Šæ¬¡æ˜¾ç¤ºçš„æ—¥æœŸ
+/* ==================== Ä£¿éÄÚ×´Ì¬(½öuiTask·ÃÎÊ) ==================== */
+static bool s_oled_inited = false; // OLED ÊÇ·ñÒÑ³õÊ¼»¯(Ö»³õÊ¼»¯Ò»´Î)
+static bool s_rtc_inited = false;  // DS1302 ÊÇ·ñÒÑ³õÊ¼»¯
+static uint8_t s_last_hour = 0xFF; // ÉÏ´ÎÏÔÊ¾µÄĞ¡Ê±
+static uint8_t s_last_min = 0xFF;  // ÉÏ´ÎÏÔÊ¾µÄ·ÖÖÓ
+static uint8_t s_last_day = 0xFF;  // ÉÏ´ÎÏÔÊ¾µÄÈÕÆÚ
 
-/* ==================== static å‡½æ•° ==================== */
+/* ==================== static º¯Êı ==================== */
 static void UI_Night_EnsureRTC(void);
 static bool UI_Night_SyncRTC(void);
 static bool UI_Night_ReadTime(AT_Date_Info_t *out);
 
-/** @brief ç¡®ä¿RTCå·²åˆå§‹åŒ– */
+/** @brief È·±£RTCÒÑ³õÊ¼»¯ */
 static void UI_Night_EnsureRTC(void)
 {
     if (!s_rtc_inited)
@@ -22,15 +22,15 @@ static void UI_Night_EnsureRTC(void)
     }
 }
 
-/** @brief ä»ç³»ç»Ÿæ—¶é’ŸåŒæ­¥RTCæ—¶é—´
- *  @return true æˆåŠŸ, false å¤±è´¥
- *  @note é¦–æ¬¡è°ƒç”¨æ—¶, åˆå§‹åŒ–RTC, åç»­è°ƒç”¨ä»…æ£€æŸ¥æ˜¯å¦å·²åˆå§‹åŒ–
- *        é¦–æ¬¡è°ƒç”¨æ—¶, ä»ç³»ç»Ÿæ—¶é’Ÿè·å–æ—¶é—´, åç»­è°ƒç”¨ä»…å¯¹æ¯”æ—¶é—´æ˜¯å¦ä¸€è‡´, å…è®¸åˆ†é’Ÿè¯¯å·®2åˆ†é’Ÿ
+/** @brief ´ÓÏµÍ³Ê±ÖÓÍ¬²½RTCÊ±¼ä
+ *  @return true ³É¹¦, false Ê§°Ü
+ *  @note Ê×´Îµ÷ÓÃÊ±, ³õÊ¼»¯RTC, ºóĞøµ÷ÓÃ½ö¼ì²éÊÇ·ñÒÑ³õÊ¼»¯
+ *        Ê×´Îµ÷ÓÃÊ±, ´ÓÏµÍ³Ê±ÖÓ»ñÈ¡Ê±¼ä, ºóĞøµ÷ÓÃ½ö¶Ô±ÈÊ±¼äÊÇ·ñÒ»ÖÂ, ÔÊĞí·ÖÖÓÎó²î2·ÖÖÓ
  */
 static bool UI_Night_SyncRTC(void)
 {
     AT_Date_Info_t tmp;
-    DS1302_Time_t rtc, check; // rtc-å†™å…¥å¤–éƒ¨RTCçš„æ—¶é—´,check-å›è¯»å¯¹æ¯”æ—¶é—´
+    DS1302_Time_t rtc, check; // rtc-Ğ´ÈëÍâ²¿RTCµÄÊ±¼ä,check-»Ø¶Á¶Ô±ÈÊ±¼ä
 
     if (!Clock_IsSynced())
         return false;
@@ -60,12 +60,12 @@ static bool UI_Night_SyncRTC(void)
     if (!DS1302_ReadTime(&check))
         return false;
 
-    /* å¯¹æ¯”æ—¶é—´æ˜¯å¦ä¸€è‡´: ç”¨"å½“æ—¥ç§’æ€»æ•°"æ¯”è¾ƒ, å…è®¸å†™å…¥è€—æ—¶é€ æˆçš„ 2 ç§’åå·® */
+    /* ¶Ô±ÈÊ±¼äÊÇ·ñÒ»ÖÂ: ÓÃ"µ±ÈÕÃë×ÜÊı"±È½Ï, ÔÊĞíĞ´ÈëºÄÊ±Ôì³ÉµÄ 2 ÃëÆ«²î */
     int base_sec = (int)rtc.hour * 60 + (int)rtc.min * 60 + (int)rtc.sec;
     int check_sec = (int)check.hour * 60 + (int)check.min * 60 + (int)check.sec;
     int diff_sec = check_sec - base_sec;
 
-    /* è·¨å¤©å¤„ç† */
+    /* ¿çÌì´¦Àí */
     bool crossed = (diff_sec < 0);
     if (crossed)
         diff_sec += 24 * 60 * 60;
@@ -79,9 +79,9 @@ static bool UI_Night_SyncRTC(void)
     return ret;
 }
 
-/** @brief ä»RTCè¯»å–æ•°æ®æ—¶é—´
- *  @param out è¾“å‡ºæ—¶é—´ç»“æ„ä½“æŒ‡é’ˆ
- *  @return true æˆåŠŸ, ä»RTCè¯»å–æ—¶é—´, false å¤±è´¥, ä»ç³»ç»Ÿæ—¶é’Ÿè·å–æ—¶é—´
+/** @brief ´ÓRTC¶ÁÈ¡Êı¾İÊ±¼ä
+ *  @param out Êä³öÊ±¼ä½á¹¹ÌåÖ¸Õë
+ *  @return true ³É¹¦, ´ÓRTC¶ÁÈ¡Ê±¼ä, false Ê§°Ü, ´ÓÏµÍ³Ê±ÖÓ»ñÈ¡Ê±¼ä
  */
 static bool UI_Night_ReadTime(AT_Date_Info_t *out)
 {
@@ -89,7 +89,7 @@ static bool UI_Night_ReadTime(AT_Date_Info_t *out)
 
 #if RTC_LP_CLK_SOURCE
 
-    /* ä»RTCè¯»å–æ—¶é—´ */
+    /* ´ÓRTC¶ÁÈ¡Ê±¼ä */
     UI_Night_EnsureRTC();
     if (DS1302_ReadTime(&rtc))
     {
@@ -105,40 +105,40 @@ static bool UI_Night_ReadTime(AT_Date_Info_t *out)
     }
 #endif
 
-    /* ä»ç³»ç»Ÿæ—¶é’Ÿè·å–æ—¶é—´ */
+    /* ´ÓÏµÍ³Ê±ÖÓ»ñÈ¡Ê±¼ä */
     Clock_GetDateTime(out);
 
     return false;
 }
 
-/* ==================== å¤œé—´æ˜¾ç¤º ==================== */
+/* ==================== Ò¹¼äÏÔÊ¾ ==================== */
 
-/** @brief è¿›å…¥å¤œé—´æ˜¾ç¤º */
+/** @brief ½øÈëÒ¹¼äÏÔÊ¾ */
 void UI_Night_Enter(void)
 {
     AT_Date_Info_t t;
     bool time_source;
 
-    /* è¿›å…¥ä½åŠŸè€—æ¨¡å¼å‰, åŒæ­¥RTCæ—¶é—´ */
+    /* ½øÈëµÍ¹¦ºÄÄ£Ê½Ç°, Í¬²½RTCÊ±¼ä */
     if (Clock_IsSynced())
     {
         bool ret = UI_Night_SyncRTC();
         DBG_PRINTF("[LP] Sync RTC time %s\r\n", ret ? "done" : "fail");
     }
 
-    /* åˆå§‹åŒ–OLED, æ—¶é—´ä¼˜å…ˆå–RTC */
+    /* ³õÊ¼»¯OLED, Ê±¼äÓÅÏÈÈ¡RTC */
     if (!s_oled_inited)
     {
         OLED_Init();
         OLED_Clear();
         s_oled_inited = true;
     }
-    OLED_Display_On(); // 0xAF å¼€æ˜¾ç¤º + æ¸…å±
+    OLED_Display_On(); // 0xAF ¿ªÏÔÊ¾ + ÇåÆÁ
 
     time_source = UI_Night_ReadTime(&t);
     OLED_ShowClock(t.hour, t.minute, t.year, t.month, t.day);
 
-    /* è¿›å…¥æ—¶å·²ç»ç”»è¿‡ä¸€æ¬¡, åŒæ­¥ç¼“å­˜: ä¸‹ä¸€æ‹åŒä¸€åˆ†é’Ÿä¸ä¼šé‡å¤åˆ· OLED */
+    /* ½øÈëÊ±ÒÑ¾­»­¹ıÒ»´Î, Í¬²½»º´æ: ÏÂÒ»ÅÄÍ¬Ò»·ÖÖÓ²»»áÖØ¸´Ë¢ OLED */
     s_last_hour = t.hour;
     s_last_min = t.minute;
     s_last_day = t.day;
@@ -151,12 +151,12 @@ void UI_Night_Leave(void)
     OLED_Display_Off();
 }
 
-/** @brief å¤œé—´å‘¨æœŸåˆ·æ–°: åˆ†é’Ÿæˆ–æ—¥æœŸå˜åŒ–æ‰é‡ç”» */
+/** @brief Ò¹¼äÖÜÆÚË¢ĞÂ: ·ÖÖÓ»òÈÕÆÚ±ä»¯²ÅÖØ»­ */
 void UI_Night_Tick(void)
 {
     AT_Date_Info_t tmp;
 
-    /* å¤œé—´æ—¶é—´ä¼˜å…ˆå–å¤–éƒ¨RTC, å¤±è´¥æ—¶å†…éƒ¨å·²å›é€€è½¯ä»¶æ—¶é’Ÿ */
+    /* Ò¹¼äÊ±¼äÓÅÏÈÈ¡Íâ²¿RTC, Ê§°ÜÊ±ÄÚ²¿ÒÑ»ØÍËÈí¼şÊ±ÖÓ */
     (void)UI_Night_ReadTime(&tmp);
 
     if (tmp.hour != s_last_hour || tmp.minute != s_last_min || tmp.day != s_last_day)

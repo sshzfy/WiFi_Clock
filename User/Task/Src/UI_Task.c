@@ -1,44 +1,44 @@
 #include "UI_Task.h"
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static void UI_Boot_Sequence(void);
 static void UI_Task(void *pvParameters);
 
-/** @brief å¼€æœºæµç¨‹: æ¿çº§åˆå§‹åŒ– â†’ å¼€æœºç”»é¢ â†’ å¯åŠ¨å­ä»»åŠ¡ â†’ ç­‰å¾…ç½‘ç»œ â†’ ç»“æœé¡µ */
+/** @brief ¿ª»úÁ÷³Ì: °å¼¶³õÊ¼»¯ ¡ú ¿ª»ú»­Ãæ ¡ú Æô¶¯×ÓÈÎÎñ ¡ú µÈ´ıÍøÂç ¡ú ½á¹ûÒ³ */
 static void UI_Boot_Sequence(void)
 {
-    /* äº‹ä»¶ç»„: ä»…è¢«ç­‰å¾…çš„bitç½®ä½æ‰ä¼šå”¤é†’ */
+    /* ÊÂ¼ş×é: ½ö±»µÈ´ıµÄbitÖÃÎ»²Å»á»½ĞÑ */
     Task_Common_Init();
 
-    /* TIM5/LCD/USART2/LCD å’Œè§¦æ‘¸åˆå§‹åŒ– */
+    /* TIM5/LCD/USART2/LCD ºÍ´¥Ãş³õÊ¼»¯ */
     Board_Init();
 
-    /* å¼€å§‹å±å¹•è§¦æ‘¸æ£€æµ‹(æ ¡å‡†/è¯»å›ä¸Šæ¬¡æ ¡å‡†å‚æ•°) */
+    /* ¿ªÊ¼ÆÁÄ»´¥Ãş¼ì²â(Ğ£×¼/¶Á»ØÉÏ´ÎĞ£×¼²ÎÊı) */
     UI_Input_Calibrate();
     DBG_PRINTF("[UI] UI_Task start\r\n");
     DBG_PRINTF("[UI] Board init done, boot page\r\n");
 
-    /* å–å›ä¸Šæ¬¡ä¿å­˜çš„WiFiå‡­æ®ä¸å®šä½ä¿¡æ¯:
-     * æ²¡æœ‰å°±æ˜¯ç©º, åç»­æŒ‰"æœªé…ç½®"å¤„ç† */
+    /* È¡»ØÉÏ´Î±£´æµÄWiFiÆ¾¾İÓë¶¨Î»ĞÅÏ¢:
+     * Ã»ÓĞ¾ÍÊÇ¿Õ, ºóĞø°´"Î´ÅäÖÃ"´¦Àí */
     WiFi_Config_Load();
     Location_Config_Load();
 
-    /* èµ„æºå±‚æœªå°±ç»ªæ—¶å­—æ¨¡ä¸å›¾ç‰‡éƒ½å–ä¸åˆ°, å±å¹•åªä¼šå‡ºç°çº¯è‰²å—ã€‚
-     * è¿™é‡Œåªæç¤º, ä¸é˜»å¡æµç¨‹ â€”â€” ç½‘ç»œä¸ä¼ æ„Ÿå™¨åŠŸèƒ½ä»å¯æ­£å¸¸ä½¿ç”¨ã€‚ */
+    /* ×ÊÔ´²ãÎ´¾ÍĞ÷Ê±×ÖÄ£ÓëÍ¼Æ¬¶¼È¡²»µ½, ÆÁÄ»Ö»»á³öÏÖ´¿É«¿é¡£
+     * ÕâÀïÖ»ÌáÊ¾, ²»×èÈûÁ÷³Ì ¡ª¡ª ÍøÂçÓë´«¸ĞÆ÷¹¦ÄÜÈÔ¿ÉÕı³£Ê¹ÓÃ¡£ */
     if (!Asset_Ready())
     {
         DBG_PRINTF("[UI] WARN: asset layer not ready, screen shows blank blocks\r\n");
         DBG_PRINTF("[UI] WARN: flash the provision firmware to write fonts/images\r\n");
     }
 
-    /* å¼€æœºç­‰å¾…é¡µé¢ */
+    /* ¿ª»úµÈ´ıÒ³Ãæ */
     Boot_Page_Wait();
 
-    /* åˆ›å»ºDHT22/ç½‘ç»œæœåŠ¡ä»»åŠ¡ */
+    /* ´´½¨DHT22/ÍøÂç·şÎñÈÎÎñ */
     DHT22_Task_Start();
     Net_Task_Start();
 
-    /* ç­‰å¾…å¼€æœºç½‘ç»œé˜¶æ®µç»“æŸ */
+    /* µÈ´ı¿ª»úÍøÂç½×¶Î½áÊø */
     EventBits_t boot_bits = xEventGroupWaitBits(Task_Events(), EV_NET_READY, pdTRUE, pdFALSE,
                                                 pdMS_TO_TICKS(UI_BOOT_NET_TIMEOUT_MS));
     if ((boot_bits & EV_NET_READY) == 0)
@@ -46,19 +46,19 @@ static void UI_Boot_Sequence(void)
         DBG_PRINTF("[UI] WARN: boot net stage timeout, showing partial result\r\n");
     }
 
-    /* ç½‘ç»œç»“æœ */
+    /* ÍøÂç½á¹û */
     bool boot_wifi = false, boot_service = false;
-    Net_Task_GetBoot(&boot_wifi, &boot_service); // è·å–å¼€æœºç½‘ç»œç»“æœ
+    Net_Task_GetBoot(&boot_wifi, &boot_service); // »ñÈ¡¿ª»úÍøÂç½á¹û
     DBG_PRINTF("[UI] Boot net stage done: wifi=%d service=%d\r\n", (int)boot_wifi, (int)boot_service);
 
-    /* å¼€æœºç»“æœ(è¿æ¥è¯¦æƒ…)
-     * ç»“æœé¡µåœç•™, ä¾¿äºæŸ¥çœ‹è¯¦æƒ… */
+    /* ¿ª»ú½á¹û(Á¬½ÓÏêÇé)
+     * ½á¹ûÒ³Í£Áô, ±ãÓÚ²é¿´ÏêÇé */
     Boot_Page_Show(boot_wifi, boot_service);
     vTaskDelay(pdMS_TO_TICKS(2500));
 }
 
-/** @brief ui ä»»åŠ¡ä¸»ä½“: å¼€æœº â†’ ä¸»é¡µé¢ â†’ äº‹ä»¶å¾ªç¯
- *  @note  æœ¬ä»»åŠ¡æ˜¯ LCD çš„å”¯ä¸€å†™è€…; äº‹ä»¶å¾ªç¯åªåš"ç­‰ â†’ åˆ‡æ¢ â†’ åˆ†æ´¾ â†’ åˆ·æ–°"
+/** @brief ui ÈÎÎñÖ÷Ìå: ¿ª»ú ¡ú Ö÷Ò³Ãæ ¡ú ÊÂ¼şÑ­»·
+ *  @note  ±¾ÈÎÎñÊÇ LCD µÄÎ¨Ò»Ğ´Õß; ÊÂ¼şÑ­»·Ö»×ö"µÈ ¡ú ÇĞ»» ¡ú ·ÖÅÉ ¡ú Ë¢ĞÂ"
  */
 static void UI_Task(void *pvParameters)
 {
@@ -66,14 +66,14 @@ static void UI_Task(void *pvParameters)
 
     UI_Boot_Sequence();
 
-    /* è¿›å…¥ä¸»é¡µé¢ */
+    /* ½øÈëÖ÷Ò³Ãæ */
     UI_Mode_Init();
 
-    /* è¿›å…¥ä¸»é¡µé¢åå†å¯åŠ¨å…‰æ•ä»»åŠ¡ä¸æŒ‰é”®ä»»åŠ¡: ä¿è¯æ˜¼å¤œåˆ‡æ¢åªå‘ç”Ÿåœ¨å¼€æœºå®Œæˆä¹‹å */
+    /* ½øÈëÖ÷Ò³ÃæºóÔÙÆô¶¯¹âÃôÈÎÎñÓë°´¼üÈÎÎñ: ±£Ö¤ÖçÒ¹ÇĞ»»Ö»·¢ÉúÔÚ¿ª»úÍê³ÉÖ®ºó */
     LightSensor_Task_Start();
     Key_Task_Start();
 
-    /* ä»»åŠ¡å…¨éƒ¨å»ºé½åå¯ç”¨å†…å­˜ç›‘æµ‹(å¼€å…³è§ BuildConfig.h çš„ MONITOR_TASK_ENABLE) */
+    /* ÈÎÎñÈ«²¿½¨ÆëºóÆôÓÃÄÚ´æ¼à²â(¿ª¹Ø¼û BuildConfig.h µÄ MONITOR_TASK_ENABLE) */
     Task_Monitor_Start();
 
     for (;;)
@@ -81,27 +81,27 @@ static void UI_Task(void *pvParameters)
         EventBits_t bits = xEventGroupWaitBits(Task_Events(), UI_TASK_EVENTS,
                                                pdTRUE, pdFALSE, UI_Mode_WaitTicks());
 
-        /* æ˜¼å¤œåˆ‡æ¢ */
+        /* ÖçÒ¹ÇĞ»» */
         if (bits & EV_LOWERPOWER)
         {
             UI_Mode_SwitchToNight();
-            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // ç¡®è®¤å¤œé—´åˆ‡æ¢
+            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // È·ÈÏÒ¹¼äÇĞ»»
         }
         if (bits & EV_WAKEUP)
         {
             UI_Mode_SwitchToDay();
-            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // ç¡®è®¤ç™½å¤©åˆ‡æ¢
+            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // È·ÈÏ°×ÌìÇĞ»»
         }
 
-        /* è¾“å…¥ç•Œé¢å¼€å…³ / é¡µé¢æ•°æ®åˆ·æ–°(ç”±å½“å‰æ¨¡å¼å†³å®šæ˜¯å¦æ‰§è¡Œ) */
+        /* ÊäÈë½çÃæ¿ª¹Ø / Ò³ÃæÊı¾İË¢ĞÂ(ÓÉµ±Ç°Ä£Ê½¾ö¶¨ÊÇ·ñÖ´ĞĞ) */
         UI_Mode_HandleEvent(bits);
 
-        /* å½“å‰æ¨¡å¼çš„å‘¨æœŸåˆ·æ–°: é”®ç›˜å¿ƒè·³ / å¤œé—´åˆ†é’Ÿæ—¶é’Ÿ / ç™½å¤©æ—¶é’Ÿ + è§¦æ‘¸è½®è¯¢ */
+        /* µ±Ç°Ä£Ê½µÄÖÜÆÚË¢ĞÂ: ¼üÅÌĞÄÌø / Ò¹¼ä·ÖÖÓÊ±ÖÓ / °×ÌìÊ±ÖÓ + ´¥ÃşÂÖÑ¯ */
         UI_Mode_Tick();
     }
 }
 
-/* uiTask: LCDå”¯ä¸€å†™è€… + å¼€æœºæµç¨‹ç¼–æ’è€…(åˆ›å»º net/sensor ä»»åŠ¡) */
+/* uiTask: LCDÎ¨Ò»Ğ´Õß + ¿ª»úÁ÷³Ì±àÅÅÕß(´´½¨ net/sensor ÈÎÎñ) */
 void UI_Task_Start(void)
 {
     xTaskCreate(UI_Task, "ui", UI_TASK_STACK_SIZE, NULL, UI_TASK_PRIORITY, NULL);

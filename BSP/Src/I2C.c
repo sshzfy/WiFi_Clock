@@ -1,17 +1,17 @@
 #include "I2C.h"
 
-/* ================ Soft I2Cæ—¶åº ================
- * æ•°æ®å˜åŒ–ï¼šSCL ä¸ºä½ç”µå¹³æ—¶ï¼Œæ•°æ®å˜åŒ–
- * æ•°æ®é‡‡æ ·ï¼šSCL ä¸ºé«˜ç”µå¹³æ—¶ï¼Œæ•°æ®é‡‡æ ·ï¼ŒSDA ä¿æŒ
- * startï¼šSCL ä¸ºé«˜ç”µå¹³æ—¶ï¼ŒSDA ç”±é«˜ç”µå¹³å‘ä½ç”µå¹³è·³å˜
- * stopï¼šSCL ä¸ºé«˜ç”µå¹³æ—¶ï¼ŒSDA ç”±ä½ç”µå¹³å‘é«˜ç”µå¹³è·³å˜
- * ackï¼šç¬¬ä¹ä¸ª SCL å‘¨æœŸï¼ŒSDA ç”±é«˜ç”µå¹³å‘ä½ç”µå¹³è·³å˜
- * nackï¼šç¬¬ä¹ä¸ª SCL å‘¨æœŸï¼ŒSDA ä¿æŒé«˜ç”µå¹³
- * ä¸»æœºå‘é€æ•°æ®ç”±ä»æœºåº”ç­” ack ç¡®è®¤
- * ä¸»æœºæ¥å—æœ€åä¸€ä¸ªå­—èŠ‚åå‘é€ nackï¼Œé€šçŸ¥ä»æœºæ•°æ®æ¥æ”¶å®Œæˆ
+/* ================ Soft I2CÊ±Ğò ================
+ * Êı¾İ±ä»¯£ºSCL ÎªµÍµçÆ½Ê±£¬Êı¾İ±ä»¯
+ * Êı¾İ²ÉÑù£ºSCL Îª¸ßµçÆ½Ê±£¬Êı¾İ²ÉÑù£¬SDA ±£³Ö
+ * start£ºSCL Îª¸ßµçÆ½Ê±£¬SDA ÓÉ¸ßµçÆ½ÏòµÍµçÆ½Ìø±ä
+ * stop£ºSCL Îª¸ßµçÆ½Ê±£¬SDA ÓÉµÍµçÆ½Ïò¸ßµçÆ½Ìø±ä
+ * ack£ºµÚ¾Å¸ö SCL ÖÜÆÚ£¬SDA ÓÉ¸ßµçÆ½ÏòµÍµçÆ½Ìø±ä
+ * nack£ºµÚ¾Å¸ö SCL ÖÜÆÚ£¬SDA ±£³Ö¸ßµçÆ½
+ * Ö÷»ú·¢ËÍÊı¾İÓÉ´Ó»úÓ¦´ğ ack È·ÈÏ
+ * Ö÷»ú½ÓÊÜ×îºóÒ»¸ö×Ö½Úºó·¢ËÍ nack£¬Í¨Öª´Ó»úÊı¾İ½ÓÊÕÍê³É
  * ================================ */
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static inline void Soft_I2C_SDA_HIGH(Soft_I2C_t *Soft_I2C) { GPIO_SetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
 static inline void Soft_I2C_SDA_LOW(Soft_I2C_t *Soft_I2C) { GPIO_ResetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
 static inline void Soft_I2C_SCL_HIGH(Soft_I2C_t *Soft_I2C) { GPIO_SetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin); }
@@ -68,7 +68,7 @@ static void Soft_I2C_Send_ACK(Soft_I2C_t *Soft_I2C)
     delay_us(5);
     Soft_I2C_SCL_LOW(Soft_I2C);
     delay_us(5);
-    Soft_I2C_SDA_HIGH(Soft_I2C); // é‡Šæ”¾SDA
+    Soft_I2C_SDA_HIGH(Soft_I2C); // ÊÍ·ÅSDA
 }
 
 static void Soft_I2C_Send_NACK(Soft_I2C_t *Soft_I2C)
@@ -81,7 +81,7 @@ static void Soft_I2C_Send_NACK(Soft_I2C_t *Soft_I2C)
     delay_us(5);
 }
 
-/* ================ public å‡½æ•° ================ */
+/* ================ public º¯Êı ================ */
 void Soft_I2C_Init(Soft_I2C_t *Soft_I2C)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -104,9 +104,9 @@ void Soft_I2C_Init(Soft_I2C_t *Soft_I2C)
 }
 
 /**
- * @brief å‘é€ä¸€ä¸ªå­—èŠ‚
- * @param Soft_I2C I2Cç»“æ„ä½“æŒ‡é’ˆ
- * @param data è¦å‘é€çš„å­—èŠ‚
+ * @brief ·¢ËÍÒ»¸ö×Ö½Ú
+ * @param Soft_I2C I2C½á¹¹ÌåÖ¸Õë
+ * @param data Òª·¢ËÍµÄ×Ö½Ú
  * */
 void Soft_I2C_Send_Byte(Soft_I2C_t *Soft_I2C, uint8_t data)
 {
@@ -127,10 +127,10 @@ void Soft_I2C_Send_Byte(Soft_I2C_t *Soft_I2C, uint8_t data)
 }
 
 /**
- * @brief æ¥æ”¶ä¸€ä¸ªå­—èŠ‚
- * @param Soft_I2C I2Cç»“æ„ä½“æŒ‡é’ˆ
- * @param ack_flag æ˜¯å¦å‘é€ ack ç¡®è®¤,0 è¡¨ç¤ºå‘é€ ack,1 è¡¨ç¤ºå‘é€ nack
- * @return uint8_t æ¥æ”¶çš„å­—èŠ‚
+ * @brief ½ÓÊÕÒ»¸ö×Ö½Ú
+ * @param Soft_I2C I2C½á¹¹ÌåÖ¸Õë
+ * @param ack_flag ÊÇ·ñ·¢ËÍ ack È·ÈÏ,0 ±íÊ¾·¢ËÍ ack,1 ±íÊ¾·¢ËÍ nack
+ * @return uint8_t ½ÓÊÕµÄ×Ö½Ú
  * */
 uint8_t Soft_I2c_Receive_Byte(Soft_I2C_t *Soft_I2C, uint8_t ack_flag)
 {
@@ -157,26 +157,26 @@ uint8_t Soft_I2c_Receive_Byte(Soft_I2C_t *Soft_I2C, uint8_t ack_flag)
 }
 
 /**
- * @brief å‘é€å¤šä¸ªå­—èŠ‚
- * @param Soft_I2C I2Cç»“æ„ä½“æŒ‡é’ˆ
- * @param dev_addr ä»æœºåœ°å€
- * @param reg_addr å¯„å­˜å™¨åœ°å€
- * @param data è¦å‘é€çš„æ•°æ®æŒ‡é’ˆ
- * @param len æ•°æ®é•¿åº¦
- * @return uint8_t å‘é€ç»“æœ,0 è¡¨ç¤ºå‘é€æˆåŠŸ,1 è¡¨ç¤ºå‘é€å¤±è´¥
+ * @brief ·¢ËÍ¶à¸ö×Ö½Ú
+ * @param Soft_I2C I2C½á¹¹ÌåÖ¸Õë
+ * @param dev_addr ´Ó»úµØÖ·
+ * @param reg_addr ¼Ä´æÆ÷µØÖ·
+ * @param data Òª·¢ËÍµÄÊı¾İÖ¸Õë
+ * @param len Êı¾İ³¤¶È
+ * @return uint8_t ·¢ËÍ½á¹û,0 ±íÊ¾·¢ËÍ³É¹¦,1 ±íÊ¾·¢ËÍÊ§°Ü
  * */
 uint8_t Soft_I2C_Send_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len)
 {
     Soft_I2C_Start(Soft_I2C);
 
-    /* å‘é€è®¾å¤‡åœ°å€ */
+    /* ·¢ËÍÉè±¸µØÖ· */
     Soft_I2C_Send_Byte(Soft_I2C, dev_addr << 1);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);
         return 1;
     }
-    /* å‘é€å¯„å­˜å™¨åœ°å€ */
+    /* ·¢ËÍ¼Ä´æÆ÷µØÖ· */
     Soft_I2C_Send_Byte(Soft_I2C, reg_addr);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
@@ -198,26 +198,26 @@ uint8_t Soft_I2C_Send_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t reg_
 }
 
 /**
- * @brief æ¥æ”¶å¤šä¸ªå­—èŠ‚
- * @param Soft_I2C I2Cç»“æ„ä½“æŒ‡é’ˆ
- * @param dev_addr ä»æœºåœ°å€
- * @param reg_addr å¯„å­˜å™¨åœ°å€
- * @param data æ¥æ”¶çš„æ•°æ®æŒ‡é’ˆ
- * @param len æ•°æ®é•¿åº¦
- * @return uint8_t æ¥æ”¶ç»“æœ,0 è¡¨ç¤ºæ¥æ”¶æˆåŠŸ,1 è¡¨ç¤ºæ¥æ”¶å¤±è´¥
+ * @brief ½ÓÊÕ¶à¸ö×Ö½Ú
+ * @param Soft_I2C I2C½á¹¹ÌåÖ¸Õë
+ * @param dev_addr ´Ó»úµØÖ·
+ * @param reg_addr ¼Ä´æÆ÷µØÖ·
+ * @param data ½ÓÊÕµÄÊı¾İÖ¸Õë
+ * @param len Êı¾İ³¤¶È
+ * @return uint8_t ½ÓÊÕ½á¹û,0 ±íÊ¾½ÓÊÕ³É¹¦,1 ±íÊ¾½ÓÊÕÊ§°Ü
  * */
 uint8_t Soft_I2C_Receive_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len)
 {
     Soft_I2C_Start(Soft_I2C);
 
-    /* å‘é€è®¾å¤‡åœ°å€,ç­‰å¾…ä»æœºåº”ç­” */
+    /* ·¢ËÍÉè±¸µØÖ·,µÈ´ı´Ó»úÓ¦´ğ */
     Soft_I2C_Send_Byte(Soft_I2C, dev_addr << 1);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
         Soft_I2C_Stop(Soft_I2C);
         return 1;
     }
-    /* å‘é€å¯„å­˜å™¨åœ°å€,ç­‰å¾…ä»æœºåº”ç­” */
+    /* ·¢ËÍ¼Ä´æÆ÷µØÖ·,µÈ´ı´Ó»úÓ¦´ğ */
     Soft_I2C_Send_Byte(Soft_I2C, reg_addr);
     if (Soft_I2C_Wait_Ack(Soft_I2C))
     {
@@ -225,7 +225,7 @@ uint8_t Soft_I2C_Receive_Bytes(Soft_I2C_t *Soft_I2C, uint8_t dev_addr, uint8_t r
         return 1;
     }
 
-    /* é‡æ–°å‘é€å¼€å§‹ä¿¡å·,ä»æœºåœ°å€,æ¥æ”¶æ•°æ® */
+    /* ÖØĞÂ·¢ËÍ¿ªÊ¼ĞÅºÅ,´Ó»úµØÖ·,½ÓÊÕÊı¾İ */
     Soft_I2C_Start(Soft_I2C);
     Soft_I2C_Send_Byte(Soft_I2C, (dev_addr << 1) | 0x01);
     if (Soft_I2C_Wait_Ack(Soft_I2C))

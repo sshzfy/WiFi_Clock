@@ -52,7 +52,7 @@
     #define LV_MEM_SIZE (24U * 1024U)          /*[bytes] 24KB */
 
     /*Set an address for the memory pool instead of allocating it as a normal array. Can be in external SRAM too.*/
-    #define LV_MEM_ADR 0x10000000     /*0: unused,ä½¿ç”¨CCM*/
+    #define LV_MEM_ADR 0x10000000     /*0: unused,Ê¹ÓÃCCM*/
     /*Instead of an address give a memory allocator that will be called to get a memory pool for LVGL. E.g. my_malloc*/
     #if LV_MEM_ADR == 0
         #undef LV_MEM_POOL_INCLUDE
@@ -81,7 +81,7 @@
 #define LV_DISP_DEF_REFR_PERIOD 30      /*[ms]*/
 
 /*Input device read period in milliseconds*/
-#define LV_INDEV_DEF_READ_PERIOD 15     /*[ms],é»˜è®¤è¯»å–å‘¨æœŸä¸º15msè§¦æ§æ›´çµæ•*/
+#define LV_INDEV_DEF_READ_PERIOD 15     /*[ms],Ä¬ÈÏ¶ÁÈ¡ÖÜÆÚÎª15ms´¥¿Ø¸üÁéÃô*/
 
 /*Use a custom tick source that tells the elapsed time in milliseconds.
  *It removes the need to manually update the tick with `lv_tick_inc()`)*/
@@ -108,7 +108,7 @@
 
 /*Enable complex draw engine.
  *Required to draw shadow, gradient, rounded corners, circles, arc, skew lines, image transformations or any masks*/
-#define LV_DRAW_COMPLEX 0 /* ä¸å¯ç”¨å¤æ‚ç»˜åˆ¶å¼•æ“ */
+#define LV_DRAW_COMPLEX 0 /* ²»ÆôÓÃ¸´ÔÓ»æÖÆÒıÇæ */
 #if LV_DRAW_COMPLEX != 0
 
     /*Allow buffering some shadow calculation.
@@ -170,7 +170,7 @@
 
 /*Maximum buffer size to allocate for rotation.
  *Only used if software rotation is enabled in the display driver.*/
-#define LV_DISP_ROT_MAX_BUF (0*1024) /* ä¸éœ€è¦è½¯ä»¶æ—‹è½¬ */
+#define LV_DISP_ROT_MAX_BUF (0*1024) /* ²»ĞèÒªÈí¼şĞı×ª */
 
 /*-------------
  * GPU
@@ -471,7 +471,7 @@
 
 /*Documentation of the widgets: https://docs.lvgl.io/latest/en/html/widgets/index.html*/
 
-#define LV_USE_ARC        0 /* ä¸å¯ç”¨å¼§å½¢ */
+#define LV_USE_ARC        0 /* ²»ÆôÓÃ»¡ĞÎ */
 
 #define LV_USE_BAR        1
 
@@ -479,13 +479,13 @@
 
 #define LV_USE_BTNMATRIX  1
 
-#define LV_USE_CANVAS     0 /* ä¸å¯ç”¨ç”»å¸ƒ */
+#define LV_USE_CANVAS     0 /* ²»ÆôÓÃ»­²¼ */
 
-#define LV_USE_CHECKBOX   0 /* ä¸å¯ç”¨å¤é€‰æ¡† */
+#define LV_USE_CHECKBOX   0 /* ²»ÆôÓÃ¸´Ñ¡¿ò */
 
-#define LV_USE_DROPDOWN   0   /*Requires: lv_label, ä¸å¯ç”¨ä¸‹æ‹‰èœå• */
+#define LV_USE_DROPDOWN   0   /*Requires: lv_label, ²»ÆôÓÃÏÂÀ­²Ëµ¥ */
 
-#define LV_USE_IMG        0   /*Requires: lv_label, ä¸å¯ç”¨å›¾ç‰‡ */
+#define LV_USE_IMG        0   /*Requires: lv_label, ²»ÆôÓÃÍ¼Æ¬ */
 
 #define LV_USE_LABEL      1
 #if LV_USE_LABEL
@@ -493,16 +493,16 @@
     #define LV_LABEL_LONG_TXT_HINT 0  /*Store some extra info in labels to speed up drawing of very long texts*/
 #endif
 
-#define LV_USE_LINE       0   /* ä¸å¯ç”¨çº¿ */
+#define LV_USE_LINE       0   /* ²»ÆôÓÃÏß */
 
-#define LV_USE_ROLLER     0   /*Requires: lv_label, ä¸å¯ç”¨æ»šåŠ¨é€‰æ‹©å™¨ */
+#define LV_USE_ROLLER     0   /*Requires: lv_label, ²»ÆôÓÃ¹ö¶¯Ñ¡ÔñÆ÷ */
 #if LV_USE_ROLLER
     #define LV_ROLLER_INF_PAGES 7 /*Number of extra "pages" when the roller is infinite*/
 #endif
 
-#define LV_USE_SLIDER     0   /*Requires: lv_bar, ä¸å¯ç”¨æ»‘åŠ¨æ¡ */
+#define LV_USE_SLIDER     0   /*Requires: lv_bar, ²»ÆôÓÃ»¬¶¯Ìõ */
 
-#define LV_USE_SWITCH     0   /* ä¸å¯ç”¨å¼€å…³ */
+#define LV_USE_SWITCH     0   /* ²»ÆôÓÃ¿ª¹Ø */
 
 #define LV_USE_TEXTAREA   1   /*Requires: lv_label*/
 #if LV_USE_TEXTAREA != 0
@@ -518,9 +518,9 @@
 /*-----------
  * Widgets
  *----------*/
-#define LV_USE_ANIMIMG    0   /* ä¸å¯ç”¨åŠ¨ç”»å›¾ç‰‡ */
+#define LV_USE_ANIMIMG    0   /* ²»ÆôÓÃ¶¯»­Í¼Æ¬ */
 
-#define LV_USE_CALENDAR   0   /* ä¸å¯ç”¨æ—¥å† */
+#define LV_USE_CALENDAR   0   /* ²»ÆôÓÃÈÕÀú */
 #if LV_USE_CALENDAR
     #define LV_CALENDAR_WEEK_STARTS_MONDAY 0
     #if LV_CALENDAR_WEEK_STARTS_MONDAY
@@ -534,39 +534,39 @@
     #define LV_USE_CALENDAR_HEADER_DROPDOWN 1
 #endif  /*LV_USE_CALENDAR*/
 
-#define LV_USE_CHART      0   /* ä¸å¯ç”¨å›¾è¡¨ */
+#define LV_USE_CHART      0   /* ²»ÆôÓÃÍ¼±í */
 
-#define LV_USE_COLORWHEEL 0   /* ä¸å¯ç”¨é¢œè‰²è½® */
+#define LV_USE_COLORWHEEL 0   /* ²»ÆôÓÃÑÕÉ«ÂÖ */
 
-#define LV_USE_IMGBTN     0   /* ä¸å¯ç”¨å›¾ç‰‡æŒ‰é’® */
+#define LV_USE_IMGBTN     0   /* ²»ÆôÓÃÍ¼Æ¬°´Å¥ */
 
-#define LV_USE_KEYBOARD   1   /* âœ´ ä½¿ç”¨è½¯é”®ç›˜ */
+#define LV_USE_KEYBOARD   1   /* ¡ï Ê¹ÓÃÈí¼üÅÌ */
 
-#define LV_USE_LED        0   /* ä¸å¯ç”¨LED */
+#define LV_USE_LED        0   /* ²»ÆôÓÃLED */
 
-#define LV_USE_LIST       0   /* ä¸å¯ç”¨åˆ—è¡¨ */
+#define LV_USE_LIST       0   /* ²»ÆôÓÃÁĞ±í */
 
-#define LV_USE_MENU       0   /* ä¸å¯ç”¨èœå• */
+#define LV_USE_MENU       0   /* ²»ÆôÓÃ²Ëµ¥ */
 
-#define LV_USE_METER      0   /* ä¸å¯ç”¨è®¡æ•°å™¨ */
+#define LV_USE_METER      0   /* ²»ÆôÓÃ¼ÆÊıÆ÷ */
 
-#define LV_USE_MSGBOX     0   /* ä¸å¯ç”¨æ¶ˆæ¯æ¡† */
+#define LV_USE_MSGBOX     0   /* ²»ÆôÓÃÏûÏ¢¿ò */
 
-#define LV_USE_SPAN       0   /* ä¸å¯ç”¨è¡Œå†…å…ƒç´  */
+#define LV_USE_SPAN       0   /* ²»ÆôÓÃĞĞÄÚÔªËØ */
 #if LV_USE_SPAN
     /*A line text can contain maximum num of span descriptor */
     #define LV_SPAN_SNIPPET_STACK_SIZE 64
 #endif
 
-#define LV_USE_SPINBOX    0   /* ä¸å¯ç”¨æ—‹è½¬æ¡† */
+#define LV_USE_SPINBOX    0   /* ²»ÆôÓÃĞı×ª¿ò */
 
-#define LV_USE_SPINNER    0   /* ä¸å¯ç”¨æ—‹è½¬å™¨ */
+#define LV_USE_SPINNER    0   /* ²»ÆôÓÃĞı×ªÆ÷ */
 
-#define LV_USE_TABVIEW    0   /* ä¸å¯ç”¨æ ‡ç­¾è§†å›¾ */
+#define LV_USE_TABVIEW    0   /* ²»ÆôÓÃ±êÇ©ÊÓÍ¼ */
 
-#define LV_USE_TILEVIEW   0   /* ä¸å¯ç”¨å¹³é“ºè§†å›¾ */
+#define LV_USE_TILEVIEW   0   /* ²»ÆôÓÃÆ½ÆÌÊÓÍ¼ */
 
-#define LV_USE_WIN        0   /* ä¸å¯ç”¨çª—å£ */
+#define LV_USE_WIN        0   /* ²»ÆôÓÃ´°¿Ú */
 
 /*-----------
  * Themes
@@ -587,20 +587,20 @@
 #endif /*LV_USE_THEME_DEFAULT*/
 
 /*A very simple theme that is a good starting point for a custom theme*/
-#define LV_USE_THEME_BASIC 0   /* ä¸å¯ç”¨åŸºæœ¬ä¸»é¢˜ */
+#define LV_USE_THEME_BASIC 0   /* ²»ÆôÓÃ»ù±¾Ö÷Ìâ */
 
 /*A theme designed for monochrome displays*/
-#define LV_USE_THEME_MONO 0   /* ä¸å¯ç”¨å•è‰²ä¸»é¢˜ */
+#define LV_USE_THEME_MONO 0   /* ²»ÆôÓÃµ¥É«Ö÷Ìâ */
 
 /*-----------
  * Layouts
  *----------*/
 
 /*A layout similar to Flexbox in CSS.*/
-#define LV_USE_FLEX 0   /* ä¸å¯ç”¨Flexå¸ƒå±€ */
+#define LV_USE_FLEX 0   /* ²»ÆôÓÃFlex²¼¾Ö */
 
 /*A layout similar to Grid in CSS.*/
-#define LV_USE_GRID 0   /* ä¸å¯ç”¨ç½‘æ ¼å¸ƒå±€ */
+#define LV_USE_GRID 0   /* ²»ÆôÓÃÍø¸ñ²¼¾Ö */
 
 /*---------------------
  * 3rd party libraries

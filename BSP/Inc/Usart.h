@@ -15,7 +15,7 @@ void Usart1_RX_Flush(void);
 
 void Usart2_Debug_Init(void);
 
-// /* USART3: Е╝ Д╫█Ф╗║Е²≈(ATGM336H)Д╦⌠Г■╗Ц─┌Ф╗║Е²≈Е┤╨Е▌┌И╩≤Х╝╓9600-8N1 */
+// /* USART3: ╤╗н╩дё©И(ATGM336H)в╗сц║ёдё©ИЁЖЁ╖д╛хо9600-8N1 */
 // #define USART3_BAUD 9600U
 
 // void Usart3_Init(void);

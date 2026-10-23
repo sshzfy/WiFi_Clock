@@ -16,7 +16,7 @@
 #include "App.h"
 
 
-/* è§¦æ‘¸çƒ­åŒº: å·¦ä¸Šè§’å¹¶æ’ä¸¤ä¸ª 20x20 å›¾æ ‡(WiFi åœ¨ x=5, å®šä½åœ¨ x=26, y éƒ½æ˜¯ 5) */
+/* ´¥ÃşÈÈÇø: ×óÉÏ½Ç²¢ÅÅÁ½¸ö 20x20 Í¼±ê(WiFi ÔÚ x=5, ¶¨Î»ÔÚ x=26, y ¶¼ÊÇ 5) */
 #define TOUCH_X_WIFI           5U
 #define TOUCH_Y_WIFI           5U
 #define TOUCH_SIZE_WIFI        20U
@@ -24,21 +24,21 @@
 #define TOUCH_Y_LOC            5U
 #define TOUCH_SIZE_LOC         20U
 
-/* å½“å‰åœåœ¨å“ªä¸ªè¾“å…¥ç•Œé¢ */
+/* µ±Ç°Í£ÔÚÄÄ¸öÊäÈë½çÃæ */
 typedef enum
 {
-    UI_SCR_MAIN = 0, // ä¸åœ¨ LVGL ç•Œé¢(ä¸»é¡µé¢)
-    UI_SCR_WIFI,     // ui_WiFi: é…ç½‘
-    UI_SCR_LOCATION  // ui_location: å®šä½ä¿¡æ¯
+    UI_SCR_MAIN = 0, // ²»ÔÚ LVGL ½çÃæ(Ö÷Ò³Ãæ)
+    UI_SCR_WIFI,     // ui_WiFi: ÅäÍø
+    UI_SCR_LOCATION  // ui_location: ¶¨Î»ĞÅÏ¢
 } UI_Screen_t;
 
-/* ä¸€ä¸ªå¯ç‚¹å‡»åŒºåŸŸ: å‘½ä¸­åç½®ä½å¯¹åº”äº‹ä»¶ */
+/* Ò»¸ö¿Éµã»÷ÇøÓò: ÃüÖĞºóÖÃÎ»¶ÔÓ¦ÊÂ¼ş */
 typedef struct
 {
-    uint16_t x;        // å·¦ä¸Šè§’ x
-    uint16_t y;        // å·¦ä¸Šè§’ y
-    uint16_t size;     // è¾¹é•¿
-    EventBits_t event; // å‘½ä¸­åç½®ä½çš„äº‹ä»¶
+    uint16_t x;        // ×óÉÏ½Ç x
+    uint16_t y;        // ×óÉÏ½Ç y
+    uint16_t size;     // ±ß³¤
+    EventBits_t event; // ÃüÖĞºóÖÃÎ»µÄÊÂ¼ş
 } UI_Hotspot_t;
 
 void UI_Input_Calibrate(void);

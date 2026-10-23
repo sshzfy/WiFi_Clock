@@ -5,22 +5,22 @@
 #include "stm32f4xx.h"
 #include "Timer.h"
 
-/* DS1302 ç¡¬ä»¶å¼•è„š */
+/* DS1302 Ó²¼şÒı½Å */
 #define DS1302_PORT                     GPIOE
 #define DS1302_RST_PIN                  GPIO_Pin_7
 #define DS1302_IO_PIN                   GPIO_Pin_8
 #define DS1302_CLK_PIN                  GPIO_Pin_9
 
-/* DS1302 å¯„å­˜å™¨åœ°å€ */
-#define DS1302_REG_SEC                  0x80 // ç§’å¯„å­˜å™¨
-#define DS1302_REG_MIN                  0x82 // åˆ†å¯„å­˜å™¨
-#define DS1302_REG_HOUR                 0x84 // æ—¶å¯„å­˜å™¨
-#define DS1302_REG_DAY                  0x86 // æ—¥å¯„å­˜å™¨
-#define DS1302_REG_MONTH                0x88 // æœˆå¯„å­˜å™¨
-#define DS1302_REG_DAY_OF_WEEK          0x8A // æ˜ŸæœŸå¯„å­˜å™¨
-#define DS1302_REG_YEAR                 0x8C // å¹´å¯„å­˜å™¨
-#define DS1302_REG_WP                   0x8E // å†™ä¿æŠ¤å¯„å­˜å™¨
-#define DS1302_REG_TRICKLK              0x90 // æ¶“æµå……ç”µå¯„å­˜å™¨
+/* DS1302 ¼Ä´æÆ÷µØÖ· */
+#define DS1302_REG_SEC                  0x80 // Ãë¼Ä´æÆ÷
+#define DS1302_REG_MIN                  0x82 // ·Ö¼Ä´æÆ÷
+#define DS1302_REG_HOUR                 0x84 // Ê±¼Ä´æÆ÷
+#define DS1302_REG_DAY                  0x86 // ÈÕ¼Ä´æÆ÷
+#define DS1302_REG_MONTH                0x88 // ÔÂ¼Ä´æÆ÷
+#define DS1302_REG_DAY_OF_WEEK          0x8A // ĞÇÆÚ¼Ä´æÆ÷
+#define DS1302_REG_YEAR                 0x8C // Äê¼Ä´æÆ÷
+#define DS1302_REG_WP                   0x8E // Ğ´±£»¤¼Ä´æÆ÷
+#define DS1302_REG_TRICKLK              0x90 // ä¸Á÷³äµç¼Ä´æÆ÷
 
 typedef struct
 {

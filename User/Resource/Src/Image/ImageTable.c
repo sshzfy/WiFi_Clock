@@ -1,15 +1,15 @@
 #include "Image.h"
 
-/* å›¾ç‰‡èµ„æºæ¸…å•
- * ä¾› Asset å¼€æœºè‡ªæ£€ä¸ Provision çƒ§å½•éå†ä½¿ç”¨ã€‚
- * è¿™é‡Œåªæ˜¯ä¸€å¼ æŒ‡é’ˆè¡¨(32 * 4 = 128 å­—èŠ‚), ä¸å«åƒç´ æ•°æ® */
+/* Í¼Æ¬×ÊÔ´Çåµ¥
+ * ¹© Asset ¿ª»ú×Ô¼ìÓë Provision ÉÕÂ¼±éÀúÊ¹ÓÃ¡£
+ * ÕâÀïÖ»ÊÇÒ»ÕÅÖ¸Õë±í(32 * 4 = 128 ×Ö½Ú), ²»º¬ÏñËØÊı¾İ */
 const Image_t *const g_AllImages[] =
     {
-        /* å¼€æœºä¸ä¸»é¡µé¢å…¨å±å›¾ */
+        /* ¿ª»úÓëÖ÷Ò³ÃæÈ«ÆÁÍ¼ */
         &Boot_Page_Waitconnect,
         &Image_Main_Page,
 
-        /* é€šç”¨å›¾æ ‡ */
+        /* Í¨ÓÃÍ¼±ê */
         &Image_err,
         &Image_wifi,
         &Image_wifi_off,
@@ -19,7 +19,7 @@ const Image_t *const g_AllImages[] =
         &Image_humidity,
         &Image_thermometer,
 
-        /* å¤©æ°”å›¾æ ‡ */
+        /* ÌìÆøÍ¼±ê */
         &Image_sunny,
         &Image_star,
         &Image_cloudy,

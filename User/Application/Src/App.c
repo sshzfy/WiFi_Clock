@@ -1,15 +1,15 @@
 #include "App.h"
 
 char g_ssid[WIFI_SSID_MAX_LEN + 1U] = {0};     // WiFi SSID
-char g_password[WIFI_PASS_MAX_LEN + 1U] = {0}; // WiFi å¯†ç 
-const char *mac = WIFI_MAC;                    // WiFi MACåœ°å€(ä¸€èˆ¬ä¸éœ€è¦)
-char g_location[LOCATION_MAX_LEN + 1U] = {0};  // å®šä½ä¿¡æ¯((çœ+)å¸‚,å¯é¿å…åŸå¸‚æ‹¼éŸ³é‡å¤é€ æˆçš„å®šä½é”™è¯¯)
+char g_password[WIFI_PASS_MAX_LEN + 1U] = {0}; // WiFi ÃÜÂë
+const char *mac = WIFI_MAC;                    // WiFi MACµØÖ·(Ò»°ã²»ĞèÒª)
+char g_location[LOCATION_MAX_LEN + 1U] = {0};  // ¶¨Î»ĞÅÏ¢((Ê¡+)ÊĞ,¿É±ÜÃâ³ÇÊĞÆ´ÒôÖØ¸´Ôì³ÉµÄ¶¨Î»´íÎó)
 
 AT_WiFi_Info_t wifi_info = {0};
 AT_Date_Info_t date_info = {0};
 AT_Weather_Info_t weather_info = {0};
 DHT22_Data_t room_info = {0};
-// AT_Location_Info_t location_info = {0}; // é€†åœ°ç†ç¼–ç çœ/å¸‚; å½“å‰åº”ç”¨æœªæ¥å…¥(è§ Service_Location_Update)
+// AT_Location_Info_t location_info = {0}; // ÄæµØÀí±àÂëÊ¡/ÊĞ; µ±Ç°Ó¦ÓÃÎ´½ÓÈë(¼û Service_Location_Update)
 
 const char *weekdays[] =
     {"Monday",
@@ -21,31 +21,31 @@ const char *weekdays[] =
      "Sunday"};
 static char weather_url[WEATHER_URL_SIZE] =
     "https://api.seniverse.com/v3/weather/now.json"
-    "?key=" WEATHER_KEY "&location=" WEATHER_IP_LOCATION "&language=en&unit=c"; // ä¸­æ–‡: æŠŠ language=en æ¢æˆ language=zh-Hans å³å¯(location ç”±å…¬ç½‘IPåŠ¨æ€å¡«å…¥)
-static char weather_ip[16] = {0};                                               // æœ€è¿‘ä¸€æ¬¡æˆåŠŸè§£æåˆ°çš„å…¬ç½‘IP
-const char *http_response = NULL;                                               // HTTP å“åº”ç¼“å†²åŒº
+    "?key=" WEATHER_KEY "&location=" WEATHER_IP_LOCATION "&language=en&unit=c"; // ÖĞÎÄ: °Ñ language=en »»³É language=zh-Hans ¼´¿É(location ÓÉ¹«ÍøIP¶¯Ì¬ÌîÈë)
+static char weather_ip[16] = {0};                                               // ×î½üÒ»´Î³É¹¦½âÎöµ½µÄ¹«ÍøIP
+const char *http_response = NULL;                                               // HTTP ÏìÓ¦»º³åÇø
 
-/* ================ è½¯ä»¶æ—¶é’Ÿ(åŸºäºTIM5) ================
- * çº¿ç¨‹å®‰å…¨: netTaskå†™(Clock_Sync), uiTaskè¯»(Clock_IsSynced/GetDateTime),
- * è¯»å†™å‡åœ¨ä¸´ç•ŒåŒºå†…è¿›è¡Œ, é¿å…64ä½å­—æ®µ(epoch/sync_ms)æ’•è£‚è¯»ã€‚
+/* ================ Èí¼şÊ±ÖÓ(»ùÓÚTIM5) ================
+ * Ïß³Ì°²È«: netTaskĞ´(Clock_Sync), uiTask¶Á(Clock_IsSynced/GetDateTime),
+ * ¶ÁĞ´¾ùÔÚÁÙ½çÇøÄÚ½øĞĞ, ±ÜÃâ64Î»×Ö¶Î(epoch/sync_ms)ËºÁÑ¶Á¡£
  * ================================*/
-static bool clock_synced = false; // æ˜¯å¦åŒæ­¥
-static uint64_t clock_epoch;      // åŒæ­¥æ—¶åˆ»çš„"Unixæ—¶é—´æˆ³"(SNTPæœ¬åœ°æ—¶é—´æŒ‰UTCç®—æ³•)
-static uint64_t clock_sync_ms;    // åŒæ­¥æ—¶åˆ»çš„ ms
+static bool clock_synced = false; // ÊÇ·ñÍ¬²½
+static uint64_t clock_epoch;      // Í¬²½Ê±¿ÌµÄ"UnixÊ±¼ä´Á"(SNTP±¾µØÊ±¼ä°´UTCËã·¨)
+static uint64_t clock_sync_ms;    // Í¬²½Ê±¿ÌµÄ ms
 
 static int64_t Clock_DaysFromCivil(int y, unsigned m, unsigned d)
 {
-    y -= m <= 2;                                                   // è‹¥æœˆä»½ â‰¤ 2ï¼Œå¹´ä»½å‡1ï¼ˆç”¨äºè®¡ç®—é—°å¹´ï¼‰
-    int64_t era = (y >= 0 ? y : y - 399) / 400;                    // 400å¹´å‘¨æœŸ
-    unsigned yoe = (unsigned)(y - era * 400);                      // å‘¨æœŸå†…å¹´ä»½
-    unsigned doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // å¹´å†…ç¬¬å‡ å¤©
-    unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;          // å‘¨æœŸå†…ç¬¬å‡ å¤©
-    return era * 146097 + (int64_t)doe - 719468;                   // 1970-01-01 å¯¹åº”çš„å„’ç•¥æ—¥åç§»,146097å¤©/400å¹´,719468å¤©ä¸º1970-01-01,çºªå…ƒåç§»é‡
+    y -= m <= 2;                                                   // ÈôÔÂ·İ ¡Ü 2£¬Äê·İ¼õ1£¨ÓÃÓÚ¼ÆËãÈòÄê£©
+    int64_t era = (y >= 0 ? y : y - 399) / 400;                    // 400ÄêÖÜÆÚ
+    unsigned yoe = (unsigned)(y - era * 400);                      // ÖÜÆÚÄÚÄê·İ
+    unsigned doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // ÄêÄÚµÚ¼¸Ìì
+    unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;          // ÖÜÆÚÄÚµÚ¼¸Ìì
+    return era * 146097 + (int64_t)doe - 719468;                   // 1970-01-01 ¶ÔÓ¦µÄÈåÂÔÈÕÆ«ÒÆ,146097Ìì/400Äê,719468ÌìÎª1970-01-01,¼ÍÔªÆ«ÒÆÁ¿
 }
 
 static void Clock_CivilFromDays(int64_t z, int *y, unsigned *m, unsigned *d)
 {
-    z += 719468; // zä¸ºè‡ª1970-01-01å¼€å§‹çš„å¤©æ•°,z+719468å°†åŸºå‡†ç‚¹è°ƒæ•´ä¸ºå…¬å…ƒ1å¹´3æœˆ1æ—¥
+    z += 719468; // zÎª×Ô1970-01-01¿ªÊ¼µÄÌìÊı,z+719468½«»ù×¼µãµ÷ÕûÎª¹«Ôª1Äê3ÔÂ1ÈÕ
     int64_t era = (z >= 0 ? z : z - 146096) / 146097;
     unsigned doe = (unsigned)(z - era * 146097);
     unsigned yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
@@ -58,8 +58,8 @@ static void Clock_CivilFromDays(int64_t z, int *y, unsigned *m, unsigned *d)
 }
 
 /**
- * @brief ç”¨SNTPæœ¬åœ°æ—¶é—´æ ¡å‡†è½¯ä»¶æ—¶é’Ÿ
- * @param date_info SNTPè§£æå‡ºçš„æœ¬åœ°æ—¶é—´
+ * @brief ÓÃSNTP±¾µØÊ±¼äĞ£×¼Èí¼şÊ±ÖÓ
+ * @param date_info SNTP½âÎö³öµÄ±¾µØÊ±¼ä
  */
 void Clock_Sync(AT_Date_Info_t *date_info)
 {
@@ -78,8 +78,8 @@ void Clock_Sync(AT_Date_Info_t *date_info)
 }
 
 /**
- * @brief æ£€æŸ¥è½¯ä»¶æ—¶é’Ÿæ˜¯å¦å·²æ ¡å‡†
- * @return true å·²æ ¡å‡†,false æœªæ ¡å‡†
+ * @brief ¼ì²éÈí¼şÊ±ÖÓÊÇ·ñÒÑĞ£×¼
+ * @return true ÒÑĞ£×¼,false Î´Ğ£×¼
  */
 bool Clock_IsSynced(void)
 {
@@ -93,8 +93,8 @@ bool Clock_IsSynced(void)
 }
 
 /**
- * @brief è·å–å½“å‰æœ¬åœ°æ—¶é—´
- * @param time_out è¾“å‡ºæ—¶é—´ç»“æ„ä½“
+ * @brief »ñÈ¡µ±Ç°±¾µØÊ±¼ä
+ * @param time_out Êä³öÊ±¼ä½á¹¹Ìå
  */
 void Clock_GetDateTime(AT_Date_Info_t *time_out)
 {
@@ -107,7 +107,7 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
         return;
     memset(time_out, 0, sizeof(*time_out));
 
-    /* ä¸´ç•ŒåŒºå†…ä¸€æ¬¡æ€§è¯»å–æ—¶é’ŸçŠ¶æ€(é¿å…ä¸netTaskçš„å†™å…¥æ’•è£‚) */
+    /* ÁÙ½çÇøÄÚÒ»´ÎĞÔ¶ÁÈ¡Ê±ÖÓ×´Ì¬(±ÜÃâÓënetTaskµÄĞ´ÈëËºÁÑ) */
     taskENTER_CRITICAL();
     synced = clock_synced;
     epoch = clock_epoch;
@@ -118,8 +118,8 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
     if (synced == false)
         return;
 
-    uint64_t elapsed_ms = now_ms - sync_ms;               // ä»åŒæ­¥æ—¶åˆ»åˆ°å½“å‰æ—¶é—´çš„æ¯«ç§’æ•°
-    uint64_t now = epoch + (uint64_t)(elapsed_ms / 1000); // å½“å‰æ—¶é—´çš„ç§’æ•°
+    uint64_t elapsed_ms = now_ms - sync_ms;               // ´ÓÍ¬²½Ê±¿Ìµ½µ±Ç°Ê±¼äµÄºÁÃëÊı
+    uint64_t now = epoch + (uint64_t)(elapsed_ms / 1000); // µ±Ç°Ê±¼äµÄÃëÊı
     int64_t days = now / 86400;
     int64_t secs = now % 86400;
     int year;
@@ -134,12 +134,12 @@ void Clock_GetDateTime(AT_Date_Info_t *time_out)
     time_out->weekday = (uint8_t)(((days + 3) % 7 + 7) % 7 + 1);
 }
 
-/* ================ WiFi å‡­æ®(é”®ç›˜è¾“å…¥ â†’ æ‰ç”µä¿å­˜) ================ */
-static volatile bool s_wifi_cfg_dirty = false; // å†…å­˜é‡Œçš„å‡­æ®è¿˜æ²¡è½ç›˜(é”®ç›˜åˆšæäº¤è¿‡) â€”â€” åªç”± uiTask è¯»å†™
+/* ================ WiFi Æ¾¾İ(¼üÅÌÊäÈë ¡ú µôµç±£´æ) ================ */
+static volatile bool s_wifi_cfg_dirty = false; // ÄÚ´æÀïµÄÆ¾¾İ»¹Ã»ÂäÅÌ(¼üÅÌ¸ÕÌá½»¹ı) ¡ª¡ª Ö»ÓÉ uiTask ¶ÁĞ´
 
 /**
- * @brief æ˜¯å¦å·²ç»æ‹¿åˆ° WiFi å‡­æ®
- * @return true å·²æ‹¿åˆ°
+ * @brief ÊÇ·ñÒÑ¾­ÄÃµ½ WiFi Æ¾¾İ
+ * @return true ÒÑÄÃµ½
  */
 bool WiFi_Config_IsSet(void)
 {
@@ -147,8 +147,8 @@ bool WiFi_Config_IsSet(void)
 }
 
 /**
- * @brief å†…å­˜é‡Œçš„å‡­æ®æ˜¯å¦è¿˜æ²¡è½ç›˜
- * @return true æœªè½ç›˜
+ * @brief ÄÚ´æÀïµÄÆ¾¾İÊÇ·ñ»¹Ã»ÂäÅÌ
+ * @return true Î´ÂäÅÌ
  */
 bool WiFi_Config_IsDirty(void)
 {
@@ -156,16 +156,16 @@ bool WiFi_Config_IsDirty(void)
 }
 
 /**
- * @brief æ›´æ–° WiFi å‡­æ®
- * @param ssid     WiFi åç§°, ä¸å…è®¸ä¸º NULL
- * @param password WiFi å¯†ç , ä¼  NULL è¡¨ç¤ºå¼€æ”¾ç½‘ç»œ
+ * @brief ¸üĞÂ WiFi Æ¾¾İ
+ * @param ssid     WiFi Ãû³Æ, ²»ÔÊĞíÎª NULL
+ * @param password WiFi ÃÜÂë, ´« NULL ±íÊ¾¿ª·ÅÍøÂç
  */
 void WiFi_Config_Set(const char *ssid, const char *password)
 {
     if (ssid == NULL)
         return;
 
-    /* ä¸´ç•ŒåŒºå†…æ•´ä½“æ›¿æ¢: netTask ä¼šåœ¨é‡è¿æ—¶è¯»è¿™ä¸¤ä¸ªä¸², ä¸èƒ½è¢«å®ƒçœ‹åˆ°åŠæˆªæ–°å€¼ */
+    /* ÁÙ½çÇøÄÚÕûÌåÌæ»»: netTask »áÔÚÖØÁ¬Ê±¶ÁÕâÁ½¸ö´®, ²»ÄÜ±»Ëü¿´µ½°ë½ØĞÂÖµ */
     taskENTER_CRITICAL();
 
     strncpy(g_ssid, ssid, sizeof(g_ssid) - 1U);
@@ -187,8 +187,8 @@ void WiFi_Config_Set(const char *ssid, const char *password)
 }
 
 /**
- * @brief æŠŠå½“å‰å‡­æ®å†™å…¥å¤–éƒ¨ Flash
- * @return true å†™å…¥æˆåŠŸ
+ * @brief °Ñµ±Ç°Æ¾¾İĞ´ÈëÍâ²¿ Flash
+ * @return true Ğ´Èë³É¹¦
  */
 bool WiFi_Config_Save(void)
 {
@@ -217,8 +217,8 @@ bool WiFi_Config_Save(void)
 }
 
 /**
- * @brief ä»å¤–éƒ¨ Flash è½½å…¥ WiFi å‡­æ®
- * @note  æ–‡ä»¶ä¸å­˜åœ¨æˆ–æ ¡éªŒä¸è¿‡æ—¶æ¸…ç©ºå‡­æ®, ç”±è°ƒç”¨æ–¹æŒ‰"æœªé…ç½®"å¤„ç†
+ * @brief ´ÓÍâ²¿ Flash ÔØÈë WiFi Æ¾¾İ
+ * @note  ÎÄ¼ş²»´æÔÚ»òĞ£Ñé²»¹ıÊ±Çå¿ÕÆ¾¾İ, ÓÉµ÷ÓÃ·½°´"Î´ÅäÖÃ"´¦Àí
  */
 void WiFi_Config_Load(void)
 {
@@ -252,12 +252,12 @@ void WiFi_Config_Load(void)
     s_wifi_cfg_dirty = false;
 }
 
-/* ================ å®šä½ä¿¡æ¯(å®šä½ç•Œé¢è¾“å…¥ â†’ æ‰ç”µä¿å­˜) ================ */
-static volatile bool s_location_cfg_dirty = false; // å†…å­˜é‡Œçš„å®šä½ä¿¡æ¯è¿˜æ²¡è½ç›˜ â€”â€” åªç”± uiTask è¯»å†™
+/* ================ ¶¨Î»ĞÅÏ¢(¶¨Î»½çÃæÊäÈë ¡ú µôµç±£´æ) ================ */
+static volatile bool s_location_cfg_dirty = false; // ÄÚ´æÀïµÄ¶¨Î»ĞÅÏ¢»¹Ã»ÂäÅÌ ¡ª¡ª Ö»ÓÉ uiTask ¶ÁĞ´
 
 /**
- * @brief æ˜¯å¦å·²ç»è®¾ç½®è¿‡å®šä½ä¿¡æ¯
- * @return true å·²è®¾ç½®
+ * @brief ÊÇ·ñÒÑ¾­ÉèÖÃ¹ı¶¨Î»ĞÅÏ¢
+ * @return true ÒÑÉèÖÃ
  */
 bool Location_Config_IsSet(void)
 {
@@ -265,8 +265,8 @@ bool Location_Config_IsSet(void)
 }
 
 /**
- * @brief å†…å­˜é‡Œçš„å®šä½ä¿¡æ¯æ˜¯å¦è¿˜æ²¡è½ç›˜
- * @return true æœªè½ç›˜
+ * @brief ÄÚ´æÀïµÄ¶¨Î»ĞÅÏ¢ÊÇ·ñ»¹Ã»ÂäÅÌ
+ * @return true Î´ÂäÅÌ
  */
 bool Location_Config_IsDirty(void)
 {
@@ -274,8 +274,8 @@ bool Location_Config_IsDirty(void)
 }
 
 /**
- * @brief æ›´æ–°å†…å­˜ä¸­çš„å®šä½ä¿¡æ¯(ä¸å†™ Flash, ç”± uiTask è½ç›˜)
- * @param location çœ+å¸‚, ä¸å…è®¸ä¸º NULL
+ * @brief ¸üĞÂÄÚ´æÖĞµÄ¶¨Î»ĞÅÏ¢(²»Ğ´ Flash, ÓÉ uiTask ÂäÅÌ)
+ * @param location Ê¡+ÊĞ, ²»ÔÊĞíÎª NULL
  */
 void Location_Config_Set(const char *location)
 {
@@ -293,8 +293,8 @@ void Location_Config_Set(const char *location)
 }
 
 /**
- * @brief æŠŠå½“å‰å®šä½ä¿¡æ¯å†™å…¥å¤–éƒ¨ Flash
- * @return true å†™å…¥æˆåŠŸ
+ * @brief °Ñµ±Ç°¶¨Î»ĞÅÏ¢Ğ´ÈëÍâ²¿ Flash
+ * @return true Ğ´Èë³É¹¦
  */
 bool Location_Config_Save(void)
 {
@@ -322,8 +322,8 @@ bool Location_Config_Save(void)
 }
 
 /**
- * @brief ä»å¤–éƒ¨ Flash è½½å…¥å®šä½ä¿¡æ¯
- * @note  æ–‡ä»¶ä¸å­˜åœ¨æˆ–æ ¡éªŒä¸è¿‡æ—¶æ¸…ç©º, ç”±è°ƒç”¨æ–¹æŒ‰"æœªè®¾ç½®"å¤„ç†
+ * @brief ´ÓÍâ²¿ Flash ÔØÈë¶¨Î»ĞÅÏ¢
+ * @note  ÎÄ¼ş²»´æÔÚ»òĞ£Ñé²»¹ıÊ±Çå¿Õ, ÓÉµ÷ÓÃ·½°´"Î´ÉèÖÃ"´¦Àí
  */
 void Location_Config_Load(void)
 {
@@ -353,17 +353,17 @@ void Location_Config_Load(void)
     s_location_cfg_dirty = false;
 }
 
-/* ================ WiFi åˆå§‹åŒ– ================ */
+/* ================ WiFi ³õÊ¼»¯ ================ */
 
 /**
- * @brief åˆå§‹åŒ–æ— çº¿ç½‘ç»œ, åŒ…æ‹¬ATå‘½ä»¤å’ŒWiFi
- * @return true åˆå§‹åŒ–æˆåŠŸ
+ * @brief ³õÊ¼»¯ÎŞÏßÍøÂç, °üÀ¨ATÃüÁîºÍWiFi
+ * @return true ³õÊ¼»¯³É¹¦
  */
 bool Wireless_Init(void)
 {
     bool at_ok = false;
 
-    /* åˆå§‹åŒ–ATå‘½ä»¤ */
+    /* ³õÊ¼»¯ATÃüÁî */
     for (uint8_t retry = 1; retry <= WIRELESS_INIT_RETRY; retry++)
     {
         if (AT_Init())
@@ -376,9 +376,9 @@ bool Wireless_Init(void)
                    (unsigned)retry, (unsigned)WIRELESS_INIT_RETRY,
                    (unsigned)strlen(AT_Get_Response()), AT_Get_Response());
 
-        /* ç¬¬ä¸€æ¬¡å¤±è´¥åæ‰åŠ¨ç”¨ AT+RESTORE: æ­£å¸¸å¼€æœºä¸ä¼šèµ°åˆ°è¿™é‡Œ, åªæœ‰æ¨¡ç»„ç¡®å®ä¸åº”ç­”
-         * (é…ç½®æŸåã€åœåœ¨ä¸æ­£å¸¸çŠ¶æ€ç­‰)æ—¶æ‰"æ“¦é…ç½® + é‡å¯"
-         * å¹³æ—¶å¼€æœºä¸åšæ¢å¤å‡ºå‚, ä¹Ÿå°±æ²¡æœ‰é‚£æ¬¡é‡å¯å¸¦æ¥çš„ busy/ready æŠ¢è·‘çª—å£ */
+        /* µÚÒ»´ÎÊ§°Üºó²Å¶¯ÓÃ AT+RESTORE: Õı³£¿ª»ú²»»á×ßµ½ÕâÀï, Ö»ÓĞÄ£×éÈ·Êµ²»Ó¦´ğ
+         * (ÅäÖÃËğ»µ¡¢Í£ÔÚ²»Õı³£×´Ì¬µÈ)Ê±²Å"²ÁÅäÖÃ + ÖØÆô"
+         * Æ½Ê±¿ª»ú²»×ö»Ö¸´³ö³§, Ò²¾ÍÃ»ÓĞÄÇ´ÎÖØÆô´øÀ´µÄ busy/ready ÇÀÅÜ´°¿Ú */
         if (retry == 1)
         {
             DBG_PRINTF("[NET] AT init failed, try factory reset (AT+RESTORE)\r\n");
@@ -399,7 +399,7 @@ bool Wireless_Init(void)
     }
     DBG_PRINTF("[NET] AT init OK\r\n");
 
-    /* åˆå§‹åŒ–WiFi */
+    /* ³õÊ¼»¯WiFi */
     for (uint8_t retry = 1; retry <= WIRELESS_INIT_RETRY; retry++)
     {
         if (AT_WiFi_Init())
@@ -420,11 +420,11 @@ bool Wireless_Init(void)
     return false;
 }
 
-/* ================ WiFi è¿æ¥ ================ */
+/* ================ WiFi Á¬½Ó ================ */
 
 /**
- * @brief æ•´ä½“æ›¿æ¢wifi_info(ä¸´ç•ŒåŒºå†…èµ‹å€¼, é¿å…UIè¯»åˆ°åŠå†™çŠ¶æ€)
- * @param info æ–°çš„WiFiä¿¡æ¯
+ * @brief ÕûÌåÌæ»»wifi_info(ÁÙ½çÇøÄÚ¸³Öµ, ±ÜÃâUI¶Áµ½°ëĞ´×´Ì¬)
+ * @param info ĞÂµÄWiFiĞÅÏ¢
  */
 static void WiFi_Info_Store(const AT_WiFi_Info_t *info)
 {
@@ -434,9 +434,9 @@ static void WiFi_Info_Store(const AT_WiFi_Info_t *info)
 }
 
 /**
- * @brief åªè·å–ä¸è¿æ¥: ç­‰æ¨¡ç»„ç”¨å®ƒè‡ªå·±è®°å¿†çš„ AP è¿ä¸Š, æœ€å¤šç­‰ timeout_ms
- * @param timeout_ms æœ€é•¿ç­‰å¾…æ—¶é—´
- * @return true å·²è¿æ¥
+ * @brief Ö»»ñÈ¡²»Á¬½Ó: µÈÄ£×éÓÃËü×Ô¼º¼ÇÒäµÄ AP Á¬ÉÏ, ×î¶àµÈ timeout_ms
+ * @param timeout_ms ×î³¤µÈ´ıÊ±¼ä
+ * @return true ÒÑÁ¬½Ó
  */
 static bool Service_WiFi_WaitConnected(uint32_t timeout_ms)
 {
@@ -467,8 +467,8 @@ static bool Service_WiFi_WaitConnected(uint32_t timeout_ms)
 }
 
 /**
- * @brief è¿æ¥WiFiå¹¶åˆ·æ–°wifi_info
- * @return true è¿æ¥æˆåŠŸ
+ * @brief Á¬½ÓWiFi²¢Ë¢ĞÂwifi_info
+ * @return true Á¬½Ó³É¹¦
  */
 bool Service_WiFi_Connect(void)
 {
@@ -488,7 +488,7 @@ bool Service_WiFi_Connect(void)
         return false;
     }
 
-    /* è¯»å–WiFiä¿¡æ¯(å¤±è´¥é‡è¯•; é¿å…æ ˆä¸Šæœªåˆå§‹åŒ–å€¼è¢«å½“æˆç»“æœ) */
+    /* ¶ÁÈ¡WiFiĞÅÏ¢(Ê§°ÜÖØÊÔ; ±ÜÃâÕ»ÉÏÎ´³õÊ¼»¯Öµ±»µ±³É½á¹û) */
     for (int i = 0; i < 3 && !ok; i++)
     {
         memset(&tmp, 0, sizeof(tmp));
@@ -497,7 +497,7 @@ bool Service_WiFi_Connect(void)
             vTaskDelay(pdMS_TO_TICKS(200));
     }
 
-    /* ä¸€æ¬¡æ€§æ•´ä½“æ›¿æ¢, é¿å…uiè¯»åˆ°åŠå†™çŠ¶æ€ */
+    /* Ò»´ÎĞÔÕûÌåÌæ»», ±ÜÃâui¶Áµ½°ëĞ´×´Ì¬ */
     if (ok)
         WiFi_Info_Store(&tmp);
 
@@ -514,12 +514,12 @@ bool Service_WiFi_Connect(void)
     return (ok && wifi_info.connected);
 }
 
-/* ================ WiFi çœç”µ ================ */
+/* ================ WiFi Ê¡µç ================ */
 
 /**
- * @brief åˆ‡æ¢ESP32-C3çš„Wi-Fiçœç”µæ¡£ä½
- * @param enable true=è¿›å…¥çœç”µ(å¤œé—´), false=æ¢å¤å…¨é€Ÿ(ç™½å¤©)
- * @return true è®¾ç½®æˆåŠŸ
+ * @brief ÇĞ»»ESP32-C3µÄWi-FiÊ¡µçµµÎ»
+ * @param enable true=½øÈëÊ¡µç(Ò¹¼ä), false=»Ö¸´È«ËÙ(°×Ìì)
+ * @return true ÉèÖÃ³É¹¦
  */
 bool Service_WiFi_Sleep(bool enable)
 {
@@ -534,22 +534,22 @@ bool Service_WiFi_Sleep(bool enable)
     return true;
 }
 
-/* ================ å‘¨æœŸä»»åŠ¡(ç”±netTask/sensorTaskè°ƒåº¦) ================ */
+/* ================ ÖÜÆÚÈÎÎñ(ÓÉnetTask/sensorTaskµ÷¶È) ================ */
 
 /**
- * @brief WiFiè¿æ¥æ£€æŸ¥/é‡è¿
- * @return 0=å·²è¿æ¥, 1=æœ¬æ¬¡åˆšé‡è¿æˆåŠŸ, -1=è·å–å¤±è´¥æˆ–é‡è¿å¤±è´¥
+ * @brief WiFiÁ¬½Ó¼ì²é/ÖØÁ¬
+ * @return 0=ÒÑÁ¬½Ó, 1=±¾´Î¸ÕÖØÁ¬³É¹¦, -1=»ñÈ¡Ê§°Ü»òÖØÁ¬Ê§°Ü
  */
 int Service_WiFi_Update(void)
 {
     AT_WiFi_Info_t tmp;
     bool ok = false;
 
-    /* è·å–å¤±è´¥â‰ æ‰çº¿:ä¸¤æ¬¡éƒ½å¤±è´¥åˆ™åªæŠ¥å‘Š, ä¸åŠ¨è¿æ¥çŠ¶æ€ */
+    /* »ñÈ¡Ê§°Ü¡ÙµôÏß:Á½´Î¶¼Ê§°ÜÔòÖ»±¨¸æ, ²»¶¯Á¬½Ó×´Ì¬ */
     for (int i = 0; i < 2 && !ok; i++)
     {
         memset(&tmp, 0, sizeof(tmp));
-        ok = AT_Get_WiFi_Info(&tmp); // è·å– WiFi ä¿¡æ¯
+        ok = AT_Get_WiFi_Info(&tmp); // »ñÈ¡ WiFi ĞÅÏ¢
         if (!ok)
             vTaskDelay(pdMS_TO_TICKS(200));
     }
@@ -560,7 +560,7 @@ int Service_WiFi_Update(void)
         return -1;
     }
 
-    /* è·å–æˆåŠŸä¸”å·²è¿æ¥ */
+    /* »ñÈ¡³É¹¦ÇÒÒÑÁ¬½Ó */
     if (tmp.connected)
     {
         WiFi_Info_Store(&tmp);
@@ -568,24 +568,24 @@ int Service_WiFi_Update(void)
         return 0;
     }
 
-    /* æœªé…ç½®è¿‡å‡­æ® */
+    /* Î´ÅäÖÃ¹ıÆ¾¾İ */
     if (!WiFi_Config_IsSet())
     {
-        WiFi_Info_Store(&tmp); // connected=0, è®©UIåŒæ­¥åˆ‡åˆ°ç¦»çº¿å›¾æ ‡
+        WiFi_Info_Store(&tmp); // connected=0, ÈÃUIÍ¬²½ÇĞµ½ÀëÏßÍ¼±ê
         DBG_PRINTF("[NET] WiFi offline, no credentials stored\r\n");
         return -1;
     }
 
-    /* è·å–æˆåŠŸä¹Ÿé…ç½®è¿‡å‡­æ®ä½†ç¡®å®æœªè¿æ¥ */
+    /* »ñÈ¡³É¹¦Ò²ÅäÖÃ¹ıÆ¾¾İµ«È·ÊµÎ´Á¬½Ó */
     DBG_PRINTF("[NET] WiFi lost, reconnecting...\r\n");
     if (!AT_Connect_WiFi(g_ssid, g_password, mac))
     {
-        WiFi_Info_Store(&tmp); // connected=0, è®©UIåŒæ­¥åˆ‡åˆ°ç¦»çº¿å›¾æ ‡
+        WiFi_Info_Store(&tmp); // connected=0, ÈÃUIÍ¬²½ÇĞµ½ÀëÏßÍ¼±ê
         DBG_PRINTF("[NET] WiFi reconnect FAILED\r\n");
         return -1;
     }
 
-    /* é‡è¿åé‡è¯•è·å–: ä¸Service_WiFi_Connectä¿æŒä¸€è‡´(æ¨¡ç»„çŠ¶æ€æ›´æ–°æœ‰å»¶è¿Ÿ) */
+    /* ÖØÁ¬ºóÖØÊÔ»ñÈ¡: ÓëService_WiFi_Connect±£³ÖÒ»ÖÂ(Ä£×é×´Ì¬¸üĞÂÓĞÑÓ³Ù) */
     for (int i = 0; i < 3; i++)
     {
         memset(&tmp, 0, sizeof(tmp));
@@ -598,21 +598,21 @@ int Service_WiFi_Update(void)
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
-    WiFi_Info_Store(&tmp); // connected=0, è®©UIåŒæ­¥åˆ‡åˆ°ç¦»çº¿å›¾æ ‡
+    WiFi_Info_Store(&tmp); // connected=0, ÈÃUIÍ¬²½ÇĞµ½ÀëÏßÍ¼±ê
     DBG_PRINTF("[NET] WiFi reconnect FAILED: no valid info\r\n");
 
     return -1;
 }
 
 /**
- * @brief SNTPæ—¶é—´åŒæ­¥
- * @return true åŒæ­¥æˆåŠŸ
+ * @brief SNTPÊ±¼äÍ¬²½
+ * @return true Í¬²½³É¹¦
  */
 bool Service_Time_Sync(void)
 {
     AT_Date_Info_t t;
 
-    /* ESP é…ç½‘åSNTPéœ€æ•°ç§’æ‰çœŸæ­£åŒæ­¥; è½®è¯¢ç›´åˆ°å–åˆ°æœ‰æ•ˆæ—¶é—´(çº¦15s), æœŸé—´å¾—ä¸åˆ°åˆ™é‡è¯• */
+    /* ESP ÅäÍøºóSNTPĞèÊıÃë²ÅÕæÕıÍ¬²½; ÂÖÑ¯Ö±µ½È¡µ½ÓĞĞ§Ê±¼ä(Ô¼15s), ÆÚ¼äµÃ²»µ½ÔòÖØÊÔ */
     for (int i = 0; i < 15; i++)
     {
         if (AT_SNTP_Get_Time(&t))
@@ -632,12 +632,12 @@ bool Service_Time_Sync(void)
 }
 
 /**
- * @brief æŠŠå®šä½ä¸²æŒ‰URLè§„åˆ™ç¼–ç (åªæ”¾è¡Œ unreserved å­—ç¬¦, å…¶ä½™æŒ‰UTF-8é€å­—èŠ‚è½¬%XX)
- * @param in åŸå§‹å®šä½ä¸²
- * @param out ç¼–ç ç»“æœç¼“å†²åŒº
- * @param out_size out çš„å­—èŠ‚æ•°
- * @note  ç”¨æˆ·åœ¨å®šä½ç•Œé¢è¾“å…¥çš„å¯èƒ½æ˜¯ä¸­æ–‡("è¾½å®å¤§è¿")æˆ–å¸¦ç©ºæ ¼("shanxi yulin"),
- *        ç›´æ¥æ‹¼è¿›URLä¼šç ´åHTTPè¯·æ±‚è¡Œ, è¿™é‡Œç»Ÿä¸€ç¼–ç 
+ * @brief °Ñ¶¨Î»´®°´URL¹æÔò±àÂë(Ö»·ÅĞĞ unreserved ×Ö·û, ÆäÓà°´UTF-8Öğ×Ö½Ú×ª%XX)
+ * @param in Ô­Ê¼¶¨Î»´®
+ * @param out ±àÂë½á¹û»º³åÇø
+ * @param out_size out µÄ×Ö½ÚÊı
+ * @note  ÓÃ»§ÔÚ¶¨Î»½çÃæÊäÈëµÄ¿ÉÄÜÊÇÖĞÎÄ("ÁÉÄş´óÁ¬")»ò´ø¿Õ¸ñ("shanxi yulin"),
+ *        Ö±½ÓÆ´½øURL»áÆÆ»µHTTPÇëÇóĞĞ, ÕâÀïÍ³Ò»±àÂë
  */
 static void Weather_URL_Encode(const char *in, char *out, size_t out_size)
 {
@@ -665,8 +665,8 @@ static void Weather_URL_Encode(const char *in, char *out, size_t out_size)
 }
 
 /**
- * @brief ç”¨ç»™å®šå®šä½ä¸²é‡å»ºå¤©æ°”URL
- * @param location å·²ç¼–ç çš„å®šä½ä¸²(åŸå¸‚å / å…¬ç½‘IP / "ip")
+ * @brief ÓÃ¸ø¶¨¶¨Î»´®ÖØ½¨ÌìÆøURL
+ * @param location ÒÑ±àÂëµÄ¶¨Î»´®(³ÇÊĞÃû / ¹«ÍøIP / "ip")
  */
 static void Weather_URL_Set_Location(const char *location)
 {
@@ -674,9 +674,9 @@ static void Weather_URL_Set_Location(const char *location)
 }
 
 /**
- * @brief å›é€€å®šä½: æŒ‰å…¬ç½‘IPé‡å»ºå¤©æ°”URL
- * @note  å…¬ç½‘IPä¼šéšå®½å¸¦é‡æ‹¨/æ¢ç½‘å˜åŒ–, æ‰€ä»¥æ¯æ¬¡å›é€€å‰é‡æ–°è§£æä¸€æ¬¡;
- *        å–ä¸åˆ°IPæ—¶å…ˆæ²¿ç”¨ä¸Šæ¬¡çš„, ä»æœªå–åˆ°è¿‡å°±äº¤ç»™æœåŠ¡ç«¯æŒ‰è¯·æ±‚æ¥æºIPå®šä½
+ * @brief »ØÍË¶¨Î»: °´¹«ÍøIPÖØ½¨ÌìÆøURL
+ * @note  ¹«ÍøIP»áËæ¿í´øÖØ²¦/»»Íø±ä»¯, ËùÒÔÃ¿´Î»ØÍËÇ°ÖØĞÂ½âÎöÒ»´Î;
+ *        È¡²»µ½IPÊ±ÏÈÑØÓÃÉÏ´ÎµÄ, ´ÓÎ´È¡µ½¹ı¾Í½»¸ø·şÎñ¶Ë°´ÇëÇóÀ´Ô´IP¶¨Î»
  */
 static void Weather_Update_Location(void)
 {
@@ -684,7 +684,7 @@ static void Weather_Update_Location(void)
 
     if (!AT_Get_IP(ip))
     {
-        /* å–IPå¤±è´¥ä¸é˜»å¡å¤©æ°”: æœ‰ç¼“å­˜å°±ç”¨ç¼“å­˜, å¦åˆ™é€€åˆ°æœåŠ¡ç«¯æŒ‰æ¥æºIPå®šä½ */
+        /* È¡IPÊ§°Ü²»×èÈûÌìÆø: ÓĞ»º´æ¾ÍÓÃ»º´æ, ·ñÔòÍËµ½·şÎñ¶Ë°´À´Ô´IP¶¨Î» */
         if (weather_ip[0] != '\0')
         {
             DBG_PRINTF("[NET] public IP FAILED, keep location=%s\r\n", weather_ip);
@@ -698,7 +698,7 @@ static void Weather_Update_Location(void)
         return;
     }
 
-    /* å‡ºå£IPæœ‰å˜åŒ–æ‰åˆ·æ–°ç¼“å­˜ */
+    /* ³ö¿ÚIPÓĞ±ä»¯²ÅË¢ĞÂ»º´æ */
     if (strcmp(ip, weather_ip) != 0)
     {
         strncpy(weather_ip, ip, sizeof(weather_ip) - 1);
@@ -706,14 +706,14 @@ static void Weather_Update_Location(void)
         DBG_PRINTF("[NET] public IP = %s\r\n", weather_ip);
     }
 
-    /* æ— æ¡ä»¶é‡å»º: ä¸Šä¸€æ­¥çš„URLé‡Œè£…çš„å¯èƒ½æ˜¯ç”¨æˆ·è¾“å…¥çš„çœå¸‚ */
+    /* ÎŞÌõ¼şÖØ½¨: ÉÏÒ»²½µÄURLÀï×°µÄ¿ÉÄÜÊÇÓÃ»§ÊäÈëµÄÊ¡ÊĞ */
     Weather_URL_Set_Location(weather_ip);
 }
 
 /**
- * @brief ç”¨å½“å‰ weather_url å–ä¸€æ¬¡å¤©æ°”å¹¶è§£æ
- * @param info è§£æç»“æœè¾“å‡º
- * @return true æˆåŠŸ
+ * @brief ÓÃµ±Ç° weather_url È¡Ò»´ÎÌìÆø²¢½âÎö
+ * @param info ½âÎö½á¹ûÊä³ö
+ * @return true ³É¹¦
  */
 static bool Weather_Fetch(AT_Weather_Info_t *info)
 {
@@ -734,25 +734,25 @@ static bool Weather_Fetch(AT_Weather_Info_t *info)
 }
 
 /**
- * @brief å¤©æ°”æ›´æ–°(æ¯1h)
- * @note  å®šä½ä¼˜å…ˆçº§: å®šä½ç•Œé¢è¾“å…¥çš„"(çœ+)å¸‚" > ç½‘ç»œIPã€‚
- *        ç”¨æˆ·è¾“å…¥çš„å®šä½å–ä¸åˆ°æ•°æ®(åŸå¸‚åå†™é”™ç­‰, è¡¨ç°ä¸ºå“åº”é‡Œæ²¡æœ‰ results)æ—¶,
- *        è‡ªåŠ¨å›é€€åˆ°ç½‘ç»œIPå†å–ä¸€æ¬¡, ä¿è¯ç•Œé¢ä¸Šå§‹ç»ˆæœ‰å¤©æ°”å¯æ˜¾ç¤º
+ * @brief ÌìÆø¸üĞÂ(Ã¿1h)
+ * @note  ¶¨Î»ÓÅÏÈ¼¶: ¶¨Î»½çÃæÊäÈëµÄ"(Ê¡+)ÊĞ" > ÍøÂçIP¡£
+ *        ÓÃ»§ÊäÈëµÄ¶¨Î»È¡²»µ½Êı¾İ(³ÇÊĞÃûĞ´´íµÈ, ±íÏÖÎªÏìÓ¦ÀïÃ»ÓĞ results)Ê±,
+ *        ×Ô¶¯»ØÍËµ½ÍøÂçIPÔÙÈ¡Ò»´Î, ±£Ö¤½çÃæÉÏÊ¼ÖÕÓĞÌìÆø¿ÉÏÔÊ¾
  */
 bool Service_Weather_Update(void)
 {
     AT_Weather_Info_t tmp;
     char location[LOCATION_MAX_LEN + 1U] = {0};
-    char encoded[LOCATION_MAX_LEN * 3U + 1U]; // æ¯å­—èŠ‚æœ€åç¼–ç æˆ3å­—ç¬¦
+    char encoded[LOCATION_MAX_LEN * 3U + 1U]; // Ã¿×Ö½Ú×î»µ±àÂë³É3×Ö·û
     bool ok = false;
 
-    /* ä¸´ç•ŒåŒºå†…å–ä¸€ä»½å®šä½ä¿¡æ¯: uiTask éšæ—¶å¯èƒ½æ”¹å®ƒ */
+    /* ÁÙ½çÇøÄÚÈ¡Ò»·İ¶¨Î»ĞÅÏ¢: uiTask ËæÊ±¿ÉÄÜ¸ÄËü */
     taskENTER_CRITICAL();
     strncpy(location, g_location, sizeof(location) - 1U);
     location[sizeof(location) - 1U] = '\0';
     taskEXIT_CRITICAL();
 
-    /* ä¼˜å…ˆç”¨ç”¨æˆ·è¾“å…¥çš„å®šä½ */
+    /* ÓÅÏÈÓÃÓÃ»§ÊäÈëµÄ¶¨Î» */
     if (location[0] != '\0')
     {
         Weather_URL_Encode(location, encoded, sizeof(encoded));
@@ -764,7 +764,7 @@ bool Service_Weather_Update(void)
             DBG_PRINTF("[NET] user location FAILED, fallback to network IP\r\n");
     }
 
-    /* å›é€€ç½‘ç»œIPå®šä½(æœªè¾“å…¥å®šä½æ—¶ä¹Ÿèµ°è¿™é‡Œ) */
+    /* »ØÍËÍøÂçIP¶¨Î»(Î´ÊäÈë¶¨Î»Ê±Ò²×ßÕâÀï) */
     if (!ok)
     {
         Weather_Update_Location();
@@ -775,7 +775,7 @@ bool Service_Weather_Update(void)
         return false;
 
     taskENTER_CRITICAL();
-    weather_info = tmp; // ä¸€æ¬¡æ€§æ•´ä½“æ›¿æ¢, é¿å…uiè¯»åˆ°åŠå†™çŠ¶æ€
+    weather_info = tmp; // Ò»´ÎĞÔÕûÌåÌæ»», ±ÜÃâui¶Áµ½°ëĞ´×´Ì¬
     taskEXIT_CRITICAL();
 
     DBG_PRINTF("[NET] Weather OK: %s, code=%d, temp=%.1f\r\n",
@@ -785,15 +785,15 @@ bool Service_Weather_Update(void)
 }
 
 // /**
-//  * @brief æŒ‰GPSç»çº¬åº¦åæŸ¥çœ/å¸‚(é«˜å¾·é€†åœ°ç†ç¼–ç )
-//  * @param latitude  çº¬åº¦(åè¿›åˆ¶åº¦, å—çº¬ä¸ºè´Ÿ)
-//  * @param longitude ç»åº¦(åè¿›åˆ¶åº¦, è¥¿ç»ä¸ºè´Ÿ)
-//  * @return true æˆåŠŸ
-//  * @note  **å½“å‰åº”ç”¨æœªæ¥å…¥** â€”â€” ç•Œé¢ä¸Šçš„åŸå¸‚åæ”¹ç”±å¤©æ°”æ¥å£æŒ‰å…¬ç½‘IPå®šä½æä¾›
-//  *        (weather_info.city), æ‰€ä»¥è¿™é‡Œæ²¡æœ‰ä»»ä½•è°ƒç”¨è€…ã€‚æ¥å£ä¸å®ç°ä¿ç•™, å°†æ¥
-//  *        è¦åš"æŒ‰å®é™…ä½ç½®æ˜¾ç¤ºçœå¸‚"æ—¶, åœ¨ netTask é‡Œè°ƒå®ƒå³å¯(è§ 4.13)ã€‚
-//  *        è°ƒç”¨æ–¹çº¦å®š: å¤±è´¥æ—¶æœ¬å‡½æ•°**ä¸æ¸…ç©º** location_info, ç•Œé¢å¯ç»§ç»­æ˜¾ç¤ºä¸Šä¸€æ¬¡
-//  *        çš„ç»“æœ, é¿å…ä¿¡å·çŸ­æš‚ä¸¢å¤±å°±æŠŠé¡¶éƒ¨æ¡é—ªæˆç©ºç™½ã€‚
+//  * @brief °´GPS¾­Î³¶È·´²éÊ¡/ÊĞ(¸ßµÂÄæµØÀí±àÂë)
+//  * @param latitude  Î³¶È(Ê®½øÖÆ¶È, ÄÏÎ³Îª¸º)
+//  * @param longitude ¾­¶È(Ê®½øÖÆ¶È, Î÷¾­Îª¸º)
+//  * @return true ³É¹¦
+//  * @note  **µ±Ç°Ó¦ÓÃÎ´½ÓÈë** ¡ª¡ª ½çÃæÉÏµÄ³ÇÊĞÃû¸ÄÓÉÌìÆø½Ó¿Ú°´¹«ÍøIP¶¨Î»Ìá¹©
+//  *        (weather_info.city), ËùÒÔÕâÀïÃ»ÓĞÈÎºÎµ÷ÓÃÕß¡£½Ó¿ÚÓëÊµÏÖ±£Áô, ½«À´
+//  *        Òª×ö"°´Êµ¼ÊÎ»ÖÃÏÔÊ¾Ê¡ÊĞ"Ê±, ÔÚ netTask Àïµ÷Ëü¼´¿É(¼û 4.13)¡£
+//  *        µ÷ÓÃ·½Ô¼¶¨: Ê§°ÜÊ±±¾º¯Êı**²»Çå¿Õ** location_info, ½çÃæ¿É¼ÌĞøÏÔÊ¾ÉÏÒ»´Î
+//  *        µÄ½á¹û, ±ÜÃâĞÅºÅ¶ÌÔİ¶ªÊ§¾Í°Ñ¶¥²¿ÌõÉÁ³É¿Õ°×¡£
 //  */
 // bool Service_Location_Update(float latitude, float longitude)
 // {
@@ -806,17 +806,17 @@ bool Service_Weather_Update(void)
 //     }
 
 //     taskENTER_CRITICAL();
-//     location_info = tmp; // ä¸€æ¬¡æ€§æ•´ä½“æ›¿æ¢, é¿å…uiè¯»åˆ°åŠå†™çŠ¶æ€
+//     location_info = tmp; // Ò»´ÎĞÔÕûÌåÌæ»», ±ÜÃâui¶Áµ½°ëĞ´×´Ì¬
 //     taskEXIT_CRITICAL();
 
-//     /* æ‰“å°çš„æ˜¯æ¥å£è¿”å›çš„UTF-8åŸæ–‡, è°ƒè¯•ç»ˆç«¯éœ€æŒ‰UTF-8æ˜¾ç¤º */
+//     /* ´òÓ¡µÄÊÇ½Ó¿Ú·µ»ØµÄUTF-8Ô­ÎÄ, µ÷ÊÔÖÕ¶ËĞè°´UTF-8ÏÔÊ¾ */
 //     DBG_PRINTF("[NET] Location OK: %s%s\r\n", location_info.province, location_info.city);
 //     return true;
 // }
 
 /**
- * @brief æˆ¿é—´æ¸©æ¹¿åº¦æ›´æ–°(æ¯20min, DHT22)
- * @return true æˆåŠŸ
+ * @brief ·¿¼äÎÂÊª¶È¸üĞÂ(Ã¿20min, DHT22)
+ * @return true ³É¹¦
  */
 bool Service_Room_Update(void)
 {

@@ -19,7 +19,7 @@ void ui_event_Keyboard2(lv_event_t *e)
 
     if (event_code == LV_EVENT_READY)
     {
-        /* é”®ç›˜ä¸Šçš„"ç¡®è®¤": è¾“å…¥æœ‰æ•ˆæ—¶ç”± Get_LocationInfo() å†…éƒ¨è¯·æ±‚é€€å›ä¸»ç•Œé¢ */
+        /* ¼üÅÌÉÏµÄ"È·ÈÏ": ÊäÈëÓĞĞ§Ê±ÓÉ Get_LocationInfo() ÄÚ²¿ÇëÇóÍË»ØÖ÷½çÃæ */
         Get_LocationInfo(e);
     }
 }
@@ -39,7 +39,7 @@ void ui_event_TextArea4(lv_event_t *e)
     }
     if (event_code == LV_EVENT_READY)
     {
-        /* è½¯é”®ç›˜ä¸Šçš„"å›è½¦"æŠŠ READY å‘ç»™è¾“å…¥æ¡†(è€Œä¸æ˜¯é”®ç›˜å¯¹è±¡), æ‰€ä»¥è¿™é‡Œä¹Ÿè¦æ¥ */
+        /* Èí¼üÅÌÉÏµÄ"»Ø³µ"°Ñ READY ·¢¸øÊäÈë¿ò(¶ø²»ÊÇ¼üÅÌ¶ÔÏó), ËùÒÔÕâÀïÒ²Òª½Ó */
         Get_LocationInfo(e);
     }
 }
@@ -50,7 +50,7 @@ void ui_event_Button2(lv_event_t *e)
 
     if (event_code == LV_EVENT_CLICKED)
     {
-        /* å–æ¶ˆè¾“å…¥: ä¸æäº¤ä»»ä½•å†…å®¹, ç›´æ¥é€€å›ä¸»ç•Œé¢ */
+        /* È¡ÏûÊäÈë: ²»Ìá½»ÈÎºÎÄÚÈİ, Ö±½ÓÍË»ØÖ÷½çÃæ */
         xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
     }
 }
@@ -68,7 +68,7 @@ void ui_location_screen_init(void)
     lv_obj_add_flag(ui_Keyboard2, LV_OBJ_FLAG_HIDDEN); /// Flags
 
     ui_Label4 = lv_label_create(ui_location);
-    lv_obj_set_width(ui_Label4, 230); /* åŸä¸º 170, æ”¾ä¸ä¸‹æ•´è¡Œæç¤ºæ–‡å­— */
+    lv_obj_set_width(ui_Label4, 230); /* Ô­Îª 170, ·Å²»ÏÂÕûĞĞÌáÊ¾ÎÄ×Ö */
     lv_obj_set_height(ui_Label4, 16);
     lv_obj_set_x(ui_Label4, 5);
     lv_obj_set_y(ui_Label4, 5);
@@ -80,7 +80,7 @@ void ui_location_screen_init(void)
     lv_obj_set_x(ui_TextArea4, 5);
     lv_obj_set_y(ui_TextArea4, 24);
     lv_textarea_set_placeholder_text(ui_TextArea4, "e.g. Dalian");
-    /* ä¸ WiFi ç•Œé¢åŒæ ·çš„åŸå› : ä¸å¼€ CLICK_FOCUSABLE å°±ç‚¹ä¸å‡º FOCUSED äº‹ä»¶ */
+    /* Óë WiFi ½çÃæÍ¬ÑùµÄÔ­Òò: ²»¿ª CLICK_FOCUSABLE ¾Íµã²»³ö FOCUSED ÊÂ¼ş */
     lv_obj_add_flag(ui_TextArea4, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_textarea_set_one_line(ui_TextArea4, true);
     lv_textarea_set_max_length(ui_TextArea4, LOCATION_MAX_LEN);
@@ -95,7 +95,7 @@ void ui_location_screen_init(void)
     lv_obj_set_style_bg_color(ui_Button2, lv_color_hex(0x484545), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Button2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    /* å–æ¶ˆé”®ä¸Šæ”¾ä¸€ä¸ª X */
+    /* È¡Ïû¼üÉÏ·ÅÒ»¸ö X */
     lv_obj_t *cancel_label = lv_label_create(ui_Button2);
     lv_label_set_text(cancel_label, "X");
     lv_obj_set_style_text_color(cancel_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);

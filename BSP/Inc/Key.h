@@ -6,26 +6,26 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-/* æŒ‰é”®: PA0, ç¡¬ä»¶æ¶ˆæŠ–, ç©ºé—²ä¸‹æ‹‰(ä½Ž), æŒ‰ä¸‹ä¸ºé«˜ */
+/* °´¼ü: PA0, Ó²¼þÏû¶¶, ¿ÕÏÐÏÂÀ­(µÍ), °´ÏÂÎª¸ß */
 #define KEY_GPIO_PORT               GPIOA
 #define KEY_GPIO_PIN                GPIO_Pin_0
 #define KEY_EXTI_LINE               EXTI_Line0
-#define KEY_EXTI_PORT_SOURCE        EXTI_PortSourceGPIOA // SYSCFG ç«¯å£æº
+#define KEY_EXTI_PORT_SOURCE        EXTI_PortSourceGPIOA // SYSCFG ¶Ë¿ÚÔ´
 #define KEY_EXTI_PIN_SOURCE         EXTI_PinSource0
 #define KEY_EXTI_IRQn               EXTI0_IRQn
 #define KEY_EXTI_IRQHandler         EXTI0_IRQHandler
 
-/* æ‰‹åŠ¿: ç”± RTOS å±‚çš„æŒ‰é”®ä»»åŠ¡è¯†åˆ«åŽäº§ç”Ÿ(æœ¬å±‚åªä¸ŠæŠ¥æŒ‰ä¸‹/æ¾å¼€è¾¹æ²¿) */
+/* ÊÖÊÆ: ÓÉ RTOS ²ãµÄ°´¼üÈÎÎñÊ¶±ðºó²úÉú(±¾²ãÖ»ÉÏ±¨°´ÏÂ/ËÉ¿ª±ßÑØ) */
 typedef enum
 {
     KEY_GESTURE_NONE = 0,
-    KEY_GESTURE_CLICK_1, // å•å‡»
-    KEY_GESTURE_CLICK_2, // åŒå‡»
-    KEY_GESTURE_CLICK_3, // ä¸‰å‡»
-    KEY_GESTURE_LONG,    // é•¿æŒ‰(æŒ‰ä½è¾¾åˆ°é˜ˆå€¼å³è§¦å‘, ä¸ç­‰æ¾å¼€)
+    KEY_GESTURE_CLICK_1, // µ¥»÷
+    KEY_GESTURE_CLICK_2, // Ë«»÷
+    KEY_GESTURE_CLICK_3, // Èý»÷
+    KEY_GESTURE_LONG,    // ³¤°´(°´×¡´ïµ½ãÐÖµ¼´´¥·¢, ²»µÈËÉ¿ª)
 } Key_Gesture_t;
 
-/* ä¸­æ–­å›žè°ƒ(ç”± RTOS å±‚æ³¨å†Œ, ISR å†…è°ƒç”¨): æŒ‰ä¸‹/æ¾å¼€è¾¹æ²¿ */
+/* ÖÐ¶Ï»Øµ÷(ÓÉ RTOS ²ã×¢²á, ISR ÄÚµ÷ÓÃ): °´ÏÂ/ËÉ¿ª±ßÑØ */
 typedef void (*Key_IRQ_Callbacks_t)(void);
 
 void Key_Init(void);

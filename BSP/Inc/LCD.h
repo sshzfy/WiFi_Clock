@@ -13,110 +13,110 @@
 #include "Profiling.h"
 #include "Timer.h"
 
-/* LCD æ˜¾ç¤ºåŒºåŸŸ */
+/* LCD ÏÔÊ¾ÇøÓò */
 #define WIDTH         240
 #define HEIGHT        320
 
-/* LCD  SPI ç«¯å£å®šä¹‰ */
+/* LCD  SPI ¶Ë¿Ú¶¨Òå */
 #define LCD_SPI_PORT        GPIOC
 #define LCD_SCLK_PIN        GPIO_Pin_10
 #define LCD_MISO_PIN        GPIO_Pin_11
 #define LCD_MOSI_PIN        GPIO_Pin_12
 
-/* LCD  GPIO ç«¯å£å®šä¹‰ */
+/* LCD  GPIO ¶Ë¿Ú¶¨Òå */
 #define LCD_PORT                 GPIOE
 #define LCD_CS_PIN               GPIO_Pin_2
 #define LCD_RESET_PIN            GPIO_Pin_3
 #define LCD_DC_PIN               GPIO_Pin_4
 #define LCD_BACKLIGHT_PIN        GPIO_Pin_5
 
-/* LCD  å±€å†…å‚æ•°å®šä¹‰ */
-#define GRAM_DMA_MAX_HALFWORD        65535U // DMA NDTR(16bit)å•æ¬¡æœ€å¤§åŠå­—æ•°
-#define SCRATCH_H_PX                 48     // æœ€å¤§æ¸²æŸ“è¡Œé«˜(å¯¹é½Font_48)
+/* LCD  ¾ÖÄÚ²ÎÊý¶¨Òå */
+#define GRAM_DMA_MAX_HALFWORD        65535U // DMA NDTR(16bit)µ¥´Î×î´ó°ë×ÖÊý
+#define SCRATCH_H_PX                 48     // ×î´óäÖÈ¾ÐÐ¸ß(¶ÔÆëFont_48)
 
-/* SPI3 æ—¶é’Ÿ: LCD ç”¨ 21MHz; TSC2046(è§¦æ‘¸)çš„ SCLK ä¸Šé™ 2MHz */
+/* SPI3 Ê±ÖÓ: LCD ÓÃ 21MHz; TSC2046(´¥Ãþ)µÄ SCLK ÉÏÏÞ 2MHz */
 #define LCD_SPI_BR_FAST        SPI_BaudRatePrescaler_2  // 42MHz / 2  = 21MHz
 #define LCD_SPI_BR_SLOW        SPI_BaudRatePrescaler_64 // 42MHz / 64 = 656kHz
 
-/* å›¾ç‰‡æµå¼å‘é€çš„ä¹’ä¹“ç¼“å†² */
-#define PIC_BLOCK_LINES        16                        // æ¯ä¸€å—ç¼“å†²å—è¡Œæ•°
-#define PIC_BLOCK_PIXEL        (WIDTH * PIC_BLOCK_LINES) // æ¯ä¸€å—ç¼“å†²å—åƒç´ æ•°
+/* Í¼Æ¬Á÷Ê½·¢ËÍµÄÆ¹ÅÒ»º³å */
+#define PIC_BLOCK_LINES        16                        // Ã¿Ò»¿é»º³å¿éÐÐÊý
+#define PIC_BLOCK_PIXEL        (WIDTH * PIC_BLOCK_LINES) // Ã¿Ò»¿é»º³å¿éÏñËØÊý
 
-/* é¢œè‰² */
+/* ÑÕÉ« */
 #define COLOR(r, g, b)           ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
 
 #if MULTICOLLOR_SUPPORT == 1
 
-#define COLOR_BLACK               COLOR(0, 0, 0)       // çº¯é»‘
-/* çº¢è‰²ç³» */
-#define COLOR_RED                 COLOR(255, 0, 0)     // çº¯çº¢
-#define COLOR_DARKRED             COLOR(128, 0, 0)     // æ·±çº¢
-#define COLOR_MAROON              COLOR(196, 30, 30)   // æš—çº¢
-#define COLOR_TOMATO              COLOR(255, 80, 0)    // ç•ªèŒ„çº¢
-#define COLOR_ORANGERED           COLOR(255, 69, 0)    // æ©™çº¢
-#define COLOR_MAGENTA             COLOR(255, 0, 255)   // å“çº¢
-#define COLOR_HOTPINK             COLOR(255, 105, 180) // äº®ç²‰çº¢
-#define COLOR_PINK                COLOR(255, 192, 203) // ç²‰çº¢
-#define COLOR_ROSE                COLOR(255, 0, 127)   // çŽ«ç‘°çº¢
-#define COLOR_PURPLERED           COLOR(128, 0, 32)    // ç´«çº¢
-/* æ©™è‰²ç³» */
-#define COLOR_ORANGE              COLOR(255, 165, 0)   // æ©™è‰²
-#define COLOR_DARKORANGE          COLOR(255, 140, 0)   // æš—æ©™
-#define COLOR_GOLD                COLOR(255, 215, 0)   // é‡‘è‰²
-#define COLOR_YELLOW              COLOR(255, 255, 0)   // çº¯é»„
-#define COLOR_LIMEYELLOW          COLOR(255, 255, 100) // æ·¡é»„
-#define COLOR_KHAKI               COLOR(240, 230, 140) // å¡å…¶é»„
-#define COLOR_SANDY               COLOR(210, 180, 140) // æ²™è‰²
-#define COLOR_BROWN               COLOR(165, 42, 42)   // æ£•è‰²
-#define COLOR_SADDLEBROWN         COLOR(139, 69, 19)   // æ·±æ£•è‰²/èµ­çŸ³
-/* ç»¿è‰²ç³» */
-#define COLOR_GREEN               COLOR(0, 255, 0)     // çº¯ç»¿
-#define COLOR_DARKGREEN           COLOR(0, 128, 0)     // æ·±ç»¿
-#define COLOR_FORESTGREEN         COLOR(34, 139, 34)   // æ£®æž—ç»¿
-#define COLOR_LIMEGREEN           COLOR(50, 205, 50)   // äº®ç»¿/çŸ³ç°ç»¿
-#define COLOR_YELLOWGREEN         COLOR(173, 255, 47)  // é»„ç»¿
-#define COLOR_CHARTREUSE          COLOR(127, 255, 0)   // è‰ç»¿
-#define COLOR_OLIVE               COLOR(128, 128, 0)   // æ©„æ¦„ç»¿
-#define COLOR_SEAGREEN            COLOR(46, 139, 87)   // æµ·ç»¿
-#define COLOR_SPRINGGREEN         COLOR(0, 255, 127)   // æ˜¥ç»¿/ç¿ ç»¿
-/* è“è‰²ç³» */
-#define COLOR_BLUE                COLOR(0, 0, 255)     // çº¯è“
-#define COLOR_NAVY                COLOR(0, 0, 128)     // æµ·å†›è“
-#define COLOR_DARKBLUE            COLOR(0, 0, 139)     // æ·±è“
-#define COLOR_ROYALBLUE           COLOR(65, 105, 225)  // çš‡å®¶è“
-#define COLOR_DODGERBLUE          COLOR(30, 144, 255)  // é“å¥‡è“/äº®è“
-#define COLOR_SKYBLUE             COLOR(135, 206, 235) // å¤©è“
-#define COLOR_DEEPSKYBLUE         COLOR(0, 191, 255)   // æ·±å¤©è“
-#define COLOR_CYAN                COLOR(0, 255, 255)   // é’è‰²
-#define COLOR_DARKCYAN            COLOR(0, 139, 139)   // æ·±é’
-#define COLOR_LIGHTCYAN           COLOR(224, 255, 255) // æµ…é’
-#define COLOR_AZURE               COLOR(240, 255, 255) // è”šè“
-/* ç´«è‰²ç³» */
-#define COLOR_PURPLE              COLOR(128, 0, 128)   // ç´«è‰²
-#define COLOR_VIOLET              COLOR(238, 130, 238) // ç´«ç½—å…°
-#define COLOR_ORCHID              COLOR(218, 112, 214) // å…°èŠ±ç´«
-#define COLOR_MEDIUMPURPLE        COLOR(147, 112, 219) // ä¸­ç´«
-#define COLOR_INDIGO              COLOR(75, 0, 130)    // é›è“
-#define COLOR_DARKVIOLET          COLOR(148, 0, 211)   // æ·±ç´«ç½—å…°
-#define COLOR_LAVENDER            COLOR(230, 230, 250) // è–°è¡£è‰æ·¡ç´«
-/* ç™½è‰²ç³» */
-#define COLOR_WHITE               COLOR(255, 255, 255) // çº¯ç™½
-#define COLOR_SNOW                COLOR(255, 250, 250) // é›ªç™½
-#define COLOR_GAINSBORO           COLOR(220, 220, 220) // äº®ç°
-#define COLOR_LIGHTGRAY           COLOR(192, 192, 192) // æµ…ç°
-#define COLOR_GRAY                COLOR(128, 128, 128) // ä¸­ç°
-#define COLOR_DIMGRAY             COLOR(105, 105, 105) // æš—ç°
-#define COLOR_DARKGRAY            COLOR(64, 64, 64)    // æ·±ç°
-#define COLOR_SLATEGRAY           COLOR(112, 128, 144) // è“ç°
-#define COLOR_WARMSKIN            COLOR(255, 225, 200) // æš–è‚¤è‰²
-#define COLOR_BEIGE               COLOR(245, 245, 220) // ç±³è‰²/æ²™è‰²
+#define COLOR_BLACK               COLOR(0, 0, 0)       // ´¿ºÚ
+/* ºìÉ«Ïµ */
+#define COLOR_RED                 COLOR(255, 0, 0)     // ´¿ºì
+#define COLOR_DARKRED             COLOR(128, 0, 0)     // Éîºì
+#define COLOR_MAROON              COLOR(196, 30, 30)   // °µºì
+#define COLOR_TOMATO              COLOR(255, 80, 0)    // ·¬ÇÑºì
+#define COLOR_ORANGERED           COLOR(255, 69, 0)    // ³Èºì
+#define COLOR_MAGENTA             COLOR(255, 0, 255)   // Æ·ºì
+#define COLOR_HOTPINK             COLOR(255, 105, 180) // ÁÁ·Ûºì
+#define COLOR_PINK                COLOR(255, 192, 203) // ·Ûºì
+#define COLOR_ROSE                COLOR(255, 0, 127)   // Ãµ¹åºì
+#define COLOR_PURPLERED           COLOR(128, 0, 32)    // ×Ïºì
+/* ³ÈÉ«Ïµ */
+#define COLOR_ORANGE              COLOR(255, 165, 0)   // ³ÈÉ«
+#define COLOR_DARKORANGE          COLOR(255, 140, 0)   // °µ³È
+#define COLOR_GOLD                COLOR(255, 215, 0)   // ½ðÉ«
+#define COLOR_YELLOW              COLOR(255, 255, 0)   // ´¿»Æ
+#define COLOR_LIMEYELLOW          COLOR(255, 255, 100) // µ­»Æ
+#define COLOR_KHAKI               COLOR(240, 230, 140) // ¿¨Æä»Æ
+#define COLOR_SANDY               COLOR(210, 180, 140) // É³É«
+#define COLOR_BROWN               COLOR(165, 42, 42)   // ×ØÉ«
+#define COLOR_SADDLEBROWN         COLOR(139, 69, 19)   // Éî×ØÉ«/ô÷Ê¯
+/* ÂÌÉ«Ïµ */
+#define COLOR_GREEN               COLOR(0, 255, 0)     // ´¿ÂÌ
+#define COLOR_DARKGREEN           COLOR(0, 128, 0)     // ÉîÂÌ
+#define COLOR_FORESTGREEN         COLOR(34, 139, 34)   // É­ÁÖÂÌ
+#define COLOR_LIMEGREEN           COLOR(50, 205, 50)   // ÁÁÂÌ/Ê¯»ÒÂÌ
+#define COLOR_YELLOWGREEN         COLOR(173, 255, 47)  // »ÆÂÌ
+#define COLOR_CHARTREUSE          COLOR(127, 255, 0)   // ²ÝÂÌ
+#define COLOR_OLIVE               COLOR(128, 128, 0)   // éÏé­ÂÌ
+#define COLOR_SEAGREEN            COLOR(46, 139, 87)   // º£ÂÌ
+#define COLOR_SPRINGGREEN         COLOR(0, 255, 127)   // ´ºÂÌ/´äÂÌ
+/* À¶É«Ïµ */
+#define COLOR_BLUE                COLOR(0, 0, 255)     // ´¿À¶
+#define COLOR_NAVY                COLOR(0, 0, 128)     // º£¾üÀ¶
+#define COLOR_DARKBLUE            COLOR(0, 0, 139)     // ÉîÀ¶
+#define COLOR_ROYALBLUE           COLOR(65, 105, 225)  // »Ê¼ÒÀ¶
+#define COLOR_DODGERBLUE          COLOR(30, 144, 255)  // µÀÆæÀ¶/ÁÁÀ¶
+#define COLOR_SKYBLUE             COLOR(135, 206, 235) // ÌìÀ¶
+#define COLOR_DEEPSKYBLUE         COLOR(0, 191, 255)   // ÉîÌìÀ¶
+#define COLOR_CYAN                COLOR(0, 255, 255)   // ÇàÉ«
+#define COLOR_DARKCYAN            COLOR(0, 139, 139)   // ÉîÇà
+#define COLOR_LIGHTCYAN           COLOR(224, 255, 255) // Ç³Çà
+#define COLOR_AZURE               COLOR(240, 255, 255) // ÎµÀ¶
+/* ×ÏÉ«Ïµ */
+#define COLOR_PURPLE              COLOR(128, 0, 128)   // ×ÏÉ«
+#define COLOR_VIOLET              COLOR(238, 130, 238) // ×ÏÂÞÀ¼
+#define COLOR_ORCHID              COLOR(218, 112, 214) // À¼»¨×Ï
+#define COLOR_MEDIUMPURPLE        COLOR(147, 112, 219) // ÖÐ×Ï
+#define COLOR_INDIGO              COLOR(75, 0, 130)    // µåÀ¶
+#define COLOR_DARKVIOLET          COLOR(148, 0, 211)   // Éî×ÏÂÞÀ¼
+#define COLOR_LAVENDER            COLOR(230, 230, 250) // Þ¹ÒÂ²Ýµ­×Ï
+/* °×É«Ïµ */
+#define COLOR_WHITE               COLOR(255, 255, 255) // ´¿°×
+#define COLOR_SNOW                COLOR(255, 250, 250) // Ñ©°×
+#define COLOR_GAINSBORO           COLOR(220, 220, 220) // ÁÁ»Ò
+#define COLOR_LIGHTGRAY           COLOR(192, 192, 192) // Ç³»Ò
+#define COLOR_GRAY                COLOR(128, 128, 128) // ÖÐ»Ò
+#define COLOR_DIMGRAY             COLOR(105, 105, 105) // °µ»Ò
+#define COLOR_DARKGRAY            COLOR(64, 64, 64)    // Éî»Ò
+#define COLOR_SLATEGRAY           COLOR(112, 128, 144) // À¶»Ò
+#define COLOR_WARMSKIN            COLOR(255, 225, 200) // Å¯·ôÉ«
+#define COLOR_BEIGE               COLOR(245, 245, 220) // Ã×É«/É³É«
 
 #elif MULTICOLLOR_SUPPORT == 0
-#define COLOR_BLACK               COLOR(0, 0, 0)       // çº¯é»‘
-#define COLOR_WHITE               COLOR(255, 255, 255) // çº¯ç™½
-#define COLOR_GRAY                COLOR(128, 128, 128) // ä¸­ç°
-#define COLOR_DEEPSKYBLUE         COLOR(0, 191, 255)   // æ·±å¤©è“
-#define COLOR_LAVENDER            COLOR(230, 230, 250) // è–°è¡£è‰æ·¡ç´«
+#define COLOR_BLACK               COLOR(0, 0, 0)       // ´¿ºÚ
+#define COLOR_WHITE               COLOR(255, 255, 255) // ´¿°×
+#define COLOR_GRAY                COLOR(128, 128, 128) // ÖÐ»Ò
+#define COLOR_DEEPSKYBLUE         COLOR(0, 191, 255)   // ÉîÌìÀ¶
+#define COLOR_LAVENDER            COLOR(230, 230, 250) // Þ¹ÒÂ²Ýµ­×Ï
 #endif
 
 void LCD_Init(void);
@@ -128,15 +128,15 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uin
 void LCD_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image);
 void LCD_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_bc);
 
-/* æ•´å—åƒç´ å†™å…¥: æŠŠä¸€æ®µ RGB565 æ•°æ®(æŒ‰è¡Œè¿žç»­, å·¦ä¸Šåˆ°å³ä¸‹)åˆ·åˆ°çŸ©å½¢åŒºåŸŸã€‚
- * ä¾›å›¾å½¢åº“(LVGL)çš„ flush å›žè°ƒä½¿ç”¨, ä¸Ž LCD_Fill_Color èµ°åŒä¸€æ¡çª—å£+DMA é€šè·¯,
- * å› æ­¤å­—èŠ‚åº(é«˜å­—èŠ‚å…ˆå‘)ä¸Žå±å¹•ä¸Šçš„è£¸ç»˜å†…å®¹å®Œå…¨ä¸€è‡´ã€‚ */
+/* Õû¿éÏñËØÐ´Èë: °ÑÒ»¶Î RGB565 Êý¾Ý(°´ÐÐÁ¬Ðø, ×óÉÏµ½ÓÒÏÂ)Ë¢µ½¾ØÐÎÇøÓò¡£
+ * ¹©Í¼ÐÎ¿â(LVGL)µÄ flush »Øµ÷Ê¹ÓÃ, Óë LCD_Fill_Color ×ßÍ¬Ò»Ìõ´°¿Ú+DMA Í¨Â·,
+ * Òò´Ë×Ö½ÚÐò(¸ß×Ö½ÚÏÈ·¢)ÓëÆÁÄ»ÉÏµÄÂã»æÄÚÈÝÍêÈ«Ò»ÖÂ¡£ */
 void LCD_Draw_Pixels(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, const uint16_t *pixels);
 
-/* å€Ÿç”¨æ¨¡å—å†…éƒ¨çš„æ•´è¡Œæ¸²æŸ“ç¼“å†²(240 x 48 åƒç´ , ä½äºŽ SRAMã€4 å­—èŠ‚å¯¹é½)ã€‚
- * å›¾å½¢åº“å¯ä»¥ç›´æŽ¥æ‹¿å®ƒå½“ç»˜åˆ¶ç¼“å†², çœä¸‹ä¸€å—åŒç­‰å¤§å°çš„é™æ€å†…å­˜ â€”â€”
- * æœ¬å·¥ç¨‹ä¸» SRAM åªå‰©çº¦ 2KB, å¦å¼€ç¼“å†²ä¼šç›´æŽ¥çˆ†æŽ‰ã€‚
- * çº¦å®š: è°ƒç”¨æ–¹åªåœ¨åˆ·å±æœŸé—´ä½¿ç”¨å®ƒ, ä¸èƒ½ä¸Ž LCD_Write_String() å¹¶å‘ã€‚ */
+/* ½èÓÃÄ£¿éÄÚ²¿µÄÕûÐÐäÖÈ¾»º³å(240 x 48 ÏñËØ, Î»ÓÚ SRAM¡¢4 ×Ö½Ú¶ÔÆë)¡£
+ * Í¼ÐÎ¿â¿ÉÒÔÖ±½ÓÄÃËüµ±»æÖÆ»º³å, Ê¡ÏÂÒ»¿éÍ¬µÈ´óÐ¡µÄ¾²Ì¬ÄÚ´æ ¡ª¡ª
+ * ±¾¹¤³ÌÖ÷ SRAM Ö»Ê£Ô¼ 2KB, Áí¿ª»º³å»áÖ±½Ó±¬µô¡£
+ * Ô¼¶¨: µ÷ÓÃ·½Ö»ÔÚË¢ÆÁÆÚ¼äÊ¹ÓÃËü, ²»ÄÜÓë LCD_Write_String() ²¢·¢¡£ */
 uint16_t *LCD_RenderBuffer(uint32_t *capacity_px);
 
 

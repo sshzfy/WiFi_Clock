@@ -1,13 +1,13 @@
 #include "Key.h"
 
-/* ================= Key ç”¨äºé€šçŸ¥ä»»åŠ¡ =================
- * æŒ‰é”®å·²æœ‰ç¡¬ä»¶æ¶ˆæŠ–
- * æŒ‰ä¸‹ä¸æ¾å¼€å‡ä¸ºè¾¹æ²¿è§¦å‘, æ‰‹åŠ¿(çŸ­æŒ‰/é•¿æŒ‰/è¿å‡»)ç”± RTOS å±‚æŒ‰é”®ä»»åŠ¡è¯†åˆ«
+/* ================= Key ÓÃÓÚÍ¨ÖªÈÎÎñ =================
+ * °´¼üÒÑÓĞÓ²¼şÏû¶¶
+ * °´ÏÂÓëËÉ¿ª¾ùÎª±ßÑØ´¥·¢, ÊÖÊÆ(¶Ì°´/³¤°´/Á¬»÷)ÓÉ RTOS ²ã°´¼üÈÎÎñÊ¶±ğ
  * ================================== */
 
-static Key_IRQ_Callbacks_t s_irq_cb = NULL; // ä»»åŠ¡å›è°ƒå‡½æ•°æŒ‡é’ˆ
+static Key_IRQ_Callbacks_t s_irq_cb = NULL; // ÈÎÎñ»Øµ÷º¯ÊıÖ¸Õë
 
-/* ================ static å‡½æ•° ================ */
+/* ================ static º¯Êı ================ */
 static inline void Key_Notify(void);
 static void Key_GPIO_Init(void);
 static void Key_NVIC_Init(void);
@@ -26,15 +26,15 @@ static void Key_GPIO_Init(void)
     GPIO_InitStruct.GPIO_Pin = KEY_GPIO_PIN;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_DOWN; // ä¸‹æ‹‰: ç©ºé—²ä¸ºä½, æŒ‰ä¸‹ä¸ºé«˜
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_DOWN; // ÏÂÀ­: ¿ÕÏĞÎªµÍ, °´ÏÂÎª¸ß
     GPIO_Init(KEY_GPIO_PORT, &GPIO_InitStruct);
 }
 
 static void Key_NVIC_Init(void)
 {
     NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = KEY_EXTI_IRQn;       // NVIC é€šé“
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // =configMAX_SYSCALL: å…è®¸FromISR
+    NVIC_InitStruct.NVIC_IRQChannel = KEY_EXTI_IRQn;       // NVIC Í¨µÀ
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // =configMAX_SYSCALL: ÔÊĞíFromISR
     NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
@@ -44,16 +44,16 @@ static void Key_EXTI_Init(void)
 {
     EXTI_InitTypeDef EXTI_InitStruct;
     EXTI_StructInit(&EXTI_InitStruct);
-    /* ç«¯å£æºå¿…é¡»ç”¨ EXTI_PortSourceGPIOx(NVIC é€šé“å¦è¡Œé…ç½®) */
+    /* ¶Ë¿ÚÔ´±ØĞëÓÃ EXTI_PortSourceGPIOx(NVIC Í¨µÀÁíĞĞÅäÖÃ) */
     SYSCFG_EXTILineConfig(KEY_EXTI_PORT_SOURCE, KEY_EXTI_PIN_SOURCE);
     EXTI_InitStruct.EXTI_Line = KEY_EXTI_LINE;
-    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;            // ä¸­æ–­æ¨¡å¼
-    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling; // æŒ‰ä¸‹/æ¾å¼€éƒ½é€šçŸ¥
+    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;            // ÖĞ¶ÏÄ£Ê½
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling; // °´ÏÂ/ËÉ¿ª¶¼Í¨Öª
     EXTI_InitStruct.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStruct);
 }
 
-/* ================ publicå‡½æ•° ================ */
+/* ================ publicº¯Êı ================ */
 void Key_Init(void)
 {
     Key_GPIO_Init();
@@ -66,8 +66,8 @@ void Key_RegisterCallback(Key_IRQ_Callbacks_t callback)
     s_irq_cb = callback;
 }
 
-/** @brief è¯»å–æŒ‰é”®å½“å‰ç”µå¹³
- *  @return true=æŒ‰ä¸‹, false=æ¾å¼€
+/** @brief ¶ÁÈ¡°´¼üµ±Ç°µçÆ½
+ *  @return true=°´ÏÂ, false=ËÉ¿ª
  */
 bool Key_IsPressed(void)
 {
@@ -79,7 +79,7 @@ void KEY_EXTI_IRQHandler(void)
     if (EXTI_GetITStatus(KEY_EXTI_LINE) == SET)
     {
         EXTI_ClearITPendingBit(KEY_EXTI_LINE);
-        /* ISR å†…åªé€šçŸ¥ä»»åŠ¡, æ‰‹åŠ¿è¯†åˆ«åœ¨ä»»åŠ¡ä¸Šä¸‹æ–‡å®Œæˆ */
+        /* ISR ÄÚÖ»Í¨ÖªÈÎÎñ, ÊÖÊÆÊ¶±ğÔÚÈÎÎñÉÏÏÂÎÄÍê³É */
         Key_Notify();
     }
 }

@@ -2,55 +2,55 @@
 
 void Board_Peripheral_Init(void)
 {
-    /* 使能GPIOA时钟,用于调试输出
-     * 使能GPIOB时钟,备用引脚
-     * 使能GPIOC时钟,LCD,LED测试
-     * 使能GPIOE时钟,LCD,DHT22 */
+    /* ʹ��GPIOAʱ��,���ڵ������
+     * ʹ��GPIOBʱ��,��������
+     * ʹ��GPIOCʱ��,LCD,LED����
+     * ʹ��GPIOEʱ��,LCD,DHT22 */
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);
-    /* 使能USART1时钟,传输AT命令
-     * 使能USART2时钟,用于调试输出
-     * 使能USART3时钟,用于ATGM336H定位模块(未使用)  */
+    /* ʹ��USART1ʱ��,����AT����
+     * ʹ��USART2ʱ��,���ڵ������
+     * ʹ��USART3ʱ��,����ATGM336H��λģ��(δʹ��)  */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
-    /* 使能SPI3时钟,用于与LCD通信
-     * 使能SPI1时钟,用于与W25Q64通信 */
+    /* ʹ��SPI3ʱ��,������LCDͨ��
+     * ʹ��SPI1ʱ��,������W25Q64ͨ�� */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-    /* 使能DMA1时钟,用于SPI3/USART2 DMA传输 */
+    /* ʹ��DMA1ʱ��,����SPI3/USART2 DMA���� */
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
-    /* 使能TIM5时钟,用于替代RTC时间基准,延迟函数 */
+    /* ʹ��TIM5ʱ��,�������RTCʱ���׼,�ӳٺ��� */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
-    /* 使能ADC1时钟,用于光敏电阻 */
+    /* ʹ��ADC1ʱ��,���ڹ������� */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-    /* 使能CCM RAM: LVGL的24KB内存池就放在 0x10000000 */
+    /* ʹ��CCM RAM: LVGL��24KB�ڴ�ؾͷ��� 0x10000000 */
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_CCMDATARAMEN, ENABLE);
-    /* 使能SYSCFG时钟,用于外部中断配置 */
+    /* ʹ��SYSCFGʱ��,�����ⲿ�ж����� */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 }
 
 void Board_Init(void)
 {
-    // /* 测试LED,正常烧录时应亮起 */
+    // /* ����LED,������¼ʱӦ���� */
     // Test();
-    /* 初始化TIM5,用于RTC时间基准 */
+    /* ��ʼ��TIM5,����RTCʱ���׼ */
     TIM5_Init();
-    /* 初始化USART2: 先开调试口, 后面的初始化日志才看得到 */
+    /* ��ʼ��USART2: �ȿ����Կ�, ����ĳ�ʼ����־�ſ��õ� */
     Usart2_Debug_Init();
-    /* 使能DWT周期计数器, 用于测量渲染耗时 */
+    /* ʹ��DWT���ڼ�����, ���ڲ�����Ⱦ��ʱ */
     Prof_Init();
-    /* 初始化触摸屏: SPI3 由 LCD_Init 配好, 校准参数从 /data/touch_cal.bin 读 */
+    /* ��ʼ��������: SPI3 �� LCD_Init ���, У׼������ /data/touch_cal.bin �� */
     (void)Touch_Init();
-    // /* 抢在 LCD 初始化之前把触摸 CS 拉高: LCD_Init() 会往 SPI3 上打大量 ST7789 初始化
-    //  * 时钟, 此时触摸 CS 若还是复位后的浮空输入, XPT2046 会把这些命令当成自己的收进去,
-    //  * 状态机错位后只有掉电才能恢复(见 Touch_Park 的说明) */
+    // /* ���� LCD ��ʼ��֮ǰ�Ѵ��� CS ����: LCD_Init() ���� SPI3 �ϴ���� ST7789 ��ʼ��
+    //  * ʱ��, ��ʱ���� CS �����Ǹ�λ��ĸ�������, XPT2046 �����Щ������Լ����ս�ȥ,
+    //  * ״̬����λ��ֻ�е�����ָܻ�(�� Touch_Park ��˵��) */
     // Touch_Park();
-    /* 初始化LCD, 并分配图片乒乓缓冲 */
+    /* ��ʼ��LCD, ������ͼƬƹ�һ��� */
     LCD_Init();
-    /* 初始化资源层: W25Q64 + littlefs, 字库/图片只读 + 运行数据读写 */
+    /* ��ʼ����Դ��: W25Q64 + littlefs, �ֿ�/ͼƬֻ�� + �������ݶ�д */
     Asset_Init();
     OLED_Init();
     OLED_Display_Off();

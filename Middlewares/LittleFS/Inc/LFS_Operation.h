@@ -6,9 +6,9 @@
 #include "Image.h"
 #include "Font.h"
 
-#define IMAGE_BYTES_PER_PIXEL        2U              // æ¯åƒç´  2 å­—èŠ‚
-#define IMAGE_PIXEL_MAX              (1024U * 1024U) // å…è®¸çš„æœ€å¤§åƒç´ æ•°(1M åƒç´  = 2MB), ç”¨äºæ‹’ç»ç•¸å½¢æ–‡ä»¶å¤´
-#define HEADER_SIZE                  4U              // å¤´éƒ¨å¤§å°ï¼Œç”¨äºå­˜å‚¨æ–‡ä»¶å¤´ä¿¡æ¯
+#define IMAGE_BYTES_PER_PIXEL        2U              // Ã¿ÏñËØ 2 ×Ö½Ú
+#define IMAGE_PIXEL_MAX              (1024U * 1024U) // ÔÊĞíµÄ×î´óÏñËØÊı(1M ÏñËØ = 2MB), ÓÃÓÚ¾Ü¾ø»ûĞÎÎÄ¼şÍ·
+#define HEADER_SIZE                  4U              // Í·²¿´óĞ¡£¬ÓÃÓÚ´æ´¢ÎÄ¼şÍ·ĞÅÏ¢
 
 int SaveImage(const char *filename, const uint8_t *data, uint16_t w, uint16_t h);
 int LoadImage(const char *filename, uint16_t *w, uint16_t *h, uint8_t *buf, uint32_t buf_size);

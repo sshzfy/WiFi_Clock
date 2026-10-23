@@ -1,31 +1,31 @@
 #include "UI_Input.h"
 
-/* æ–°å¢å›¾æ ‡æ—¶åªè¦åœ¨è¿™å¼ è¡¨é‡ŒåŠ ä¸€è¡Œ, ä¸ç”¨æ”¹å‘½ä¸­åˆ¤æ–­ */
+/* ĞÂÔöÍ¼±êÊ±Ö»ÒªÔÚÕâÕÅ±íÀï¼ÓÒ»ĞĞ, ²»ÓÃ¸ÄÃüÖĞÅĞ¶Ï */
 static const UI_Hotspot_t s_hotspots[] = {
     {TOUCH_X_WIFI, TOUCH_Y_WIFI, TOUCH_SIZE_WIFI, EV_WIFI_KB},
     {TOUCH_X_LOC, TOUCH_Y_LOC, TOUCH_SIZE_LOC, EV_LOCATION_KB},
 };
 
-/* ==================== æ¨¡å—å†…çŠ¶æ€(ä»…uiTaskè®¿é—®) ==================== */
-static bool s_lvgl_ready = false;                 // LVGL æ˜¯å¦å·²åˆå§‹åŒ–(åªåˆå§‹åŒ–ä¸€æ¬¡)
-static uint32_t s_lvgl_tick_ms = 0;               // ä¸Šæ¬¡å–‚ç»™ LVGL å¿ƒè·³çš„æ¯«ç§’æ•°
-static UI_Screen_t s_active_screen = UI_SCR_MAIN; // å½“å‰æ‰“å¼€çš„è¾“å…¥ç•Œé¢
+/* ==================== Ä£¿éÄÚ×´Ì¬(½öuiTask·ÃÎÊ) ==================== */
+static bool s_lvgl_ready = false;                 // LVGL ÊÇ·ñÒÑ³õÊ¼»¯(Ö»³õÊ¼»¯Ò»´Î)
+static uint32_t s_lvgl_tick_ms = 0;               // ÉÏ´ÎÎ¹¸ø LVGL ĞÄÌøµÄºÁÃëÊı
+static UI_Screen_t s_active_screen = UI_SCR_MAIN; // µ±Ç°´ò¿ªµÄÊäÈë½çÃæ
 
-/* ==================== static å‡½æ•° ==================== */
+/* ==================== static º¯Êı ==================== */
 static void UI_Input_LvglInit(void);
 static void UI_Touch_DrawTestPoints(uint16_t x, uint16_t y);
 
-/* ==================== è§¦æ‘¸æ ¡å‡† ==================== */
+/* ==================== ´¥ÃşĞ£×¼ ==================== */
 static void UI_Touch_DrawTestPoints(uint16_t x, uint16_t y)
 {
     LCD_Fill_Color(0U, 0U, WIDTH - 1U, HEIGHT - 1U, COLOR_BLACK);
-    /* æ¨ªçº¿ + ç«–çº¿ç»„æˆåå­— */
+    /* ºáÏß + ÊúÏß×é³ÉÊ®×Ö */
     LCD_Fill_Color((uint16_t)(x - 10U), (uint16_t)(y - 1U), (uint16_t)(x + 10U), (uint16_t)(y + 1U), COLOR_WHITE);
     LCD_Fill_Color((uint16_t)(x - 1U), (uint16_t)(y - 10U), (uint16_t)(x + 1U), (uint16_t)(y + 10U), COLOR_WHITE);
 }
 
-/** @brief è§¦æ‘¸æ ¡å‡†æµ‹è¯•: æ£€æŸ¥è§¦æ‘¸ä¸­æ–­æ˜¯å¦æ­£å¸¸, æ ¡å‡†è§¦æ‘¸å‚æ•°
- *  @note æ ¡å‡†å¤±è´¥æ—¶, ä¼šæç¤ºç”¨æˆ·ç‚¹å‡»5ä¸ªåå­—ç‚¹, æ ¡å‡†æˆåŠŸå, ä¼šä¿å­˜æ ¡å‡†å‚æ•°åˆ°Flash
+/** @brief ´¥ÃşĞ£×¼²âÊÔ: ¼ì²é´¥ÃşÖĞ¶ÏÊÇ·ñÕı³£, Ğ£×¼´¥Ãş²ÎÊı
+ *  @note Ğ£×¼Ê§°ÜÊ±, »áÌáÊ¾ÓÃ»§µã»÷5¸öÊ®×Öµã, Ğ£×¼³É¹¦ºó, »á±£´æĞ£×¼²ÎÊıµ½Flash
  */
 void UI_Input_Calibrate(void)
 {
@@ -40,20 +40,20 @@ void UI_Input_Calibrate(void)
             ;
     }
 
-    /* æ£€æŸ¥è§¦æ‘¸ä¸­æ–­æ˜¯å¦æ­£å¸¸ */
+    /* ¼ì²é´¥ÃşÖĞ¶ÏÊÇ·ñÕı³£ */
     DBG_PRINTF("[Touch] PENIRQ idle = %s\r\n",
                Touch_IsPressed() ? "LOW  (error)" : "HIGH (ok)");
-    /* æ³¨å†Œæ ¡å‡†ç‚¹ç»˜åˆ¶å›è°ƒ */
+    /* ×¢²áĞ£×¼µã»æÖÆ»Øµ÷ */
     Touch_SetPoints_RegisterCallback(UI_Touch_DrawTestPoints);
 
-    /* Touch_Init() å·²ç»å°è¯•ä» /data/touch_cal.bin è¯»å›ä¸Šæ¬¡çš„æ ¡å‡†å‚æ•°
-     * TOUCH_FORCE_CALIBRATE ç½® 1 é‡æ–°æ ¡å‡†è§¦æ‘¸å‚æ•° */
+    /* Touch_Init() ÒÑ¾­³¢ÊÔ´Ó /data/touch_cal.bin ¶Á»ØÉÏ´ÎµÄĞ£×¼²ÎÊı
+     * TOUCH_FORCE_CALIBRATE ÖÃ 1 ÖØĞÂĞ£×¼´¥Ãş²ÎÊı */
 #if (TOUCH_FORCE_CALIBRATE == 1)
     DBG_PRINTF("[Touch] FORCE_CALIBRATE on: re-calibrating\r\n");
     calibration_params.calibrated = false;
 #endif
 
-    /* æ˜¯å¦å·²æ ¡å‡†è§¦æ‘¸å‚æ•° */
+    /* ÊÇ·ñÒÑĞ£×¼´¥Ãş²ÎÊı */
     if (calibration_params.calibrated)
     {
         DBG_PRINTF("[Touch] calibration loaded: kx=%.4f ky=%.4f bx=%d by=%d\r\n",
@@ -74,7 +74,7 @@ void UI_Input_Calibrate(void)
     }
 }
 
-/** @brief è½®è¯¢ä¸€æ¬¡è§¦æ‘¸, å‘½ä¸­å·¦ä¸Šè§’å›¾æ ‡åˆ™ç½®ä½å¯¹åº”äº‹ä»¶ */
+/** @brief ÂÖÑ¯Ò»´Î´¥Ãş, ÃüÖĞ×óÉÏ½ÇÍ¼±êÔòÖÃÎ»¶ÔÓ¦ÊÂ¼ş */
 void UI_Input_PollTouch(void)
 {
     TouchState_t status;
@@ -101,9 +101,9 @@ void UI_Input_PollTouch(void)
     }
 }
 
-/* ==================== LVGL è¾“å…¥ç•Œé¢ ==================== */
+/* ==================== LVGL ÊäÈë½çÃæ ==================== */
 
-/** @brief æ¨è¿› LVGL å¿ƒè·³å¹¶å¤„ç†ä¸€æ¬¡å®ƒçš„å®šæ—¶å™¨(è¯»è§¦æ‘¸ + åˆ·å±éƒ½åœ¨è¿™é‡Œå‘ç”Ÿ) */
+/** @brief ÍÆ½ø LVGL ĞÄÌø²¢´¦ÀíÒ»´ÎËüµÄ¶¨Ê±Æ÷(¶Á´¥Ãş + Ë¢ÆÁ¶¼ÔÚÕâÀï·¢Éú) */
 void UI_Input_Tick(void)
 {
     uint32_t now = (uint32_t)TIM5_Get_ms();
@@ -112,62 +112,62 @@ void UI_Input_Tick(void)
     if (elapsed != 0U)
     {
         s_lvgl_tick_ms = now;
-        lv_tick_inc(elapsed); // LVGL æ²¡æœ‰è‡ªå·±çš„æ—¶åŸº, ç”±å¤–éƒ¨æŒ‰æ¯«ç§’å–‚
+        lv_tick_inc(elapsed); // LVGL Ã»ÓĞ×Ô¼ºµÄÊ±»ù, ÓÉÍâ²¿°´ºÁÃëÎ¹
     }
 
     lv_timer_handler();
 }
 
-/** @brief é¦–æ¬¡è¿›å…¥é”®ç›˜ç•Œé¢æ—¶åˆå§‹åŒ– LVGL å¹¶å»ºç«‹ç•Œé¢ */
+/** @brief Ê×´Î½øÈë¼üÅÌ½çÃæÊ±³õÊ¼»¯ LVGL ²¢½¨Á¢½çÃæ */
 static void UI_Input_LvglInit(void)
 {
     lv_init();
-    lv_port_disp_init();  // æ³¨å†Œæ˜¾ç¤º: åˆ·å±å€Ÿ LCD çš„æ•´è¡Œç¼“å†², ä¸é¢å¤–å  SRAM
-    lv_port_indev_init(); // æ³¨å†Œè§¦æ‘¸: XPT2046 â†’ æŒ‡é’ˆè®¾å¤‡
-    ui_init();            // SquareLine ç”Ÿæˆçš„ç•Œé¢
+    lv_port_disp_init();  // ×¢²áÏÔÊ¾: Ë¢ÆÁ½è LCD µÄÕûĞĞ»º³å, ²»¶îÍâÕ¼ SRAM
+    lv_port_indev_init(); // ×¢²á´¥Ãş: XPT2046 ¡ú Ö¸ÕëÉè±¸
+    ui_init();            // SquareLine Éú³ÉµÄ½çÃæ
 
     s_lvgl_tick_ms = (uint32_t)TIM5_Get_ms();
     s_lvgl_ready = true;
 }
 
-/** @brief è°ƒå‡ºè¾“å…¥ç•Œé¢(WiFi é…ç½‘ / å®šä½ä¿¡æ¯)
- *  @param screen è¦æ‰“å¼€çš„ç•Œé¢
+/** @brief µ÷³öÊäÈë½çÃæ(WiFi ÅäÍø / ¶¨Î»ĞÅÏ¢)
+ *  @param screen Òª´ò¿ªµÄ½çÃæ
  */
 void UI_Input_Open(UI_Screen_t screen)
 {
     if (!s_lvgl_ready)
         UI_Input_LvglInit();
 
-    /* å¤ä½è¾“å…¥è®¾å¤‡å¹¶é‡æ–°å¯¹è¡¨: LVGL çš„å¿ƒè·³æŒ‰"è·ä¸Šæ¬¡å–‚é£Ÿçš„æ¯«ç§’å·®"æ¨è¿›,
-     * è€Œç•Œé¢å¯èƒ½éš”å‡ å°æ—¶æ‰å†æ¬¡æ‰“å¼€, ä¸é‡ç½®ä¼šæŠŠæ‰€æœ‰å®šæ—¶å™¨ä¸€æ¬¡æ€§æ¨åˆ°è¶…æœŸ */
+    /* ¸´Î»ÊäÈëÉè±¸²¢ÖØĞÂ¶Ô±í: LVGL µÄĞÄÌø°´"¾àÉÏ´ÎÎ¹Ê³µÄºÁÃë²î"ÍÆ½ø,
+     * ¶ø½çÃæ¿ÉÄÜ¸ô¼¸Ğ¡Ê±²ÅÔÙ´Î´ò¿ª, ²»ÖØÖÃ»á°ÑËùÓĞ¶¨Ê±Æ÷Ò»´ÎĞÔÍÆµ½³¬ÆÚ */
     lv_indev_reset(NULL, NULL);
     s_lvgl_tick_ms = (uint32_t)TIM5_Get_ms();
 
-    /* æ‰“å¼€ WiFi é…ç½‘ç•Œé¢ */
+    /* ´ò¿ª WiFi ÅäÍø½çÃæ */
     if (screen == UI_SCR_WIFI)
     {
-        /* æ— æ¡ä»¶è½½å±: ä¸ä¾èµ– ui_init() å†…éƒ¨é‚£ä¸€å¥, ä¿è¯ä¸€å®šåœåœ¨ç›®æ ‡ç•Œé¢ */
+        /* ÎŞÌõ¼şÔØÆÁ: ²»ÒÀÀµ ui_init() ÄÚ²¿ÄÇÒ»¾ä, ±£Ö¤Ò»¶¨Í£ÔÚÄ¿±ê½çÃæ */
         lv_disp_load_scr(ui_WiFi);
 
         lv_obj_clear_state(ui_TextArea1, LV_STATE_FOCUSED);
         lv_obj_clear_state(ui_TextArea2, LV_STATE_FOCUSED);
 
-        /* æ¸…æ‰ä¸Šä¸€æ¬¡"SSID ä¸èƒ½ä¸ºç©º"çš„çº¢è‰²æç¤º */
+        /* ÇåµôÉÏÒ»´Î"SSID ²»ÄÜÎª¿Õ"µÄºìÉ«ÌáÊ¾ */
         lv_label_set_text(ui_Label1, "SSID:");
         lv_obj_set_style_text_color(ui_Label1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
-        /* æ¸…ç©ºè¾“å…¥åŒº */
+        /* Çå¿ÕÊäÈëÇø */
         lv_textarea_set_text(ui_TextArea1, "");
         lv_textarea_set_text(ui_TextArea2, "");
 
-        /* æŠŠé”®ç›˜æ˜¾ç¤ºå‡ºæ¥å¹¶èšç„¦ SSID è¾“å…¥æ¡†  */
+        /* °Ñ¼üÅÌÏÔÊ¾³öÀ´²¢¾Û½¹ SSID ÊäÈë¿ò  */
         lv_keyboard_set_textarea(ui_Keyboard1, ui_TextArea1);
         lv_obj_clear_flag(ui_Keyboard1, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_state(ui_TextArea1, LV_STATE_FOCUSED);
-        /* å†è¡¥ä¸€æ¬¡ FOCUSED äº‹ä»¶: è¾“å…¥æ¡†çš„å…‰æ ‡é—ªçƒåŠ¨ç”»æ˜¯åœ¨è¿™ä¸ªäº‹ä»¶é‡Œå¯åŠ¨çš„ */
+        /* ÔÙ²¹Ò»´Î FOCUSED ÊÂ¼ş: ÊäÈë¿òµÄ¹â±êÉÁË¸¶¯»­ÊÇÔÚÕâ¸öÊÂ¼şÀïÆô¶¯µÄ */
         (void)lv_event_send(ui_TextArea1, LV_EVENT_FOCUSED, NULL);
     }
-    /* æ‰“å¼€å®šä½è¾“å…¥ç•Œé¢ */
+    /* ´ò¿ª¶¨Î»ÊäÈë½çÃæ */
     else
     {
         lv_disp_load_scr(ui_location);
@@ -177,7 +177,7 @@ void UI_Input_Open(UI_Screen_t screen)
         lv_label_set_text(ui_Label4, "location(province+city):");
         lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
-        /* æ¸…ç©ºè¾“å…¥åŒº */
+        /* Çå¿ÕÊäÈëÇø */
         lv_textarea_set_text(ui_TextArea4, "");
 
         lv_keyboard_set_textarea(ui_Keyboard2, ui_TextArea4);
@@ -186,14 +186,14 @@ void UI_Input_Open(UI_Screen_t screen)
         (void)lv_event_send(ui_TextArea4, LV_EVENT_FOCUSED, NULL);
     }
 
-    /* ä¸»é¡µé¢æ˜¯è£¸ç»˜çš„, LVGL å†…éƒ¨å¹¶ä¸çŸ¥é“å±å¹•å·²è¢«è¦†ç›–, å¼ºåˆ¶æ•´å±é‡ç»˜ä¸€æ¬¡ */
+    /* Ö÷Ò³ÃæÊÇÂã»æµÄ, LVGL ÄÚ²¿²¢²»ÖªµÀÆÁÄ»ÒÑ±»¸²¸Ç, Ç¿ÖÆÕûÆÁÖØ»æÒ»´Î */
     lv_obj_invalidate(lv_scr_act());
 
     s_active_screen = screen;
     DBG_PRINTF("[UI] %s screen opened\r\n", (screen == UI_SCR_WIFI) ? "WiFi" : "location");
 }
 
-/** @brief é€€å‡ºè¾“å…¥ç•Œé¢ */
+/** @brief ÍË³öÊäÈë½çÃæ */
 void UI_Input_Close(void)
 {
     UI_Screen_t closed = s_active_screen;
@@ -205,7 +205,7 @@ void UI_Input_Close(void)
 
     if (s_lvgl_ready)
     {
-        /* éšè—é”®ç›˜ */
+        /* Òş²Ø¼üÅÌ */
         if (ui_Keyboard1 != NULL)
         {
             lv_obj_add_flag(ui_Keyboard1, LV_OBJ_FLAG_HIDDEN);
@@ -219,24 +219,24 @@ void UI_Input_Close(void)
     DBG_PRINTF("[UI] %s screen closed\r\n", (closed == UI_SCR_WIFI) ? "WiFi" : "location");
 }
 
-/** @brief å½“å‰æ˜¯å¦åœåœ¨è¾“å…¥ç•Œé¢
- *  @return true è¡¨ç¤ºå½“å‰åœ¨è¾“å…¥ç•Œé¢, false è¡¨ç¤ºåœ¨ä¸»ç•Œé¢
+/** @brief µ±Ç°ÊÇ·ñÍ£ÔÚÊäÈë½çÃæ
+ *  @return true ±íÊ¾µ±Ç°ÔÚÊäÈë½çÃæ, false ±íÊ¾ÔÚÖ÷½çÃæ
  */
 bool UI_Input_IsActive(void)
 {
     return (s_active_screen != UI_SCR_MAIN);
 }
 
-/** @brief å¤„ç†è¾“å…¥ç•Œé¢çš„å¼€å…³ä¸è¾“å…¥ç»“æœè½åœ°
- *  @param bits       æœ¬è½®ç­‰å¾…åˆ°çš„äº‹ä»¶ä½
- *  @param allow_open æ˜¯å¦å…è®¸æ‰“å¼€è¾“å…¥ç•Œé¢(å¤œé—´ä¸º false)
- *  @return true è¡¨ç¤ºæœ¬è½®æ”¶åˆ°äº†"è¿”å›ä¸»é¡µé¢"è¯·æ±‚, è°ƒç”¨æ–¹éœ€è¦é‡ç»˜ä¸»é¡µé¢
+/** @brief ´¦ÀíÊäÈë½çÃæµÄ¿ª¹ØÓëÊäÈë½á¹ûÂäµØ
+ *  @param bits       ±¾ÂÖµÈ´ıµ½µÄÊÂ¼şÎ»
+ *  @param allow_open ÊÇ·ñÔÊĞí´ò¿ªÊäÈë½çÃæ(Ò¹¼äÎª false)
+ *  @return true ±íÊ¾±¾ÂÖÊÕµ½ÁË"·µ»ØÖ÷Ò³Ãæ"ÇëÇó, µ÷ÓÃ·½ĞèÒªÖØ»æÖ÷Ò³Ãæ
  */
 bool UI_Input_HandleEvent(EventBits_t bits, bool allow_open)
 {
-    bool back_home = false; // æ˜¯å¦è¿”å›ä¸»é¡µé¢
+    bool back_home = false; // ÊÇ·ñ·µ»ØÖ÷Ò³Ãæ
 
-    /* æ‰“å¼€è¾“å…¥ç•Œé¢,åªæœ‰åœ¨ä¸»ç•Œé¢æ—¶æ‰å…è®¸ */
+    /* ´ò¿ªÊäÈë½çÃæ,Ö»ÓĞÔÚÖ÷½çÃæÊ±²ÅÔÊĞí */
     if (allow_open && !UI_Input_IsActive())
     {
         if (bits & EV_WIFI_KB)
@@ -249,12 +249,12 @@ bool UI_Input_HandleEvent(EventBits_t bits, bool allow_open)
         }
     }
 
-    /* å…³é—­è¾“å…¥ç•Œé¢ */
+    /* ¹Ø±ÕÊäÈë½çÃæ */
     if (bits & EV_MAIN_SCREEN)
     {
         UI_Input_Close();
 
-        /* ç•Œé¢æäº¤è¿‡æ–°å†…å®¹å°±ä¿å­˜è¿› Flash */
+        /* ½çÃæÌá½»¹ıĞÂÄÚÈİ¾Í±£´æ½ø Flash */
         if (WiFi_Config_IsDirty())
         {
             (void)WiFi_Config_Save();

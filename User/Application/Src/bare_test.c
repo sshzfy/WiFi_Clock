@@ -2,11 +2,11 @@
 
 #if (USE_FREERTOS == 0)
 
-/* ================ æ¨¡å—æµ‹è¯• ================ */
+/* ================ Ä£¿é²âÊÔ ================ */
 
-/* æµ‹è¯•é¡¹ç”± BuildConfig.h çš„ BM_TEST_MODULE å®åœ¨ç¼–è¯‘æœŸé€‰æ‹©, æ­¤å¤„ä¸å†å®šä¹‰åŒåå˜é‡ */
+/* ²âÊÔÏîÓÉ BuildConfig.h µÄ BM_TEST_MODULE ºêÔÚ±àÒëÆÚÑ¡Ôñ, ´Ë´¦²»ÔÙ¶¨ÒåÍ¬Ãû±äÁ¿ */
 
-/* ================ OLED æµ‹è¯• ================ */
+/* ================ OLED ²âÊÔ ================ */
 static void OLED_BareMetal_Test(void)
 {
     OLED_Init();
@@ -26,10 +26,10 @@ static void OLED_BareMetal_Test(void)
     }
 }
 
-/* ================ å…‰æ•ä¼ æ„Ÿå™¨æµ‹è¯• ================ */
+/* ================ ¹âÃô´«¸ĞÆ÷²âÊÔ ================ */
 
-#define LIGHT_THRESHOLD_ON 800   // å¼€ç¯é˜ˆå€¼ (å…‰çº¿å˜æš—)
-#define LIGHT_THRESHOLD_OFF 1000 // å…³ç¯é˜ˆå€¼ (å…‰çº¿å˜äº®)
+#define LIGHT_THRESHOLD_ON 800   // ¿ªµÆãĞÖµ (¹âÏß±ä°µ)
+#define LIGHT_THRESHOLD_OFF 1000 // ¹ØµÆãĞÖµ (¹âÏß±äÁÁ)
 
 static void Light_Sensor_BareMetal_Test(void)
 {
@@ -54,44 +54,44 @@ static void Light_Sensor_BareMetal_Test(void)
     }
 }
 
-/* ================ DS1302 å¤–éƒ¨ RTC æµ‹è¯• ================
- * è§‚å¯Ÿç‚¹:
- *   - å¤ä½åæ—¶é—´æ˜¯å¦ä»ä¸Šæ¬¡ç»§ç»­(è€Œä¸æ˜¯å›åˆ°åŸºå‡†å€¼) â†’ éªŒè¯ Init ä¸å†æ¸…é›¶ç§’å¯„å­˜å™¨
- *   - æ–­ç”µ(VCC)åé‡æ–°ä¸Šç”µæ—¶é—´æ˜¯å¦è¿ç»­           â†’ éªŒè¯æ¨¡å—ç”µæ± ä¿æŒ
- *   - ç§’å€¼è¿ç»­ DS1302_TEST_HALT_LIMIT æ¬¡ä¸å˜     â†’ æç¤ºæ™¶æŒ¯åœæŒ¯/ç”µæ± æ¬ å‹
- *   - æ‹”æ‰æ¨¡å—åæ˜¯å¦åªæŠ¥é”™ä¸å¡æ­»                 â†’ éªŒè¯å¤±è´¥è·¯å¾„
+/* ================ DS1302 Íâ²¿ RTC ²âÊÔ ================
+ * ¹Û²ìµã:
+ *   - ¸´Î»ºóÊ±¼äÊÇ·ñ´ÓÉÏ´Î¼ÌĞø(¶ø²»ÊÇ»Øµ½»ù×¼Öµ) ¡ú ÑéÖ¤ Init ²»ÔÙÇåÁãÃë¼Ä´æÆ÷
+ *   - ¶Ïµç(VCC)ºóÖØĞÂÉÏµçÊ±¼äÊÇ·ñÁ¬Ğø           ¡ú ÑéÖ¤Ä£¿éµç³Ø±£³Ö
+ *   - ÃëÖµÁ¬Ğø DS1302_TEST_HALT_LIMIT ´Î²»±ä     ¡ú ÌáÊ¾¾§ÕñÍ£Õñ/µç³ØÇ·Ñ¹
+ *   - °ÎµôÄ£¿éºóÊÇ·ñÖ»±¨´í²»¿¨ËÀ                 ¡ú ÑéÖ¤Ê§°ÜÂ·¾¶
  * ==================================================== */
 
-/* 1 = æ¯æ¬¡ä¸Šç”µéƒ½å†™å…¥åŸºå‡†æ—¶é—´(ä¼šè¦†ç›– RTC ç°æœ‰æ—¶é—´, ä¸”ä¼šæŠŠ CH æ¸…é›¶ä»¥å¯åŠ¨æŒ¯è¡å™¨)
- * 0 = ä»…åœ¨è¯»å–å¤±è´¥æˆ–å¹´ä»½æ—©äº DS1302_TEST_MIN_YEAR æ—¶å†™å…¥
- * è¯´æ˜: è‹¥è¯»å–åˆ°çš„ç§’å¯„å­˜å™¨ CH ä½=1(æ—¶é’Ÿåœèµ°), ç½® 1 å¼ºåˆ¶å†™å…¥ä¸€æ¬¡ä»¥å¯åŠ¨æ—¶é’Ÿ;
- *       éªŒè¯æ–­ç”µä¿æŒæ—¶å¿…é¡»ç½® 0, å¦åˆ™æ¯æ¬¡ä¸Šç”µéƒ½ä¼šæŠŠæ—¶é—´é‡å†™ä¸ºåŸºå‡†å€¼ã€‚ */
+/* 1 = Ã¿´ÎÉÏµç¶¼Ğ´Èë»ù×¼Ê±¼ä(»á¸²¸Ç RTC ÏÖÓĞÊ±¼ä, ÇÒ»á°Ñ CH ÇåÁãÒÔÆô¶¯Õñµ´Æ÷)
+ * 0 = ½öÔÚ¶ÁÈ¡Ê§°Ü»òÄê·İÔçÓÚ DS1302_TEST_MIN_YEAR Ê±Ğ´Èë
+ * ËµÃ÷: Èô¶ÁÈ¡µ½µÄÃë¼Ä´æÆ÷ CH Î»=1(Ê±ÖÓÍ£×ß), ÖÃ 1 Ç¿ÖÆĞ´ÈëÒ»´ÎÒÔÆô¶¯Ê±ÖÓ;
+ *       ÑéÖ¤¶Ïµç±£³ÖÊ±±ØĞëÖÃ 0, ·ñÔòÃ¿´ÎÉÏµç¶¼»á°ÑÊ±¼äÖØĞ´Îª»ù×¼Öµ¡£ */
 #define DS1302_TEST_FORCE_SET 0
-/* åˆ¤å®š "RTC æœªåˆå§‹åŒ–" çš„å¹´ä»½ä¸‹é™ */
+/* ÅĞ¶¨ "RTC Î´³õÊ¼»¯" µÄÄê·İÏÂÏŞ */
 #define DS1302_TEST_MIN_YEAR 2020
-/* åŸºå‡†æ—¶é—´(æ˜ŸæœŸ: 1=å‘¨ä¸€ ... 7=å‘¨æ—¥), ä»…åœ¨éœ€è¦å†™å…¥æ—¶ä½¿ç”¨ã€‚
- * å»ºè®®ä¸è¦è®¾ä¸º 23:59, å¦åˆ™è·¨å¤©æ—¶å›è¯»æ ¡éªŒä¼šå¤±è´¥ã€‚ */
+/* »ù×¼Ê±¼ä(ĞÇÆÚ: 1=ÖÜÒ» ... 7=ÖÜÈÕ), ½öÔÚĞèÒªĞ´ÈëÊ±Ê¹ÓÃ¡£
+ * ½¨Òé²»ÒªÉèÎª 23:59, ·ñÔò¿çÌìÊ±»Ø¶ÁĞ£Ñé»áÊ§°Ü¡£ */
 #define DS1302_TEST_YEAR 2026
 #define DS1302_TEST_MONTH 9
 #define DS1302_TEST_DAY 13
-#define DS1302_TEST_WEEK 7 /* 2026-09-13 ä¸ºå‘¨æ—¥ */
+#define DS1302_TEST_WEEK 7 /* 2026-09-13 ÎªÖÜÈÕ */
 #define DS1302_TEST_HOUR 12
 #define DS1302_TEST_MINUTE 0
 #define DS1302_TEST_SECOND 0
-/* ä¸²å£æ—¥å¿—å‘¨æœŸ(ç§’) */
+/* ´®¿ÚÈÕÖ¾ÖÜÆÚ(Ãë) */
 #define DS1302_TEST_LOG_PERIOD 10
-/* è¿ç»­è¯»åˆ°ç›¸åŒç§’å¤šå°‘æ¬¡åˆ¤å®šä¸º "èµ°æ—¶åœæ»" */
+/* Á¬Ğø¶Áµ½ÏàÍ¬Ãë¶àÉÙ´ÎÅĞ¶¨Îª "×ßÊ±Í£ÖÍ" */
 #define DS1302_TEST_HALT_LIMIT 3
 
 /**
- * @brief å†™å…¥åŸºå‡†æ—¶é—´å¹¶åšå›è¯»æ ¡éªŒ(å†™å…¥æ¥å£æ— è¿”å›å€¼æ ¡éªŒ, åªèƒ½é å›è¯»ç¡®è®¤)
- * @return true å›è¯»ç»“æœä¸åŸºå‡†æ—¶é—´ä¸€è‡´(å…è®¸è·¨ 1 åˆ†é’Ÿ)
+ * @brief Ğ´Èë»ù×¼Ê±¼ä²¢×ö»Ø¶ÁĞ£Ñé(Ğ´Èë½Ó¿ÚÎŞ·µ»ØÖµĞ£Ñé, Ö»ÄÜ¿¿»Ø¶ÁÈ·ÈÏ)
+ * @return true »Ø¶Á½á¹ûÓë»ù×¼Ê±¼äÒ»ÖÂ(ÔÊĞí¿ç 1 ·ÖÖÓ)
  */
 static bool DS1302_BareMetal_SetDefault(const DS1302_Time_t *base)
 {
-    DS1302_Time_t chk; // ç”¨äºå­˜å‚¨å›è¯»æ—¶é—´
+    DS1302_Time_t chk; // ÓÃÓÚ´æ´¢»Ø¶ÁÊ±¼ä
 
-    delay_ms(10); // ç­‰ DS1302 å®Œæˆä¸€æ¬¡ç§’å¯„å­˜å™¨æ›´æ–°
+    delay_ms(10); // µÈ DS1302 Íê³ÉÒ»´ÎÃë¼Ä´æÆ÷¸üĞÂ
 
     if (!DS1302_ReadTime(&chk))
     {
@@ -99,7 +99,7 @@ static bool DS1302_BareMetal_SetDefault(const DS1302_Time_t *base)
         return false;
     }
 
-    /* ç”¨"å½“æ—¥åˆ†é’Ÿæ•°"æ¯”è¾ƒ, å…è®¸å†™å…¥è€—æ—¶é€ æˆçš„ 1 åˆ†é’Ÿè¿›ä½ */
+    /* ÓÃ"µ±ÈÕ·ÖÖÓÊı"±È½Ï, ÔÊĞíĞ´ÈëºÄÊ±Ôì³ÉµÄ 1 ·ÖÖÓ½øÎ» */
     int base_min = (int)base->hour * 60 + (int)base->min;
     int chk_min = (int)chk.hour * 60 + (int)chk.min;
     int dm = chk_min - base_min;
@@ -143,7 +143,7 @@ static void DS1302_BareMetal_Test(void)
     DS1302_Init();
     DBG_PRINTF("[RTC] DS1302 init done (pins: PE7=RST PE8=IO PE9=CLK)\r\n");
 
-    /* é¦–æ¬¡è¯»å–, å¿…è¦æ—¶å†™å…¥åŸºå‡†æ—¶é—´ */
+    /* Ê×´Î¶ÁÈ¡, ±ØÒªÊ±Ğ´Èë»ù×¼Ê±¼ä */
     bool first_ok = DS1302_ReadTime(&t);
     bool uninit = (!first_ok) || (t.year < DS1302_TEST_MIN_YEAR);
 
@@ -167,7 +167,7 @@ static void DS1302_BareMetal_Test(void)
                (unsigned)t.hour, (unsigned)t.min, (unsigned)t.sec, (unsigned)t.week);
     }
 
-    /* æ¯ç§’è¯»å– + åˆ·æ–°æ˜¾ç¤º */
+    /* Ã¿Ãë¶ÁÈ¡ + Ë¢ĞÂÏÔÊ¾ */
     for (;;)
     {
         bool ok = DS1302_ReadTime(&t);
@@ -177,7 +177,7 @@ static void DS1302_BareMetal_Test(void)
             rd_ok++;
             have_valid = true;
 
-            /* ç§’å€¼æ˜¯å¦åœæ»(ReadTime å±è”½äº† CH ä½, åªèƒ½è¿™æ ·é—´æ¥åˆ¤æ–­èµ°æ—¶) */
+            /* ÃëÖµÊÇ·ñÍ£ÖÍ(ReadTime ÆÁ±ÎÁË CH Î», Ö»ÄÜÕâÑù¼ä½ÓÅĞ¶Ï×ßÊ±) */
             if (last_sec == (int)t.sec)
             {
                 if (halt_cnt < 0xFFFFU)
@@ -194,7 +194,7 @@ static void DS1302_BareMetal_Test(void)
             rd_err++;
         }
 
-        /* åœæŒ¯å‘Šè­¦: å‡ºç°æ—¶ç«‹å³æ‰“å°ä¸€æ¬¡, æ¢å¤æ­£å¸¸åå…è®¸å†æ¬¡å‘Šè­¦ */
+        /* Í£Õñ¸æ¾¯: ³öÏÖÊ±Á¢¼´´òÓ¡Ò»´Î, »Ö¸´Õı³£ºóÔÊĞíÔÙ´Î¸æ¾¯ */
         if (halt_cnt >= DS1302_TEST_HALT_LIMIT)
         {
             if (!halt_reported)
@@ -209,7 +209,7 @@ static void DS1302_BareMetal_Test(void)
             halt_reported = false;
         }
 
-        /* é¦–æ¬¡ + æ¯ DS1302_TEST_LOG_PERIOD ç§’æ‰“å°ä¸€è¡Œ, ä¾¿äºé•¿æ—¶é—´è§‚å¯Ÿ */
+        /* Ê×´Î + Ã¿ DS1302_TEST_LOG_PERIOD Ãë´òÓ¡Ò»ĞĞ, ±ãÓÚ³¤Ê±¼ä¹Û²ì */
         log_cnt++;
         if ((log_cnt == 1U) || ((log_cnt % DS1302_TEST_LOG_PERIOD) == 0U))
         {
@@ -222,7 +222,7 @@ static void DS1302_BareMetal_Test(void)
             }
         }
 
-        /*  OLED åˆ·æ–°(å®šé•¿å­—ç¬¦ä¸², æ— æ®‹å½±)  */
+        /*  OLED Ë¢ĞÂ(¶¨³¤×Ö·û´®, ÎŞ²ĞÓ°)  */
         if (have_valid)
         {
             snprintf(line, sizeof(line), "%04u-%02u-%02u W%u",
@@ -251,19 +251,19 @@ static void DS1302_BareMetal_Test(void)
     }
 }
 
-/* ================ W25Q64 / littlefs æµ‹è¯•å…¬å…±å·¥å…· ================
- * è¯´æ˜: printf å†…å®¹ä¸€å¾‹ä½¿ç”¨ ASCIIã€‚æºæ–‡ä»¶æ˜¯ UTF-8, è€Œå·¥ç¨‹é‡Œçš„ä¸­æ–‡å­—æ¨¡æ˜¯
- * GB2312, ä¸²å£æ—¥å¿—æ··ç”¨ä¸¤ç§ç¼–ç ä¼šåœ¨ç»ˆç«¯é‡Œæ˜¾ç¤ºä¸ºä¹±ç , ä¸åˆ©äºå®šä½é—®é¢˜ã€‚
+/* ================ W25Q64 / littlefs ²âÊÔ¹«¹²¹¤¾ß ================
+ * ËµÃ÷: printf ÄÚÈİÒ»ÂÉÊ¹ÓÃ ASCII¡£Ô´ÎÄ¼şÊÇ UTF-8, ¶ø¹¤³ÌÀïµÄÖĞÎÄ×ÖÄ£ÊÇ
+ * GB2312, ´®¿ÚÈÕÖ¾»ìÓÃÁ½ÖÖ±àÂë»áÔÚÖÕ¶ËÀïÏÔÊ¾ÎªÂÒÂë, ²»ÀûÓÚ¶¨Î»ÎÊÌâ¡£
  * ============================================================ */
 
-/* ç”Ÿæˆå¯å¤ç°çš„æµ‹è¯•æ•°æ®: åŒä¸€ seed å¿…ç„¶äº§ç”ŸåŒä¸€æ®µå­—èŠ‚ */
+/* Éú³É¿É¸´ÏÖµÄ²âÊÔÊı¾İ: Í¬Ò» seed ±ØÈ»²úÉúÍ¬Ò»¶Î×Ö½Ú */
 static void Test_FillPattern(uint8_t *p, uint32_t n, uint32_t seed)
 {
     for (uint32_t i = 0; i < n; i++)
         p[i] = (uint8_t)((i * 31U) + (i >> 8) + seed);
 }
 
-/* FNV-1a æ ¡éªŒå’Œ, ç”¨äºå¤§å—æ•°æ®æ¯”å¯¹æ—¶é¿å…å ç”¨å¤§ç¼“å†² */
+/* FNV-1a Ğ£ÑéºÍ, ÓÃÓÚ´ó¿éÊı¾İ±È¶ÔÊ±±ÜÃâÕ¼ÓÃ´ó»º³å */
 static uint32_t Test_Checksum(const uint8_t *p, uint32_t n)
 {
     uint32_t h = 2166136261U;
@@ -275,28 +275,28 @@ static uint32_t Test_Checksum(const uint8_t *p, uint32_t n)
     return h;
 }
 
-/* ================ W25Q64 SPI Flash è£¸é©±åŠ¨æµ‹è¯• ================
- * è§‚å¯Ÿç‚¹:
- *   - T1/T2  è¯» ID: è‹¥ä¸º 0x000000/0xFFFFFF, è¯´æ˜ SPI æœ¬èº«ä¸é€š(æ¥çº¿/ç‰‡é€‰/æ—¶é’Ÿ/ä¾›ç”µ)
- *   - T5/T6  è¦†ç›–ä¸¤ä¸ªæ›¾ç»å‡ºé”™çš„åœ°å€è¾¹ç•Œ:
- *              T5 èµ·ç‚¹ 0x0F0 éœ€è¦è·¨ 256 å­—èŠ‚é¡µè¾¹ç•Œ(åŸä»£ç ä¼šä¸€æ¬¡å†™æ»¡ 256 å­—èŠ‚å¹¶å›å·åˆ°é¡µé¦–)
- *              T6 èµ·ç‚¹ 0x200 çš„ bit8=1, åŸé¡µå†…å‰©ä½™é‡ç®—æ³•åœ¨æ­¤å¾—åˆ° 0 è€Œ**æ­»å¾ªç¯**
- *   - T8     512 å­—èŠ‚è·¨ 4KB æ‰‡åŒºè¾¹ç•Œ
- *   - T9     æ•´æ‰‡åŒº 4KB è¿ç»­ç¼–ç¨‹ + è¯»å›æ ¡éªŒ(ä½¿ç”¨ç‹¬ç«‹æ‰‡åŒº)
- * æµ‹è¯•åŒºå›ºå®šåœ¨**æœ€å 4 ä¸ª 4KB æ‰‡åŒº**(0x7FC000 èµ·), ä¸ä¼šç ´å littlefs å·²å†™å…¥çš„æ•°æ®ã€‚
- * å„ç”¨ä¾‹åœ°å€äº’ä¸é‡å  â€”â€” NOR Flash åªèƒ½æŠŠ 1 å†™æˆ 0, åŒä¸€åŒºåŸŸé‡å¤ç¼–ç¨‹ä¼šé€ æˆå‡å¤±è´¥ã€‚
+/* ================ W25Q64 SPI Flash ÂãÇı¶¯²âÊÔ ================
+ * ¹Û²ìµã:
+ *   - T1/T2  ¶Á ID: ÈôÎª 0x000000/0xFFFFFF, ËµÃ÷ SPI ±¾Éí²»Í¨(½ÓÏß/Æ¬Ñ¡/Ê±ÖÓ/¹©µç)
+ *   - T5/T6  ¸²¸ÇÁ½¸öÔø¾­³ö´íµÄµØÖ·±ß½ç:
+ *              T5 Æğµã 0x0F0 ĞèÒª¿ç 256 ×Ö½ÚÒ³±ß½ç(Ô­´úÂë»áÒ»´ÎĞ´Âú 256 ×Ö½Ú²¢»Ø¾íµ½Ò³Ê×)
+ *              T6 Æğµã 0x200 µÄ bit8=1, Ô­Ò³ÄÚÊ£ÓàÁ¿Ëã·¨ÔÚ´ËµÃµ½ 0 ¶ø**ËÀÑ­»·**
+ *   - T8     512 ×Ö½Ú¿ç 4KB ÉÈÇø±ß½ç
+ *   - T9     ÕûÉÈÇø 4KB Á¬Ğø±à³Ì + ¶Á»ØĞ£Ñé(Ê¹ÓÃ¶ÀÁ¢ÉÈÇø)
+ * ²âÊÔÇø¹Ì¶¨ÔÚ**×îºó 4 ¸ö 4KB ÉÈÇø**(0x7FC000 Æğ), ²»»áÆÆ»µ littlefs ÒÑĞ´ÈëµÄÊı¾İ¡£
+ * ¸÷ÓÃÀıµØÖ·»¥²»ÖØµş ¡ª¡ª NOR Flash Ö»ÄÜ°Ñ 1 Ğ´³É 0, Í¬Ò»ÇøÓòÖØ¸´±à³Ì»áÔì³É¼ÙÊ§°Ü¡£
  * ============================================================ */
 
-/* æµ‹è¯•ç”¨å…±äº«ç¼“å†²: W25Q64 ä¸ LFS ä¸¤ä¸ªæµ‹è¯•é¡¹åœ¨ç¼–è¯‘æœŸäºŒé€‰ä¸€(switch ä¼šè¢«å¸¸é‡æŠ˜å ),
- * å…±ç”¨åŒä¸€ç»„ç¼“å†²å¯çœä¸‹çº¦ 11KB RAM â€”â€” F407VE åªæœ‰ 128KB SRAM, è€Œè£¸æœºåˆ†æ”¯å› ä¸º
- * Usart.c ç›´æ¥è°ƒç”¨äº† FreeRTOS API, ä»ç„¶ä¼šé“¾æ¥ heap_4 çš„ 95KB å †ã€‚ */
+/* ²âÊÔÓÃ¹²Ïí»º³å: W25Q64 Óë LFS Á½¸ö²âÊÔÏîÔÚ±àÒëÆÚ¶şÑ¡Ò»(switch »á±»³£Á¿ÕÛµş),
+ * ¹²ÓÃÍ¬Ò»×é»º³å¿ÉÊ¡ÏÂÔ¼ 11KB RAM ¡ª¡ª F407VE Ö»ÓĞ 128KB SRAM, ¶øÂã»ú·ÖÖ§ÒòÎª
+ * Usart.c Ö±½Óµ÷ÓÃÁË FreeRTOS API, ÈÔÈ»»áÁ´½Ó heap_4 µÄ 95KB ¶Ñ¡£ */
 #define TEST_BUF_SIZE 4096U
 static uint8_t s_test_buf[TEST_BUF_SIZE];
 static uint8_t s_test_rd[TEST_BUF_SIZE];
 
 #define W25Q64_TEST_BASE (W25Q64_FLASH_SIZE - 4U * W25Q64_SECTOR_SIZE)
 
-/* ä» addr è¯» n å­—èŠ‚ä¸ exp æ¯”è¾ƒ, è¿”å›ä¸ä¸€è‡´çš„å­—èŠ‚ä¸ªæ•° */
+/* ´Ó addr ¶Á n ×Ö½ÚÓë exp ±È½Ï, ·µ»Ø²»Ò»ÖÂµÄ×Ö½Ú¸öÊı */
 static uint32_t W25Q64_CountMismatch(uint32_t addr, const uint8_t *exp, uint32_t n)
 {
     uint32_t bad = 0;
@@ -311,7 +311,7 @@ static uint32_t W25Q64_CountMismatch(uint32_t addr, const uint8_t *exp, uint32_t
     return bad;
 }
 
-/* è¿”å›åŒºåŸŸä¸­é 0xFF çš„å­—èŠ‚ä¸ªæ•°(æ“¦é™¤æ€åº”ä¸º 0) */
+/* ·µ»ØÇøÓòÖĞ·Ç 0xFF µÄ×Ö½Ú¸öÊı(²Á³ıÌ¬Ó¦Îª 0) */
 static uint32_t W25Q64_CountNotFF(uint32_t addr, uint32_t n)
 {
     uint32_t bad = 0;
@@ -362,41 +362,41 @@ static void W25Q64_Test_RunRound(uint32_t round, uint32_t *out_pass, uint32_t *o
     W25Q_CHECK("T2 READ_ID (90h)", rid == 0xEF16U,
                "id = 0x%04X, expect 0xEF16", (unsigned)rid);
 
-    /*  T3: æ“¦é™¤åŸºç«™æ‰‡åŒºååº”å…¨ä¸º 0xFF  */
+    /*  T3: ²Á³ı»ùÕ¾ÉÈÇøºóÓ¦È«Îª 0xFF  */
     bool er = W25Q64_SectorErase(W25Q64_TEST_BASE);
     bad = W25Q64_CountNotFF(W25Q64_TEST_BASE, W25Q64_SECTOR_SIZE);
     W25Q_CHECK("T3 sector erase", er && (bad == 0U),
                "erase=%d, notFF = %lu", (int)er, (unsigned long)bad);
 
-    /*  T4: æ‰‡åŒºèµ·å§‹å¤„å†™ 16 å­—èŠ‚  */
+    /*  T4: ÉÈÇøÆğÊ¼´¦Ğ´ 16 ×Ö½Ú  */
     Test_FillPattern(s_test_buf, 16, 0x11);
     bool wr = W25Q64_PageProgram(W25Q64_TEST_BASE + 0x000U, s_test_buf, 16);
     bad = W25Q64_CountMismatch(W25Q64_TEST_BASE + 0x000U, s_test_buf, 16);
     W25Q_CHECK("T4 program @0x000 (16B)", wr && (bad == 0U),
                "prog=%d, mismatch = %lu", (int)wr, (unsigned long)bad);
 
-    /*  T5: ä» 0xF0 å†™ 32 å­—èŠ‚, è·¨è¶Š 256 å­—èŠ‚é¡µè¾¹ç•Œ  */
+    /*  T5: ´Ó 0xF0 Ğ´ 32 ×Ö½Ú, ¿çÔ½ 256 ×Ö½ÚÒ³±ß½ç  */
     Test_FillPattern(s_test_buf, 32, 0x22);
     wr = W25Q64_PageProgram(W25Q64_TEST_BASE + 0x0F0U, s_test_buf, 32);
     bad = W25Q64_CountMismatch(W25Q64_TEST_BASE + 0x0F0U, s_test_buf, 32);
     W25Q_CHECK("T5 page-cross @0x0F0 (32B)", wr && (bad == 0U),
                "prog=%d, mismatch = %lu", (int)wr, (unsigned long)bad);
 
-    /*  T6: ä» 0x200 å†™ 16 å­—èŠ‚(bit8=1, åŸæ­»å¾ªç¯è§¦å‘ç‚¹)  */
+    /*  T6: ´Ó 0x200 Ğ´ 16 ×Ö½Ú(bit8=1, Ô­ËÀÑ­»·´¥·¢µã)  */
     Test_FillPattern(s_test_buf, 16, 0x33);
     wr = W25Q64_PageProgram(W25Q64_TEST_BASE + 0x200U, s_test_buf, 16);
     bad = W25Q64_CountMismatch(W25Q64_TEST_BASE + 0x200U, s_test_buf, 16);
     W25Q_CHECK("T6 page @0x200 (16B)", wr && (bad == 0U),
                "prog=%d, mismatch = %lu", (int)wr, (unsigned long)bad);
 
-    /*  T7: ä» 0x2F0 è¿ç»­å†™ 256 å­—èŠ‚, è·¨è¶Š 2 ä¸ªé¡µè¾¹ç•Œ  */
+    /*  T7: ´Ó 0x2F0 Á¬ĞøĞ´ 256 ×Ö½Ú, ¿çÔ½ 2 ¸öÒ³±ß½ç  */
     Test_FillPattern(s_test_buf, 256, 0x44);
     wr = W25Q64_PageProgram(W25Q64_TEST_BASE + 0x2F0U, s_test_buf, 256);
     bad = W25Q64_CountMismatch(W25Q64_TEST_BASE + 0x2F0U, s_test_buf, 256);
     W25Q_CHECK("T7 multi-page @0x2F0 (256B)", wr && (bad == 0U),
                "prog=%d, mismatch = %lu", (int)wr, (unsigned long)bad);
 
-    /*  T8: å†™ 512 å­—èŠ‚, è·¨è¶Š 4KB æ‰‡åŒºè¾¹ç•Œ(0xF00 -> 0x1100)  */
+    /*  T8: Ğ´ 512 ×Ö½Ú, ¿çÔ½ 4KB ÉÈÇø±ß½ç(0xF00 -> 0x1100)  */
     er = W25Q64_SectorErase(W25Q64_TEST_BASE + W25Q64_SECTOR_SIZE);
     Test_FillPattern(s_test_buf, 512, 0x55);
     wr = W25Q64_PageProgram(W25Q64_TEST_BASE + 0x0F00U, s_test_buf, 512) && er;
@@ -404,7 +404,7 @@ static void W25Q64_Test_RunRound(uint32_t round, uint32_t *out_pass, uint32_t *o
     W25Q_CHECK("T8 sector-cross @0x0F00 (512B)", wr && (bad == 0U),
                "prog=%d, mismatch = %lu", (int)wr, (unsigned long)bad);
 
-    /*  T9: æ•´æ‰‡åŒº 4096 å­—èŠ‚å†™å…¥ + è¯»å›æ ¡éªŒå’Œ  */
+    /*  T9: ÕûÉÈÇø 4096 ×Ö½ÚĞ´Èë + ¶Á»ØĞ£ÑéºÍ  */
     Test_FillPattern(s_test_buf, W25Q64_SECTOR_SIZE, 0x66);
     uint32_t sum_w = Test_Checksum(s_test_buf, W25Q64_SECTOR_SIZE);
     er = W25Q64_SectorErase(W25Q64_TEST_BASE + 2U * W25Q64_SECTOR_SIZE);
@@ -446,7 +446,7 @@ static void W25Q64_BareMetal_Test(void)
         round++;
         W25Q64_Test_RunRound(round, &pass, &fail);
 
-        /* OLED æ±‡æ€»: å…¨éƒ¨é€šè¿‡æ—¶åªæ˜¾ç¤º PASS, æœ‰å¤±è´¥æ—¶æ˜¾ç¤ºå¤±è´¥é¡¹æ•° */
+        /* OLED »ã×Ü: È«²¿Í¨¹ıÊ±Ö»ÏÔÊ¾ PASS, ÓĞÊ§°ÜÊ±ÏÔÊ¾Ê§°ÜÏîÊı */
         snprintf(line, sizeof(line), "W25Q64  %lu/%lu", (unsigned long)pass,
                  (unsigned long)(pass + fail));
         OLED_Write_String(0, 0, line, &Font_16);
@@ -464,26 +464,26 @@ static void W25Q64_BareMetal_Test(void)
     }
 }
 
-/* ================ littlefs æ–‡ä»¶ç³»ç»Ÿæµ‹è¯• ================
- * è§‚å¯Ÿç‚¹:
- *   - é¦–æ¬¡è¿è¡Œå¿…ç„¶æ‰“å° "mount failed -> formatting"(èŠ¯ç‰‡è¿˜ä¸æ˜¯ littlefs æ ¼å¼)
- *   - **å¤ä½åå†æ¬¡è¿è¡Œ**åº”ç›´æ¥ "init success", ä¸” T8 é‡æ–°æŒ‚è½½åè¯»å›ä»ç„¶æ­£ç¡®
- *     â†’ è¿™æ‰è¯æ˜æ•°æ®çœŸçš„è½åˆ° Flash, è€Œä¸æ˜¯åªåœ¨å†…å­˜ç¼“å­˜é‡Œ
- *   - è‹¥æ¯æ¬¡ä¸Šç”µéƒ½åœ¨æ ¼å¼åŒ–, è¯´æ˜å†™å…¥æ²¡æœ‰è½ç›˜(æ“¦é™¤ç²’åº¦/ç‰‡é€‰/å¿™ç­‰å¾…é—®é¢˜)
- *   - T12~T18 éªŒè¯æ­£å¼å›ºä»¶ä½¿ç”¨çš„èµ„æºå±‚(Asset): è¿è¡Œæ•°æ®çš„é”®å€¼å¼å­˜å–ã€
- *     æ•°æ®åæ ¡éªŒã€å›¾ç‰‡çš„æ‰“å¼€/åˆ†å—è¯»/å…³é—­; æ•°æ®åªè½åœ¨ /data ä¸‹, ä¸ç¢°å­—åº“ä¸å›¾ç‰‡
+/* ================ littlefs ÎÄ¼şÏµÍ³²âÊÔ ================
+ * ¹Û²ìµã:
+ *   - Ê×´ÎÔËĞĞ±ØÈ»´òÓ¡ "mount failed -> formatting"(Ğ¾Æ¬»¹²»ÊÇ littlefs ¸ñÊ½)
+ *   - **¸´Î»ºóÔÙ´ÎÔËĞĞ**Ó¦Ö±½Ó "init success", ÇÒ T8 ÖØĞÂ¹ÒÔØºó¶Á»ØÈÔÈ»ÕıÈ·
+ *     ¡ú Õâ²ÅÖ¤Ã÷Êı¾İÕæµÄÂäµ½ Flash, ¶ø²»ÊÇÖ»ÔÚÄÚ´æ»º´æÀï
+ *   - ÈôÃ¿´ÎÉÏµç¶¼ÔÚ¸ñÊ½»¯, ËµÃ÷Ğ´ÈëÃ»ÓĞÂäÅÌ(²Á³ıÁ£¶È/Æ¬Ñ¡/Ã¦µÈ´ıÎÊÌâ)
+ *   - T12~T18 ÑéÖ¤ÕıÊ½¹Ì¼şÊ¹ÓÃµÄ×ÊÔ´²ã(Asset): ÔËĞĞÊı¾İµÄ¼üÖµÊ½´æÈ¡¡¢
+ *     Êı¾İÃûĞ£Ñé¡¢Í¼Æ¬µÄ´ò¿ª/·Ö¿é¶Á/¹Ø±Õ; Êı¾İÖ»ÂäÔÚ /data ÏÂ, ²»Åö×Ö¿âÓëÍ¼Æ¬
  * ============================================================ */
 
 #define LFS_TEST_CHUNK 4096U
 #define LFS_TEST_BIG_SIZE (64U * 1024U)
-/* ç”¨äºå›¾ç‰‡ç”¨ä¾‹çš„çœŸå®å›¾ç‰‡å°ºå¯¸(Image_err: 40x40 RGB565) */
+/* ÓÃÓÚÍ¼Æ¬ÓÃÀıµÄÕæÊµÍ¼Æ¬³ß´ç(Image_err: 40x40 RGB565) */
 #define LFS_TEST_IMG_W 40U
 #define LFS_TEST_IMG_H 40U
 #define LFS_TEST_IMG_SIZE (LFS_TEST_IMG_W * LFS_TEST_IMG_H * 2U)
 
 static struct lfs_info s_lfs_info;
 
-/* å†™æ–‡ä»¶(è¦†ç›–), è¿”å› 0 æˆåŠŸ */
+/* Ğ´ÎÄ¼ş(¸²¸Ç), ·µ»Ø 0 ³É¹¦ */
 static int LFS_WriteFile(const char *path, const uint8_t *data, uint32_t size)
 {
     lfs_file_t file;
@@ -501,7 +501,7 @@ static int LFS_WriteFile(const char *path, const uint8_t *data, uint32_t size)
     return lfs_file_close(&g_lfs, &file);
 }
 
-/* è¯»æ–‡ä»¶, è¿”å›å®é™…è¯»åˆ°çš„å­—èŠ‚æ•°, è´Ÿæ•°ä¸ºé”™è¯¯ç  */
+/* ¶ÁÎÄ¼ş, ·µ»ØÊµ¼Ê¶Áµ½µÄ×Ö½ÚÊı, ¸ºÊıÎª´íÎóÂë */
 static int LFS_ReadFile(const char *path, uint8_t *data, uint32_t size)
 {
     lfs_file_t file;
@@ -515,7 +515,7 @@ static int LFS_ReadFile(const char *path, uint8_t *data, uint32_t size)
     return (int)n;
 }
 
-/* å¤§æ–‡ä»¶åˆ†å—å†™ + åˆ†å—è¯», ç”¨æ ¡éªŒå’Œæ¯”å¯¹(ä¸ç”³è¯· 64KB ç¼“å†²) */
+/* ´óÎÄ¼ş·Ö¿éĞ´ + ·Ö¿é¶Á, ÓÃĞ£ÑéºÍ±È¶Ô(²»ÉêÇë 64KB »º³å) */
 static bool LFS_RoundTripBig(void)
 {
     lfs_file_t file;
@@ -568,13 +568,13 @@ static bool LFS_RoundTripBig(void)
     return (sum_w == sum_r);
 }
 
-/* é‡æ–°æŒ‚è½½åæ ¡éªŒ /t1.bin å†…å®¹æ˜¯å¦ä»åœ¨ -> éªŒè¯æ•°æ®çœŸçš„æŒä¹…åŒ– */
+/* ÖØĞÂ¹ÒÔØºóĞ£Ñé /t1.bin ÄÚÈİÊÇ·ñÈÔÔÚ -> ÑéÖ¤Êı¾İÕæµÄ³Ö¾Ã»¯ */
 static bool LFS_RemountAndVerify(void)
 {
     int err;
 
-    /* èµ°ç§»æ¤å±‚çš„æŒ‚è½½æ¥å£: æŒ‚è½½çŠ¶æ€ç”± lfs_port.c ç»Ÿä¸€ç»´æŠ¤,
-     * ç›´æ¥è°ƒ lfs_mount/lfs_unmount ä¼šè®©é‚£ä»½çŠ¶æ€ä¸å®é™…ä¸ç¬¦ */
+    /* ×ßÒÆÖ²²ãµÄ¹ÒÔØ½Ó¿Ú: ¹ÒÔØ×´Ì¬ÓÉ lfs_port.c Í³Ò»Î¬»¤,
+     * Ö±½Óµ÷ lfs_mount/lfs_unmount »áÈÃÄÇ·İ×´Ì¬ÓëÊµ¼Ê²»·û */
     err = LittleFS_Unmount();
     if (err != LFS_ERR_OK)
     {
@@ -644,15 +644,15 @@ static void LFS_BareMetal_Test(void)
            (unsigned long)g_lfs_config.block_size, (unsigned long)g_lfs_config.block_count,
            (unsigned long)(g_lfs_config.block_size / 1024U * g_lfs_config.block_count));
 
-    /* èµ„æºå±‚: å¤ç”¨ä¸Šé¢è¿™ä¸€æ¬¡æŒ‚è½½(ä¸é‡å¤ mount), é¡ºå¸¦åšä¸€æ¬¡èµ„æºè‡ªæ£€ã€‚
-     * æ²¡çƒ§å½•è¿‡èµ„æºæ—¶, è¿™é‡Œä¼šé€é¡¹æ‰“å° MISSING(æœ€å¤š 11+32 è¡Œ), å±æ­£å¸¸ç°è±¡:
-     * è‡ªæ£€ç¼ºå¤±åªå½±å“å­—åº“/å›¾ç‰‡çš„è¯»å–, è¿è¡Œæ•°æ®(/data)ç…§æ ·èƒ½è¯»å†™ã€‚ */
+    /* ×ÊÔ´²ã: ¸´ÓÃÉÏÃæÕâÒ»´Î¹ÒÔØ(²»ÖØ¸´ mount), Ë³´ø×öÒ»´Î×ÊÔ´×Ô¼ì¡£
+     * Ã»ÉÕÂ¼¹ı×ÊÔ´Ê±, ÕâÀï»áÖğÏî´òÓ¡ MISSING(×î¶à 11+32 ĞĞ), ÊôÕı³£ÏÖÏó:
+     * ×Ô¼ìÈ±Ê§Ö»Ó°Ïì×Ö¿â/Í¼Æ¬µÄ¶ÁÈ¡, ÔËĞĞÊı¾İ(/data)ÕÕÑùÄÜ¶ÁĞ´¡£ */
     err = Asset_Init();
     DBG_PRINTF("[LFS ] asset init: %s (err = %d), checked = %lu, missing = %lu\r\n",
            (err == ASSET_OK) ? "OK" : ((err == ASSET_ERR_MISSING) ? "NO RES" : "FAIL"),
            err, (unsigned long)Asset_CheckedCount(), (unsigned long)Asset_MissingCount());
 
-    /*  T1: åŸºæœ¬å†™ + è¯»å›  */
+    /*  T1: »ù±¾Ğ´ + ¶Á»Ø  */
     Test_FillPattern(s_test_buf, 512, 0xAA);
     err = LFS_WriteFile("/t1.bin", s_test_buf, 512);
     memset(s_test_rd, 0, 512);
@@ -661,7 +661,7 @@ static void LFS_BareMetal_Test(void)
               (err == 0) && (n == 512) && (memcmp(s_test_buf, s_test_rd, 512) == 0),
               "err = %d, read = %d", err, n);
 
-    /*  T2: ç›®å½•åˆ›å»º + å­ç›®å½•å†…æ–‡ä»¶  */
+    /*  T2: Ä¿Â¼´´½¨ + ×ÓÄ¿Â¼ÄÚÎÄ¼ş  */
     err = lfs_mkdir(&g_lfs, "/font");
     if (err == LFS_ERR_EXIST)
         err = 0;
@@ -673,13 +673,13 @@ static void LFS_BareMetal_Test(void)
               (err == 0) && (err2 == 0) && (n == 1024) && (memcmp(s_test_buf, s_test_rd, 1024) == 0),
               "mkdir = %d, write = %d, read = %d", err, err2, n);
 
-    /*  T3: lfs_stat å¤§å°æ ¡éªŒ  */
+    /*  T3: lfs_stat ´óĞ¡Ğ£Ñé  */
     err = lfs_stat(&g_lfs, "/font/f.bin", &s_lfs_info);
     LFS_CHECK("T3 stat size", (err == 0) && (s_lfs_info.size == 1024U),
               "err = %d, size = %lu, type = %d", err,
               (unsigned long)s_lfs_info.size, (int)s_lfs_info.type);
 
-    /*  T4: è¿½åŠ å†™(T1 å·²å†™å…¥ 512B, è¿½åŠ  128B ååº”ä¸º 640B)  */
+    /*  T4: ×·¼ÓĞ´(T1 ÒÑĞ´Èë 512B, ×·¼Ó 128B ºóÓ¦Îª 640B)  */
     Test_FillPattern(s_test_buf, 128, 0xCC);
     lfs_file_t af;
     err = lfs_file_open(&g_lfs, &af, "/t1.bin", LFS_O_WRONLY | LFS_O_APPEND);
@@ -694,11 +694,11 @@ static void LFS_BareMetal_Test(void)
     LFS_CHECK("T4 append 128B", (err == 0) && (err2 == 0) && (s_lfs_info.size == 640U),
               "err = %d, size = %lu", err, (unsigned long)s_lfs_info.size);
 
-    /*  T5: å¤§æ–‡ä»¶ 64KB å¾€è¿”  */
+    /*  T5: ´óÎÄ¼ş 64KB Íù·µ  */
     LFS_CHECK("T5 big file 64KB", LFS_RoundTripBig(), "chunk = %lu B",
               (unsigned long)LFS_TEST_CHUNK);
 
-    /*  T6: ç›®å½•éå†  */
+    /*  T6: Ä¿Â¼±éÀú  */
     lfs_dir_t dir;
     uint32_t entries = 0;
     err = lfs_dir_open(&g_lfs, &dir, "/font");
@@ -714,21 +714,21 @@ static void LFS_BareMetal_Test(void)
     LFS_CHECK("T6 dir traverse /font", (err == 0) && (entries >= 1U),
               "err = %d, entries = %lu", err, (unsigned long)entries);
 
-    /*  T7: åˆ é™¤æ–‡ä»¶å stat åº”æŠ¥ NOENT  */
+    /*  T7: É¾³ıÎÄ¼şºó stat Ó¦±¨ NOENT  */
     err = lfs_remove(&g_lfs, "/font/f.bin");
     err2 = lfs_stat(&g_lfs, "/font/f.bin", &s_lfs_info);
     LFS_CHECK("T7 remove + NOENT", (err == 0) && (err2 == LFS_ERR_NOENT),
               "remove = %d, stat = %d", err, err2);
 
-    /*  T8: å¸è½½åé‡æ–°æŒ‚è½½, æ•°æ®ä»åœ¨(çœŸå®æŒä¹…åŒ–)  */
+    /*  T8: Ğ¶ÔØºóÖØĞÂ¹ÒÔØ, Êı¾İÈÔÔÚ(ÕæÊµ³Ö¾Ã»¯)  */
     LFS_CHECK("T8 remount persist", LFS_RemountAndVerify(), "unmount + mount + read back");
 
-    /*  T9: å­—ä½“å­˜å–ã€‚
-     * ä¸èƒ½ç”¨ Font_xx_Table å½“åŸºå‡†: é‚£æ˜¯çƒ§å½•å›ºä»¶(RESOURCE_DATA_IN_ROM=1)æ‰ç¼–è¿›
-     * MCU Flash çš„è¡¨, æ­£å¼å›ºä»¶é‡Œå­—æ¨¡å…¨åœ¨ W25Q64 çš„ littlefs æ–‡ä»¶é‡Œ, æºç ä¸­
-     * æ²¡æœ‰å¯ç›´æ¥ memcmp çš„ç‚¹é˜µã€‚è¿™é‡Œæ”¹ç”¨å¯å¤ç°çš„æµ‹è¯•å›¾æ¡ˆã€‚
-     * ä¸ T10 çš„åŒºåˆ«: SaveFont/LoadFont ä¸å¸¦ 4 å­—èŠ‚å®½é«˜å¤´, æ‰€ä»¥æ–‡ä»¶å¤§å°åº”æ­£å¥½
-     * ç­‰äºæ•°æ®é•¿åº¦ â€”â€” è¿™ä¸€ç‚¹ç”± lfs_stat å•ç‹¬æ ¸å¯¹ã€‚ */
+    /*  T9: ×ÖÌå´æÈ¡¡£
+     * ²»ÄÜÓÃ Font_xx_Table µ±»ù×¼: ÄÇÊÇÉÕÂ¼¹Ì¼ş(RESOURCE_DATA_IN_ROM=1)²Å±à½ø
+     * MCU Flash µÄ±í, ÕıÊ½¹Ì¼şÀï×ÖÄ£È«ÔÚ W25Q64 µÄ littlefs ÎÄ¼şÀï, Ô´ÂëÖĞ
+     * Ã»ÓĞ¿ÉÖ±½Ó memcmp µÄµãÕó¡£ÕâÀï¸ÄÓÃ¿É¸´ÏÖµÄ²âÊÔÍ¼°¸¡£
+     * Óë T10 µÄÇø±ğ: SaveFont/LoadFont ²»´ø 4 ×Ö½Ú¿í¸ßÍ·, ËùÒÔÎÄ¼ş´óĞ¡Ó¦ÕıºÃ
+     * µÈÓÚÊı¾İ³¤¶È ¡ª¡ª ÕâÒ»µãÓÉ lfs_stat µ¥¶ÀºË¶Ô¡£ */
     Test_FillPattern(s_test_buf, 1024, 0xCC);
     err = SaveFont("/font/f12.bin", s_test_buf, 1024U);
     memset(s_test_rd, 0, 1024);
@@ -739,30 +739,30 @@ static void LFS_BareMetal_Test(void)
                   (memcmp(s_test_buf, s_test_rd, 1024) == 0),
               "save = %d, load = %d, size = %lu", err, n, (unsigned long)s_lfs_info.size);
 
-    /*  T10: å›¾ç‰‡å­˜å–(40x40 RGB565 = 3200 å­—èŠ‚, ç”¨æµ‹è¯•å›¾æ¡ˆ)  */
+    /*  T10: Í¼Æ¬´æÈ¡(40x40 RGB565 = 3200 ×Ö½Ú, ÓÃ²âÊÔÍ¼°¸)  */
     Test_FillPattern(s_test_rd, LFS_TEST_IMG_SIZE, 0x5A);
     err = SaveImage("/img_err.bin", s_test_rd, LFS_TEST_IMG_W, LFS_TEST_IMG_H);
     memset(s_test_buf, 0, LFS_TEST_IMG_SIZE);
     err2 = LoadImage("/img_err.bin", &w, &h, s_test_buf, TEST_BUF_SIZE);
-    /* æ³¨æ„åªæ¯”è¾ƒ 3200 å­—èŠ‚: Image_err.data æŒ‡å‘çš„ gImage_err å°±æ˜¯ 3200 å­—èŠ‚,
-     * åªæ¯”è¾ƒå‰ 3200 å­—èŠ‚ */
+    /* ×¢ÒâÖ»±È½Ï 3200 ×Ö½Ú: Image_err.data Ö¸ÏòµÄ gImage_err ¾ÍÊÇ 3200 ×Ö½Ú,
+     * Ö»±È½ÏÇ° 3200 ×Ö½Ú */
     LFS_CHECK("T10 SaveImage/LoadImage",
               (err == 0) && (err2 == 0) && (w == LFS_TEST_IMG_W) && (h == LFS_TEST_IMG_H) &&
                   (memcmp(s_test_rd, s_test_buf, LFS_TEST_IMG_SIZE) == 0),
               "save = %d, load = %d, w = %u, h = %u", err, err2, (unsigned)w, (unsigned)h);
 
-    /*  T11: æ‰“å¼€ä¸å­˜åœ¨çš„æ–‡ä»¶åº”è¿”å› NOENT  */
+    /*  T11: ´ò¿ª²»´æÔÚµÄÎÄ¼şÓ¦·µ»Ø NOENT  */
     n = LFS_ReadFile("/no_such_file.bin", s_test_rd, 16);
     LFS_CHECK("T11 open missing file", n == LFS_ERR_NOENT, "ret = %d", n);
 
-    /* ================= èµ„æºå±‚æ•°æ®æ¥å£(Asset) =================
-     * T1~T11 éªŒè¯çš„æ˜¯ littlefs åŸå§‹ API, è¿™é‡ŒéªŒè¯æ­£å¼å›ºä»¶ä½¿ç”¨çš„å°è£…å±‚ã€‚
-     * å­—åº“ä¸å›¾ç‰‡æ˜¯"çƒ§å½•ååªè¯»"çš„èµ„æº, æœ¬å±‚çš„è¯»æ¥å£å·²ç”±æ¸²æŸ“å±‚(LCD/OLED)
-     * å®é™…ä½¿ç”¨; è¿™é‡Œä¸“é—¨éªŒè¯å¦ä¸€ç±»å†…å®¹ â€”â€” è¿è¡Œæ•°æ®çš„é”®å€¼å¼å­˜å–:
-     * æ•°æ®åç”±èµ„æºå±‚æ‹¼æˆ /data/<name>.bin, è°ƒç”¨è€…æ— æ³•è¶Šå‡º /data å†™åˆ°
-     * å­—åº“æˆ–å›¾ç‰‡ä¸Š, è¿™æ˜¯"å®‰å…¨"çš„å…³é”®ä¸€ç¯ã€‚ */
+    /* ================= ×ÊÔ´²ãÊı¾İ½Ó¿Ú(Asset) =================
+     * T1~T11 ÑéÖ¤µÄÊÇ littlefs Ô­Ê¼ API, ÕâÀïÑéÖ¤ÕıÊ½¹Ì¼şÊ¹ÓÃµÄ·â×°²ã¡£
+     * ×Ö¿âÓëÍ¼Æ¬ÊÇ"ÉÕÂ¼ºóÖ»¶Á"µÄ×ÊÔ´, ±¾²ãµÄ¶Á½Ó¿ÚÒÑÓÉäÖÈ¾²ã(LCD/OLED)
+     * Êµ¼ÊÊ¹ÓÃ; ÕâÀï×¨ÃÅÑéÖ¤ÁíÒ»ÀàÄÚÈİ ¡ª¡ª ÔËĞĞÊı¾İµÄ¼üÖµÊ½´æÈ¡:
+     * Êı¾İÃûÓÉ×ÊÔ´²ãÆ´³É /data/<name>.bin, µ÷ÓÃÕßÎŞ·¨Ô½³ö /data Ğ´µ½
+     * ×Ö¿â»òÍ¼Æ¬ÉÏ, ÕâÊÇ"°²È«"µÄ¹Ø¼üÒ»»·¡£ */
 
-    /*  T12: ä¿å­˜ + æŸ¥å¤§å° + è¯»å›  */
+    /*  T12: ±£´æ + ²é´óĞ¡ + ¶Á»Ø  */
     Test_FillPattern(s_test_buf, 256, 0xD1);
     err = Asset_SaveData("t12", s_test_buf, 256U);
     uint32_t dsz = 0;
@@ -774,7 +774,7 @@ static void LFS_BareMetal_Test(void)
                   (dn == 256) && (memcmp(s_test_buf, s_test_rd, 256) == 0),
               "save = %d, size = %lu, load = %d", err, (unsigned long)dsz, dn);
 
-    /*  T13: è¦†ç›–å†™æˆé•¿åº¦æ›´çŸ­çš„å†…å®¹(æ—§å†…å®¹çš„å°¾å·´ä¸èƒ½æ®‹ç•™)  */
+    /*  T13: ¸²¸ÇĞ´³É³¤¶È¸ü¶ÌµÄÄÚÈİ(¾ÉÄÚÈİµÄÎ²°Í²»ÄÜ²ĞÁô)  */
     Test_FillPattern(s_test_buf, 64, 0xD2);
     err = Asset_SaveData("t12", s_test_buf, 64U);
     err2 = Asset_DataSize("t12", &dsz);
@@ -782,28 +782,28 @@ static void LFS_BareMetal_Test(void)
               (err == ASSET_OK) && (err2 == ASSET_OK) && (dsz == 64U),
               "save = %d, size = %lu", err, (unsigned long)dsz);
 
-    /*  T14: éæ³•æ•°æ®åå¿…é¡»è¢«æ‹’(å¸¦ '/' çš„åå­—ä¸èƒ½è¶Šå‡º /data)  */
+    /*  T14: ·Ç·¨Êı¾İÃû±ØĞë±»¾Ü(´ø '/' µÄÃû×Ö²»ÄÜÔ½³ö /data)  */
     err = Asset_SaveData("bad/name", s_test_buf, 64U);
     err2 = Asset_SaveData("", s_test_buf, 64U);
     LFS_CHECK("T14 asset data name check",
               (err == ASSET_ERR_PARAM) && (err2 == ASSET_ERR_PARAM),
               "slash = %d, empty = %d", err, err2);
 
-    /*  T15: è¯»/åˆ ä¸€ä¸ªæ²¡å­˜è¿‡çš„åå­—  */
+    /*  T15: ¶Á/É¾Ò»¸öÃ»´æ¹ıµÄÃû×Ö  */
     err = Asset_LoadData("t15_none", s_test_rd, TEST_BUF_SIZE);
     err2 = Asset_DeleteData("t15_none");
     LFS_CHECK("T15 asset data missing",
               (err == ASSET_ERR_NOENT) && (err2 == ASSET_ERR_NOENT),
               "load = %d, delete = %d", err, err2);
 
-    /*  T16: å­˜åœ¨æ€§ + åˆ é™¤  */
+    /*  T16: ´æÔÚĞÔ + É¾³ı  */
     err = Asset_HasData("t12") ? ASSET_OK : ASSET_ERR_NOENT;
     err2 = Asset_DeleteData("t12");
     LFS_CHECK("T16 asset data delete",
               (err == ASSET_OK) && (err2 == ASSET_OK) && (!Asset_HasData("t12")),
               "has = %d, delete = %d", err, err2);
 
-    /*  T17: ç©ºé—´æŸ¥è¯¢  */
+    /*  T17: ¿Õ¼ä²éÑ¯  */
     uint32_t total_bytes = 0;
     uint32_t used_bytes = 0;
     err = Asset_Space(&total_bytes, &used_bytes);
@@ -812,7 +812,7 @@ static void LFS_BareMetal_Test(void)
               "total = %lu KB, used = %lu KB",
               (unsigned long)(total_bytes / 1024U), (unsigned long)(used_bytes / 1024U));
 
-    /*  T18: å›¾ç‰‡è¯»å–: åªè¯»æ–‡ä»¶å¤´ + æ‰“å¼€/åˆ†å—è¯»/å…³é—­(ç”¨ T10 å†™è¿›å»çš„ /img_err.bin)  */
+    /*  T18: Í¼Æ¬¶ÁÈ¡: Ö»¶ÁÎÄ¼şÍ· + ´ò¿ª/·Ö¿é¶Á/¹Ø±Õ(ÓÃ T10 Ğ´½øÈ¥µÄ /img_err.bin)  */
     Image_t tmp_img = {LFS_TEST_IMG_W, LFS_TEST_IMG_H, "/img_err.bin"};
     lfs_file_t img_file;
     uint16_t iw = 0;
@@ -822,7 +822,7 @@ static void LFS_BareMetal_Test(void)
     Test_FillPattern(s_test_rd, LFS_TEST_IMG_SIZE, 0x5A);
     memset(s_test_buf, 0, LFS_TEST_IMG_SIZE);
     int ird = ASSET_ERR_STATE;
-    if (err2 == ASSET_OK) /* åªæœ‰æ‰“å¼€æˆåŠŸæ‰å»è¯»/å…³, é¿å…æ“ä½œæœªåˆå§‹åŒ–çš„å¥æŸ„ */
+    if (err2 == ASSET_OK) /* Ö»ÓĞ´ò¿ª³É¹¦²ÅÈ¥¶Á/¹Ø, ±ÜÃâ²Ù×÷Î´³õÊ¼»¯µÄ¾ä±ú */
     {
         ird = Asset_ImageRead(&img_file, s_test_buf, LFS_TEST_IMG_SIZE);
         Asset_ImageClose(&img_file);
@@ -833,7 +833,7 @@ static void LFS_BareMetal_Test(void)
                   (memcmp(s_test_rd, s_test_buf, LFS_TEST_IMG_SIZE) == 0),
               "info = %d, open = %d, read = %d", err, err2, ird);
 
-    /*  ç©ºé—´ä½¿ç”¨æƒ…å†µ  */
+    /*  ¿Õ¼äÊ¹ÓÃÇé¿ö  */
     used = lfs_fs_size(&g_lfs);
     DBG_PRINTF("[LFS ] - used blocks = %ld / %lu (%.1f%%), busy-timeout = %lu -\r\n",
            (long)used, (unsigned long)g_lfs_config.block_count,
@@ -844,7 +844,7 @@ static void LFS_BareMetal_Test(void)
 
 #undef LFS_CHECK
 
-    /* æ±‡æ€»æ˜¾ç¤ºåå¸¸é©»å¾ªç¯, ä¾¿äºé•¿æ—¶é—´è§‚å¯Ÿ; æ¯ 5 ç§’æŠŠ /t1.bin é‡æ–°è¯»ä¸€é */
+    /* »ã×ÜÏÔÊ¾ºó³£×¤Ñ­»·, ±ãÓÚ³¤Ê±¼ä¹Û²ì; Ã¿ 5 Ãë°Ñ /t1.bin ÖØĞÂ¶ÁÒ»±é */
     for (;;)
     {
         snprintf(line, sizeof(line), "LFS %lu/%lu", (unsigned long)pass,
@@ -866,14 +866,14 @@ static void LFS_BareMetal_Test(void)
     }
 }
 
-// /* ================ ATGM336H å®šä½æ¨¡å—æµ‹è¯• ================
-//  * ç›®æ ‡: åªéªŒè¯"æ¥çº¿ + æ³¢ç‰¹ç‡ + NMEA æ”¶å¸§ + æ ¡éªŒå’Œ + è§£æ"è¿™ä¸€æ¡é“¾è·¯,
-//  *       æ—¢ä¸æ¥ç•Œé¢(é™¤ OLED æ˜¾ç¤º), ä¹Ÿä¸æ¥ç³»ç»Ÿæ—¶é’Ÿ â€”â€” è·‘é€šä¹‹åå†å¹¶å…¥ FreeRTOSã€‚
-//  * æ¥çº¿: æ¨¡å— TXD -> PB11(USART3_RX), æ¨¡å— VCC/GND ä¸ä¸»æ§å…±åœ°;
-//  *       æ¨¡å— RXD(PB10) å¯æ‚¬ç©º, åªæœ‰éœ€è¦ä¸‹å‘é…ç½®å‘½ä»¤æ—¶æ‰è¦æ¥ã€‚
+// /* ================ ATGM336H ¶¨Î»Ä£¿é²âÊÔ ================
+//  * Ä¿±ê: Ö»ÑéÖ¤"½ÓÏß + ²¨ÌØÂÊ + NMEA ÊÕÖ¡ + Ğ£ÑéºÍ + ½âÎö"ÕâÒ»ÌõÁ´Â·,
+//  *       ¼È²»½Ó½çÃæ(³ı OLED ÏÔÊ¾), Ò²²»½ÓÏµÍ³Ê±ÖÓ ¡ª¡ª ÅÜÍ¨Ö®ºóÔÙ²¢Èë FreeRTOS¡£
+//  * ½ÓÏß: Ä£¿é TXD -> PB11(USART3_RX), Ä£¿é VCC/GND ÓëÖ÷¿Ø¹²µØ;
+//  *       Ä£¿é RXD(PB10) ¿ÉĞü¿Õ, Ö»ÓĞĞèÒªÏÂ·¢ÅäÖÃÃüÁîÊ±²ÅÒª½Ó¡£
 //  * ==================================================== */
 
-// /* è¿ç»­å¤šå°‘ç§’ä¸€ä¸ªRMCå¸§éƒ½æ²¡æ”¶åˆ°å°±æç¤ºæ¥çº¿/æ³¢ç‰¹ç‡ */
+// /* Á¬Ğø¶àÉÙÃëÒ»¸öRMCÖ¡¶¼Ã»ÊÕµ½¾ÍÌáÊ¾½ÓÏß/²¨ÌØÂÊ */
 // #define ATGM_TEST_NO_DATA_SEC 5U
 
 // static void ATGM336H_BareMetal_Test(void)
@@ -888,7 +888,7 @@ static void LFS_BareMetal_Test(void)
 
 //     OLED_Init();
 //     OLED_Clear();
-//     OLED_Write_String(0, 0, "LAT ---         ", &Font_16); /* å…ˆæ‘†ä¸Š"è¿˜æ²¡æœ‰å®šä½" */
+//     OLED_Write_String(0, 0, "LAT ---         ", &Font_16); /* ÏÈ°ÚÉÏ"»¹Ã»ÓĞ¶¨Î»" */
 //     OLED_Write_String(0, 16, "LON ---         ", &Font_16);
 
 //     ATGM336H_Init();
@@ -898,12 +898,12 @@ static void LFS_BareMetal_Test(void)
 
 //     for (;;)
 //     {
-//         ev = ATGM336H_Poll(); /* éé˜»å¡; æ¯100msè¯»ä¸€æ¬¡, ä¿è¯ç¯å½¢ç¼“å†²ä¸æº¢å‡º */
+//         ev = ATGM336H_Poll(); /* ·Ç×èÈû; Ã¿100ms¶ÁÒ»´Î, ±£Ö¤»·ĞÎ»º³å²»Òç³ö */
 
 //         if (ev & ATGM_EV_RMC)
 //             got_frame = true;
 
-//         /* ---- ä½ç½®æœ‰å˜åŒ–æˆ–å®šä½çŠ¶æ€ç¿»è½¬: åˆ·ç•Œé¢å¹¶æ‰“ä¸€è¡Œ ---- */
+//         /* ---- Î»ÖÃÓĞ±ä»¯»ò¶¨Î»×´Ì¬·­×ª: Ë¢½çÃæ²¢´òÒ»ĞĞ ---- */
 //         if (ev & ATGM_EV_UPDATE)
 //         {
 //             ATGM336H_GetInfo(&info);
@@ -924,12 +924,12 @@ static void LFS_BareMetal_Test(void)
 //             }
 //             else
 //             {
-//                 /* å®šé•¿å­—ç¬¦ä¸², é¿å…ä¸Šä¸€æ¬¡çš„å†…å®¹ç•™ä¸‹æ®‹å½± */
+//                 /* ¶¨³¤×Ö·û´®, ±ÜÃâÉÏÒ»´ÎµÄÄÚÈİÁôÏÂ²ĞÓ° */
 //                 OLED_Write_String(0, 0, "LAT ---         ", &Font_16);
 //                 OLED_Write_String(0, 16, "LON ---         ", &Font_16);
 //             }
 
-//             /* å®šä½æœ‰æ— çš„å˜åŒ–å•ç‹¬æŠ¥ä¸€è¡Œ */
+//             /* ¶¨Î»ÓĞÎŞµÄ±ä»¯µ¥¶À±¨Ò»ĞĞ */
 //             if (info.valid != last_valid)
 //             {
 //                 last_valid = info.valid;
@@ -939,10 +939,10 @@ static void LFS_BareMetal_Test(void)
 
 //         delay_ms(100);
 
-//         if ((++tick % 10U) != 0U) /* æ¯ç§’ç»“ç®—ä¸€æ¬¡"æœ‰æ²¡æœ‰æ”¶åˆ°å¸§" */
+//         if ((++tick % 10U) != 0U) /* Ã¿Ãë½áËãÒ»´Î"ÓĞÃ»ÓĞÊÕµ½Ö¡" */
 //             continue;
 
-//         /* ---- ä¸€ä¸ªRMCå¸§éƒ½æ²¡æ”¶åˆ°: æç¤ºæ¥çº¿/æ³¢ç‰¹ç‡(ç¬¬5ç§’ä¸€æ¬¡, ä¹‹åæ¯30ç§’ä¸€æ¬¡) ---- */
+//         /* ---- Ò»¸öRMCÖ¡¶¼Ã»ÊÕµ½: ÌáÊ¾½ÓÏß/²¨ÌØÂÊ(µÚ5ÃëÒ»´Î, Ö®ºóÃ¿30ÃëÒ»´Î) ---- */
 //         if (got_frame)
 //         {
 //             got_frame = false;
@@ -963,14 +963,14 @@ static void LFS_BareMetal_Test(void)
 //     }
 // }
 
-/* ================ LCD + è§¦æ‘¸æµ‹è¯• ================ */
+/* ================ LCD + ´¥Ãş²âÊÔ ================ */
 
-/* è§¦æ‘¸ç‚¹æ ‡è®°çš„åŠå®½(åƒç´ ): å®é™…ç”» (2*N+1) è§æ–¹çš„å°æ–¹å— */
+/* ´¥Ãşµã±ê¼ÇµÄ°ë¿í(ÏñËØ): Êµ¼Ê»­ (2*N+1) ¼û·½µÄĞ¡·½¿é */
 #define TP_MARK_HALF 3U
 
-/** @brief åœ¨å±å¹•ä¸Šç”»ä¸€ä¸ªç‚¹(è¶…å‡ºå±å¹•çš„éƒ¨åˆ†è‡ªåŠ¨è£æ‰)
- * @param x,y å±å¹•åæ ‡
- * @param color é¢œè‰² */
+/** @brief ÔÚÆÁÄ»ÉÏ»­Ò»¸öµã(³¬³öÆÁÄ»µÄ²¿·Ö×Ô¶¯²Ãµô)
+ * @param x,y ÆÁÄ»×ø±ê
+ * @param color ÑÕÉ« */
 static void LCD_Touch_Mark(uint16_t x, uint16_t y, uint16_t color)
 {
     uint16_t x1 = (x > TP_MARK_HALF) ? (uint16_t)(x - TP_MARK_HALF) : 0U;
@@ -981,28 +981,28 @@ static void LCD_Touch_Mark(uint16_t x, uint16_t y, uint16_t color)
     LCD_Fill_Color(x1, y1, x2, y2, color);
 }
 
-/** @brief æœªæ ¡å‡†æ—¶æŠŠ 0~4095 çš„åŸå§‹å€¼æŒ‰æ¯”ä¾‹ç¼©åˆ°å±å¹•ä¸Š, åªä¸ºäº†çœ‹æ¸…è§¦æ‘¸æ˜¯å¦è·Ÿéš
- * @param raw åŸå§‹å€¼
- * @param max ç›®æ ‡èŒƒå›´(å±å¹•å®½æˆ–é«˜)
- * @return ç¼©æ”¾åçš„å±å¹•åæ ‡ */
+/** @brief Î´Ğ£×¼Ê±°Ñ 0~4095 µÄÔ­Ê¼Öµ°´±ÈÀıËõµ½ÆÁÄ»ÉÏ, Ö»ÎªÁË¿´Çå´¥ÃşÊÇ·ñ¸úËæ
+ * @param raw Ô­Ê¼Öµ
+ * @param max Ä¿±ê·¶Î§(ÆÁÄ»¿í»ò¸ß)
+ * @return Ëõ·ÅºóµÄÆÁÄ»×ø±ê */
 static uint16_t LCD_Touch_ScaleRaw(uint16_t raw, uint16_t max)
 {
     return (uint16_t)(((uint32_t)raw * (uint32_t)(max - 1U)) / 4095U);
 }
 
-/** @brief æ ¡å‡†ç‚¹çš„ç»˜åˆ¶å›è°ƒ: æ¯ä¸ªç‚¹å…ˆæ¸…å±å†ç”»åå­—, ç”¨æˆ·ç…§ç€åå­—ç‚¹
- * @param x,y æ ¡å‡†ç‚¹çš„å±å¹•åæ ‡ */
+/** @brief Ğ£×¼µãµÄ»æÖÆ»Øµ÷: Ã¿¸öµãÏÈÇåÆÁÔÙ»­Ê®×Ö, ÓÃ»§ÕÕ×ÅÊ®×Öµã
+ * @param x,y Ğ£×¼µãµÄÆÁÄ»×ø±ê */
 static void LCD_Touch_DrawTarget(uint16_t x, uint16_t y)
 {
     LCD_Fill_Color(0U, 0U, WIDTH - 1U, HEIGHT - 1U, COLOR_BLACK);
-    /* æ¨ªçº¿ + ç«–çº¿ç»„æˆåå­— */
+    /* ºáÏß + ÊúÏß×é³ÉÊ®×Ö */
     LCD_Fill_Color((uint16_t)(x - 10U), (uint16_t)(y - 1U), (uint16_t)(x + 10U), (uint16_t)(y + 1U), COLOR_WHITE);
     LCD_Fill_Color((uint16_t)(x - 1U), (uint16_t)(y - 10U), (uint16_t)(x + 1U), (uint16_t)(y + 10U), COLOR_WHITE);
 }
 
-/** @brief LCD + è§¦æ‘¸è£¸æœºè‡ªæ£€
- * @note  åˆ¤æ–­æˆåŠŸçš„æ ‡å‡†: æ‰‹æŒ‡ç‚¹åˆ°å“ªé‡Œ, å±å¹•ä¸Šå°±åœ¨å“ªé‡Œç•™ä¸‹ä¸€ä¸ªçº¢ç‚¹,
- *        ä¸”ä¸²å£æ‰“å°çš„ raw / screen åæ ‡éšä¹‹å˜åŒ–ã€ä¸æ‰‹æŒ‡ä½ç½®ä¸€è‡´ã€‚ */
+/** @brief LCD + ´¥ÃşÂã»ú×Ô¼ì
+ * @note  ÅĞ¶Ï³É¹¦µÄ±ê×¼: ÊÖÖ¸µãµ½ÄÄÀï, ÆÁÄ»ÉÏ¾ÍÔÚÄÄÀïÁôÏÂÒ»¸öºìµã,
+ *        ÇÒ´®¿Ú´òÓ¡µÄ raw / screen ×ø±êËæÖ®±ä»¯¡¢ÓëÊÖÖ¸Î»ÖÃÒ»ÖÂ¡£ */
 static void LCD_Touch_BareMetal_Test(void)
 {
     TouchState_t tp;
@@ -1013,11 +1013,11 @@ static void LCD_Touch_BareMetal_Test(void)
 
     DBG_PRINTF("\r\n[TP  ] LCD + touch test start\r\n");
 
-    /* ---- 1. åˆå§‹åŒ–: LCD(SPI3 + èƒŒå…‰) -> èµ„æºå±‚(æ ¡å‡†å‚æ•°çš„å­˜æ”¾å¤„) -> è§¦æ‘¸ ---- */
+    /* ---- 1. ³õÊ¼»¯: LCD(SPI3 + ±³¹â) -> ×ÊÔ´²ã(Ğ£×¼²ÎÊıµÄ´æ·Å´¦) -> ´¥Ãş ---- */
     LCD_Init();
     LCD_Fill_Color(0U, 0U, WIDTH - 1U, HEIGHT - 1U, COLOR_BLACK);
 
-    err = Asset_Init(); /* å†…éƒ¨ä¼šåˆå§‹åŒ– W25Q64 å¹¶æŒ‚è½½ littlefs */
+    err = Asset_Init(); /* ÄÚ²¿»á³õÊ¼»¯ W25Q64 ²¢¹ÒÔØ littlefs */
     DBG_PRINTF("[TP  ] asset init: %s (err = %d), checked = %lu, missing = %lu\r\n",
            (err == ASSET_OK) ? "OK" : ((err == ASSET_ERR_MISSING) ? "NO RES" : "FAIL"),
            err, (unsigned long)Asset_CheckedCount(), (unsigned long)Asset_MissingCount());
@@ -1029,7 +1029,7 @@ static void LCD_Touch_BareMetal_Test(void)
             ;
     }
 
-    /* ---- 2. è‡ªæ£€ä¿¡æ¯ ---- */
+    /* ---- 2. ×Ô¼ìĞÅÏ¢ ---- */
     DBG_PRINTF("[TP  ] PENIRQ idle = %s\r\n",
            Touch_IsPressed() ? "LOW  (kept pressed? check PENIRQ wiring / pull-up)" : "HIGH (ok)");
 
@@ -1039,7 +1039,7 @@ static void LCD_Touch_BareMetal_Test(void)
 
     Touch_SetPoints_RegisterCallback(LCD_Touch_DrawTarget);
 
-    /* å¼ºåˆ¶æ ¡å‡†(æ–¹ä¾¿åå¤æ ¡å‡†/å¯¹æ¯”) */
+    /* Ç¿ÖÆĞ£×¼(·½±ã·´¸´Ğ£×¼/¶Ô±È) */
     calibration_params.calibrated = false;
 
     if (calibration_params.calibrated)
@@ -1050,13 +1050,13 @@ static void LCD_Touch_BareMetal_Test(void)
     }
     else
     {
-        /* é¦–æ¬¡ä¸Šç”µ(æˆ–æ²¡çƒ§å½•èµ„æº, å‚æ•°å­˜ä¸è¿›å»): å…ˆä¾æ¬¡ç‚¹å±å¹•ä¸Šå‡ºç°çš„ 5 ä¸ªåå­— */
+        /* Ê×´ÎÉÏµç(»òÃ»ÉÕÂ¼×ÊÔ´, ²ÎÊı´æ²»½øÈ¥): ÏÈÒÀ´ÎµãÆÁÄ»ÉÏ³öÏÖµÄ 5 ¸öÊ®×Ö */
         DBG_PRINTF("[TP  ] no calibration data, click the 5 crosses on the panel\r\n");
         if (!Touch_Calibrate())
             DBG_PRINTF("[TP  ] calibration NOT saved (littlefs ready?) -- valid in RAM only\r\n");
     }
 
-    /* ---- 3. è§¦æ‘¸æµ‹è¯•: æ‰‹æŒ‡ç‚¹åˆ°å“ªé‡Œ, å°±åœ¨å“ªé‡Œç•™ä¸‹ä¸€ä¸ªçº¢ç‚¹ ---- */
+    /* ---- 3. ´¥Ãş²âÊÔ: ÊÖÖ¸µãµ½ÄÄÀï, ¾ÍÔÚÄÄÀïÁôÏÂÒ»¸öºìµã ---- */
     LCD_Fill_Color(0U, 0U, WIDTH - 1U, HEIGHT - 1U, COLOR_BLACK);
 
     if (Asset_Ready())
@@ -1077,7 +1077,7 @@ static void LCD_Touch_BareMetal_Test(void)
             continue;
         }
 
-        /* åæ ‡æ²¡å˜å°±ä¸é‡å¤åˆ·å± */
+        /* ×ø±êÃ»±ä¾Í²»ÖØ¸´Ë¢ÆÁ */
         if ((tp.x_display == last_x) && (tp.y_display == last_y))
         {
             delay_ms(10);
@@ -1094,7 +1094,7 @@ static void LCD_Touch_BareMetal_Test(void)
         }
         else
         {
-            /* æ²¡æ ¡å‡†æ—¶ x_display/y_display å°±æ˜¯åŸå§‹å€¼(0~4095), æŒ‰æ¯”ä¾‹ç¼©åˆ°å±å¹•ä¸Š */
+            /* Ã»Ğ£×¼Ê± x_display/y_display ¾ÍÊÇÔ­Ê¼Öµ(0~4095), °´±ÈÀıËõµ½ÆÁÄ»ÉÏ */
             sx = LCD_Touch_ScaleRaw(tp.x, WIDTH);
             sy = LCD_Touch_ScaleRaw(tp.y, HEIGHT);
         }
@@ -1111,8 +1111,8 @@ static void LCD_Touch_BareMetal_Test(void)
 
 void BareMetal_Module_Test(void)
 {
-    /* è£¸æœºåˆ†æ”¯çš„ main() ä¸ä¼šè°ƒç”¨ Board_Init(), USART2 éœ€è¦åœ¨è¿™é‡Œåˆå§‹åŒ–,
-     * å¦åˆ™ printf æ²¡æœ‰ä»»ä½•è¾“å‡º(è°ƒåº¦å™¨æœªè¿è¡Œæ—¶ fputc è‡ªåŠ¨é€€åŒ–ä¸ºè½®è¯¢å‘é€) */
+    /* Âã»ú·ÖÖ§µÄ main() ²»»áµ÷ÓÃ Board_Init(), USART2 ĞèÒªÔÚÕâÀï³õÊ¼»¯,
+     * ·ñÔò printf Ã»ÓĞÈÎºÎÊä³ö(µ÷¶ÈÆ÷Î´ÔËĞĞÊ± fputc ×Ô¶¯ÍË»¯ÎªÂÖÑ¯·¢ËÍ) */
     Usart2_Debug_Init();
     DBG_PRINTF("\r\n[BARE] bare-metal module test start, build %s %s\r\n", __DATE__, __TIME__);
 

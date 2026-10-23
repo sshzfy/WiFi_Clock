@@ -1,6 +1,6 @@
 #include "Net_Task.h"
 
-/* å¼€æœºç½‘ç»œé˜¶æ®µç»“æœ(ä»…uiTaskåœ¨EV_NET_READYåè¯»å–) */
+/* ¿ª»úÍøÂç½×¶Î½á¹û(½öuiTaskÔÚEV_NET_READYºó¶ÁÈ¡) */
 static NetBoot_t s_boot = {0};
 
 static void Net_Task(void *pvParameters)
@@ -9,55 +9,55 @@ static void Net_Task(void *pvParameters)
 
     DBG_PRINTF("[NET] Net_Task start\r\n");
 
-    uint32_t sntp_cnt, wifi_cnt, weathercnt; // ä¸‰ä¸ªå‘¨æœŸè®¡æ•°å™¨, 1så¿ƒè·³æ—¶é€’å‡, 0æ—¶è§¦å‘å¯¹åº”æœåŠ¡
-    bool wifi_up;                            // æ˜¯å¦è¿æ¥æˆåŠŸ
-    bool wifi_sleeping = false;              // æ¨¡ç»„å½“å‰æ˜¯å¦å¤„äºçœç”µæ¡£ä½(ä»…æœ¬ä»»åŠ¡è®¿é—®)
+    uint32_t sntp_cnt, wifi_cnt, weathercnt; // Èı¸öÖÜÆÚ¼ÆÊıÆ÷, 1sĞÄÌøÊ±µİ¼õ, 0Ê±´¥·¢¶ÔÓ¦·şÎñ
+    bool wifi_up;                            // ÊÇ·ñÁ¬½Ó³É¹¦
+    bool wifi_sleeping = false;              // Ä£×éµ±Ç°ÊÇ·ñ´¦ÓÚÊ¡µçµµÎ»(½ö±¾ÈÎÎñ·ÃÎÊ)
 
     DBG_PRINTF("[NET] Init Start\r\n");
 
-    /* æ³¨: WiFi å‡­æ®ç”± uiTask åœ¨å¼€æœºæ—¶ç”¨ WiFi_Config_Load() å–å›(Asset å±‚åªæœ‰ uiTask è®¿é—®),
-     * è¿™é‡Œç›´æ¥ä½¿ç”¨ App å±‚å·²å°±ç»ªçš„ g_ssid/g_password */
+    /* ×¢: WiFi Æ¾¾İÓÉ uiTask ÔÚ¿ª»úÊ±ÓÃ WiFi_Config_Load() È¡»Ø(Asset ²ãÖ»ÓĞ uiTask ·ÃÎÊ),
+     * ÕâÀïÖ±½ÓÊ¹ÓÃ App ²ãÒÑ¾ÍĞ÷µÄ g_ssid/g_password */
 
-    /* å¼€æœºé˜¶æ®µ: AT/WiFiåˆå§‹åŒ– + è¿æ¥ */
-    s_boot.wifi_ok = Wireless_Init(); // æ­¤å¤„ s_boot.wifi_ok è¡¨ç¤ºåˆå§‹åŒ–æ— çº¿ç½‘ç»œæ˜¯å¦æˆåŠŸ
+    /* ¿ª»ú½×¶Î: AT/WiFi³õÊ¼»¯ + Á¬½Ó */
+    s_boot.wifi_ok = Wireless_Init(); // ´Ë´¦ s_boot.wifi_ok ±íÊ¾³õÊ¼»¯ÎŞÏßÍøÂçÊÇ·ñ³É¹¦
     if (s_boot.wifi_ok)
-        s_boot.wifi_ok = Service_WiFi_Connect(); // æ­¤å¤„ s_boot.wifi_ok è¡¨ç¤ºè¿æ¥WiFiæ˜¯å¦æˆåŠŸ
+        s_boot.wifi_ok = Service_WiFi_Connect(); // ´Ë´¦ s_boot.wifi_ok ±íÊ¾Á¬½ÓWiFiÊÇ·ñ³É¹¦
     wifi_up = s_boot.wifi_ok;
 
-    /* å¼€æœºé˜¶æ®µ: SNTP + å¤©æ°”(éœ€WiFi) */
+    /* ¿ª»ú½×¶Î: SNTP + ÌìÆø(ĞèWiFi) */
     if (wifi_up)
         AT_SNTP_Init();
-    bool time_ok = wifi_up && Service_Time_Sync();         // SNTPåŒæ­¥æ˜¯å¦æˆåŠŸ
-    bool weather_ok = wifi_up && Service_Weather_Update(); // å¤©æ°”æ›´æ–°æ˜¯å¦æˆåŠŸ
+    bool time_ok = wifi_up && Service_Time_Sync();         // SNTPÍ¬²½ÊÇ·ñ³É¹¦
+    bool weather_ok = wifi_up && Service_Weather_Update(); // ÌìÆø¸üĞÂÊÇ·ñ³É¹¦
 
-    s_boot.service_ok = wifi_up && time_ok && weather_ok; // æ˜¯å¦æ‰€æœ‰æœåŠ¡éƒ½å¯åŠ¨æˆåŠŸ
+    s_boot.service_ok = wifi_up && time_ok && weather_ok; // ÊÇ·ñËùÓĞ·şÎñ¶¼Æô¶¯³É¹¦
 
-    /* é€šçŸ¥UI: å¼€æœºé˜¶æ®µå®Œæˆ(æ— è®ºæˆè´¥), ä¹‹ååå°ç»§ç»­é‡è¯• */
+    /* Í¨ÖªUI: ¿ª»ú½×¶ÎÍê³É(ÎŞÂÛ³É°Ü), Ö®ºóºóÌ¨¼ÌĞøÖØÊÔ */
     xEventGroupSetBits(Task_Events(), EV_NET_READY);
 
-    /*  å‘¨æœŸè°ƒåº¦åˆå€¼  */
-    wifi_cnt = wifi_up ? WIFI_PERIOD_S : RETRY_WIFI_S;            // WiFiæ£€æŸ¥å‘¨æœŸ,è¿æ¥ä¸Š30min,æœªè¿10s
-    sntp_cnt = time_ok ? SNTP_PERIOD_S : RETRY_SNTP_S;            // SNTPå‘¨æœŸ,æˆåŠŸå4h,æœªæˆåŠŸ5s
-    weathercnt = weather_ok ? WEATHER_PERIOD_S : RETRY_WEATHER_S; // å¤©æ°”å‘¨æœŸ,æˆåŠŸå1h,æœªæˆåŠŸ60s
+    /*  ÖÜÆÚµ÷¶È³õÖµ  */
+    wifi_cnt = wifi_up ? WIFI_PERIOD_S : RETRY_WIFI_S;            // WiFi¼ì²éÖÜÆÚ,Á¬½ÓÉÏ30min,Î´Á¬10s
+    sntp_cnt = time_ok ? SNTP_PERIOD_S : RETRY_SNTP_S;            // SNTPÖÜÆÚ,³É¹¦ºó4h,Î´³É¹¦5s
+    weathercnt = weather_ok ? WEATHER_PERIOD_S : RETRY_WEATHER_S; // ÌìÆøÖÜÆÚ,³É¹¦ºó1h,Î´³É¹¦60s
 
     for (;;)
     {
-        /* 1s å¿ƒè·³; åŒæ—¶ç­‰å¾…"é€€å‡ºä½åŠŸè€—ç«‹å³è¡¥æ›´"ä¸"é”®ç›˜æäº¤äº†æ–°å‡­æ®/æ–°å®šä½"ä¸‰ä¸ªè¯·æ±‚ */
+        /* 1s ĞÄÌø; Í¬Ê±µÈ´ı"ÍË³öµÍ¹¦ºÄÁ¢¼´²¹¸ü"Óë"¼üÅÌÌá½»ÁËĞÂÆ¾¾İ/ĞÂ¶¨Î»"Èı¸öÇëÇó */
         EventBits_t bits = xEventGroupWaitBits(Task_Events(),
                                                EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED,
                                                pdTRUE, pdFALSE, pdMS_TO_TICKS(1000));
 
-        /* ä½åŠŸè€—çŠ¶æ€å˜åŒ– â†’ åŒæ­¥æ¨¡ç»„çš„Wi-Fiçœç”µæ¡£ä½ã€‚
-         * å¿…é¡»æ”¾åœ¨è¡¥æ›´ä¹‹å‰: é€€å‡ºå¤œé—´æ—¶å…ˆè®©æ¨¡ç»„æ¢å¤å…¨é€Ÿ, å†æ‰§è¡Œ WiFi/SNTP/å¤©æ°” */
+        /* µÍ¹¦ºÄ×´Ì¬±ä»¯ ¡ú Í¬²½Ä£×éµÄWi-FiÊ¡µçµµÎ»¡£
+         * ±ØĞë·ÅÔÚ²¹¸üÖ®Ç°: ÍË³öÒ¹¼äÊ±ÏÈÈÃÄ£×é»Ö¸´È«ËÙ, ÔÙÖ´ĞĞ WiFi/SNTP/ÌìÆø */
         if (APP_IS_LOWPOWER() != wifi_sleeping)
         {
             if (Service_WiFi_Sleep(APP_IS_LOWPOWER()))
-                wifi_sleeping = APP_IS_LOWPOWER(); /* å¤±è´¥åˆ™ä¿æŒåŸçŠ¶æ€, ä¸‹ä¸ªå‘¨æœŸè‡ªåŠ¨é‡è¯• */
+                wifi_sleeping = APP_IS_LOWPOWER(); /* Ê§°ÜÔò±£³ÖÔ­×´Ì¬, ÏÂ¸öÖÜÆÚ×Ô¶¯ÖØÊÔ */
         }
 
         if (bits & EV_NET_UPDATE_NOW)
         {
-            /* ä¸‰ä¸ªè®¡æ•°å™¨ç½® 1: ä¸‹ä¸€æ‹è¿ç»­æ‰§è¡Œ WiFi æ£€æŸ¥ + SNTP + å¤©æ°” */
+            /* Èı¸ö¼ÆÊıÆ÷ÖÃ 1: ÏÂÒ»ÅÄÁ¬ĞøÖ´ĞĞ WiFi ¼ì²é + SNTP + ÌìÆø */
             wifi_cnt = 1U;
             sntp_cnt = 1U;
             weathercnt = 1U;
@@ -65,18 +65,18 @@ static void Net_Task(void *pvParameters)
             DBG_PRINTF("[NET] LowPower exit, reset update\r\n");
         }
 
-        /* ä½åŠŸè€—æœŸé—´: å†»ç»“å‘¨æœŸè®¡æ•°å™¨, ä¸æ‰§è¡Œä»»ä½• update */
+        /* µÍ¹¦ºÄÆÚ¼ä: ¶³½áÖÜÆÚ¼ÆÊıÆ÷, ²»Ö´ĞĞÈÎºÎ update */
         if (APP_IS_LOWPOWER())
             continue;
 
-        /* é”®ç›˜åˆšæäº¤äº†æ–°å®šä½: ä¸å¿…ç­‰æ»¡å¤©æ°”å‘¨æœŸ, ç«‹å³æŒ‰æ–°å®šä½å–ä¸€æ¬¡å¤©æ°” */
+        /* ¼üÅÌ¸ÕÌá½»ÁËĞÂ¶¨Î»: ²»±ØµÈÂúÌìÆøÖÜÆÚ, Á¢¼´°´ĞÂ¶¨Î»È¡Ò»´ÎÌìÆø */
         if (bits & EV_LOCATION_CRED)
         {
             DBG_PRINTF("[NET] location updated, refresh weather now\r\n");
             weathercnt = 1U;
         }
 
-        /* é”®ç›˜åˆšæäº¤äº†æ–°å‡­æ®: ç”¨æ–°å‡­æ®å¼ºåˆ¶é‡è¿ä¸€æ¬¡(è½ç›˜ç”± uiTask è´Ÿè´£) */
+        /* ¼üÅÌ¸ÕÌá½»ÁËĞÂÆ¾¾İ: ÓÃĞÂÆ¾¾İÇ¿ÖÆÖØÁ¬Ò»´Î(ÂäÅÌÓÉ uiTask ¸ºÔğ) */
         if (bits & EV_WIFI_CRED)
         {
             DBG_PRINTF("[NET] WiFi credentials updated, reconnect now\r\n");
@@ -88,24 +88,24 @@ static void Net_Task(void *pvParameters)
             weathercnt = 1U;
 
             if (ok)
-                AT_SNTP_Init(); /* æ¢ç½‘åè·¯ç”±/æ—¶åŒºå¯èƒ½å˜, é‡æ–°é…ç½®SNTP */
+                AT_SNTP_Init(); /* »»ÍøºóÂ·ÓÉ/Ê±Çø¿ÉÄÜ±ä, ÖØĞÂÅäÖÃSNTP */
 
-            xEventGroupSetBits(Task_Events(), EV_WIFI); /* æ— è®ºæˆè´¥éƒ½åˆ·ä¸€æ¬¡é¡¶éƒ¨çŠ¶æ€æ¡ */
+            xEventGroupSetBits(Task_Events(), EV_WIFI); /* ÎŞÂÛ³É°Ü¶¼Ë¢Ò»´Î¶¥²¿×´Ì¬Ìõ */
         }
         else if (--wifi_cnt == 0U)
         {
             bool was_up = wifi_up;
             int ret = Service_WiFi_Update();
-            if (ret < 0) /* è¿æ¥å¤±è´¥ */
+            if (ret < 0) /* Á¬½ÓÊ§°Ü */
             {
                 wifi_up = false;
                 wifi_cnt = RETRY_WIFI_S;
             }
-            else /* è¿æ¥æˆåŠŸ */
+            else /* Á¬½Ó³É¹¦ */
             {
                 wifi_up = true;
                 wifi_cnt = WIFI_PERIOD_S;
-                if (ret > 0) /* åˆšé‡è¿æˆåŠŸ: é‡æ–°é…ç½®SNTPå¹¶ç«‹å³è¡¥SNTP+å¤©æ°” */
+                if (ret > 0) /* ¸ÕÖØÁ¬³É¹¦: ÖØĞÂÅäÖÃSNTP²¢Á¢¼´²¹SNTP+ÌìÆø */
                 {
                     AT_SNTP_Init();
                     sntp_cnt = 1U;
@@ -113,16 +113,16 @@ static void Net_Task(void *pvParameters)
                 }
             }
             if (ret != 0 || !was_up)
-                xEventGroupSetBits(Task_Events(), EV_WIFI); /* çŠ¶æ€å˜åŒ–/é¦–æ¬¡è¿ä¸Š: åˆ·é¡¶éƒ¨æ¡ */
+                xEventGroupSetBits(Task_Events(), EV_WIFI); /* ×´Ì¬±ä»¯/Ê×´ÎÁ¬ÉÏ: Ë¢¶¥²¿Ìõ */
         }
 
         if (--sntp_cnt == 0U)
         {
             if (!wifi_up)
             {
-                sntp_cnt = 1U; // WiFiæœªè¿, æ¯ç§’é¡ºå»¶, ç­‰wifiæ¢å¤åè§¦å‘
+                sntp_cnt = 1U; // WiFiÎ´Á¬, Ã¿ÃëË³ÑÓ, µÈwifi»Ö¸´ºó´¥·¢
             }
-            else if (Service_Time_Sync()) /* SNTPåŒæ­¥æˆåŠŸ */
+            else if (Service_Time_Sync()) /* SNTPÍ¬²½³É¹¦ */
             {
                 sntp_cnt = SNTP_PERIOD_S;
             }
@@ -136,12 +136,12 @@ static void Net_Task(void *pvParameters)
         {
             if (!wifi_up)
             {
-                weathercnt = 1U; // WiFiæœªè¿, æ¯ç§’é¡ºå»¶, ç­‰wifiæ¢å¤åè§¦å‘
+                weathercnt = 1U; // WiFiÎ´Á¬, Ã¿ÃëË³ÑÓ, µÈwifi»Ö¸´ºó´¥·¢
             }
-            else if (Service_Weather_Update()) /* å¤©æ°”æ›´æ–° */
+            else if (Service_Weather_Update()) /* ÌìÆø¸üĞÂ */
             {
                 weathercnt = WEATHER_PERIOD_S;
-                xEventGroupSetBits(Task_Events(), EV_WEATHER); /* å¤©æ°”æ›´æ–°æˆåŠŸ: åˆ·æ–°å¤©æ°”éƒ¨åˆ†UI */
+                xEventGroupSetBits(Task_Events(), EV_WEATHER); /* ÌìÆø¸üĞÂ³É¹¦: Ë¢ĞÂÌìÆø²¿·ÖUI */
             }
             else
             {

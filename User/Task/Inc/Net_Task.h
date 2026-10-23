@@ -10,8 +10,8 @@
 
 typedef struct
 {
-    volatile bool wifi_ok;    // å¼€æœºWiFiåˆå§‹åŒ–+è¿æ¥æ˜¯å¦å®Œæˆ(æˆåŠŸæˆ–å¤±è´¥)
-    volatile bool service_ok; // å¼€æœºSNTP+å¤©æ°”æ˜¯å¦éƒ½æˆåŠŸ
+    volatile bool wifi_ok;    // ¿ª»úWiFi³õÊ¼»¯+Á¬½ÓÊÇ·ñÍê³É(³É¹¦»òÊ§°Ü)
+    volatile bool service_ok; // ¿ª»úSNTP+ÌìÆøÊÇ·ñ¶¼³É¹¦
 } NetBoot_t;
 
 void Net_Task_Start(void);
