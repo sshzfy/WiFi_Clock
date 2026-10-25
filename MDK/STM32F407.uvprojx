@@ -450,6 +450,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\Application\Src\stm32f4xx_it.c</FilePath>
             </File>
+            <File>
+              <FileName>OTA.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Application\Src\OTA.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -549,6 +554,11 @@
               <FileName>UI_Task.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\Task\Src\UI_Task.c</FilePath>
+            </File>
+            <File>
+              <FileName>OTA_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Task\Src\OTA_Task.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -689,6 +699,16 @@
               <FileName>W25Q64.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\W25Q64.c</FilePath>
+            </File>
+            <File>
+              <FileName>OTA_Store.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\OTA_Store.c</FilePath>
+            </File>
+            <File>
+              <FileName>OTA_Serial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\OTA_Serial.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -1,0 +1,6 @@
+{
+    // Whole project uses GB2312/GBK (same as Keil MDK ANSI)
+    "files.encoding": "gb2312",
+    // Disable auto-guess so files are not mis-detected as UTF-8
+    "files.autoGuessEncoding": false
+}
