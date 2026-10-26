@@ -1,4 +1,5 @@
 #include "UI_Task.h"
+#include "OTA_UI.h"
 
 /* ================ static 函数 ================ */
 static void UI_Boot_Sequence(void);
@@ -98,6 +99,7 @@ static void UI_Task(void *pvParameters)
 
         /* 当前模式的周期刷新: 键盘心跳 / 夜间分钟时钟 / 白天时钟 + 触摸轮询 */
         UI_Mode_Tick();
+        OTA_UI_Tick();
     }
 }
 

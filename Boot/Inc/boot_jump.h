@@ -3,4 +3,4 @@
 
 void Boot_JumpToApp(void);
 
-#endif
+#endif /* __BOOT_JUMP_H__ */

@@ -10,7 +10,7 @@
 /* 缓存配置 */
 #define LFS_BLOCK_SIZE            W25Q64_SECTOR_SIZE  // 最小擦除块大小 = 4KB 扇区
 #define LFS_BLOCK_COUNT           W25Q64_SECTOR_COUNT // 块数量 = 8MB/4KB = 2048
-#define LFS_CACHE_SIZE            16                  // 缓存大小
+#define LFS_CACHE_SIZE            16                  // 缓存大小(Byte)
 #define LFS_LOOKAHEAD_SIZE        16                  // 预读大小(必须为8的倍数)
 
 /* 块设备配置 */

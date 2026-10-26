@@ -1,4 +1,5 @@
 #include "UI_Input.h"
+#include "OTA_UI.h"
 
 /* 新增图标时只要在这张表里加一行, 不用改命中判断 */
 static const UI_Hotspot_t s_hotspots[] = {
@@ -125,6 +126,7 @@ static void UI_Input_LvglInit(void)
     lv_port_disp_init();  // 注册显示: 刷屏借 LCD 的整行缓冲, 不额外占 SRAM
     lv_port_indev_init(); // 注册触摸: XPT2046 → 指针设备
     ui_init();            // SquareLine 生成的界面
+    OTA_UI_Init();       // Phase 2: 更新进度浮层
 
     s_lvgl_tick_ms = (uint32_t)TIM5_Get_ms();
     s_lvgl_ready = true;

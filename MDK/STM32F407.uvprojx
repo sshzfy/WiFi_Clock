@@ -455,6 +455,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\Application\Src\OTA.c</FilePath>
             </File>
+            <File>
+              <FileName>OTA_Update.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Application\Src\OTA_Update.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -514,6 +519,11 @@
               <FileName>ui_location.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\UI\Src\screens\ui_location.c</FilePath>
+            </File>
+            <File>
+              <FileName>OTA_UI.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\UI\Src\OTA_UI.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -709,6 +719,11 @@
               <FileName>OTA_Serial.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\OTA_Serial.c</FilePath>
+            </File>
+            <File>
+              <FileName>OTA_Net.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\Src\OTA_Net.c</FilePath>
             </File>
           </Files>
         </Group>

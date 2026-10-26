@@ -32,6 +32,10 @@ typedef struct
 
 ota_result_t OTA_Run(void);
 uint32_t OTA_AppSelfSize(void);
+
+/* 提交已下载好的 /ota/firmware.tmp：改名 -> 备份 -> 写参数 -> 复位。
+ * 串口离线升级与 Phase 2 网络升级共用；成功不返回（直接复位）。 */
+ota_result_t OTA_CommitFirmware(uint32_t fw_size, uint32_t fw_crc32, uint32_t fw_version);
 bool OTA_CalcAppInfo(uint32_t *size, uint32_t *crc32);
 
 #endif

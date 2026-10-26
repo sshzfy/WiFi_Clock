@@ -5,17 +5,11 @@
 #include <stddef.h>
 
 /* ============================================================
- * Bootloader 串口日志（USART2，PA2=TX / PA3=RX，115200-8N1）
+ * Bootloader 串口日志
  * ------------------------------------------------------------
- * 设计要点：
- *   1. 为什么不复用 BSP/Usart.c？
- *      它带 FreeRTOS 互斥量、DMA、printf 重定向，Bootloader 里
- *      没有调度器，不值得为几行日志拖进这些依赖。
- *   2. 为什么纯轮询发送？
- *      Bootloader 只在启动/搬运时打几行日志，字节少、阻塞
- *      几十微秒无所谓，轮询代码最小、行为最确定。
- *   3. 为什么不用 printf？
- *      格式化库会多出几 KB 代码，这里只有数字/字符串两种输出。
+ * 轮询发送:
+ *     Bootloader 只在启动/搬运时打几行日志，字节少、阻塞
+ *     几十微秒无所谓，轮询代码最小、行为最确定。
  * ============================================================ */
 
 /**
@@ -56,7 +50,6 @@ void Boot_Uart_Init(void)
 /**
  * @brief  发送一个字节
  * @param  c 待发送字符
- * @note   TXE 置位表示发送数据寄存器空，可以写入下一字节。
  */
 void Boot_Uart_PutChar(char c)
 {
@@ -93,11 +86,10 @@ void Boot_Uart_Puts(const char *s)
 /**
  * @brief  十进制输出 32 位无符号数
  * @param  v 数值
- * @note   先取余倒序存入栈上小缓冲，再正序输出，不引入 printf。
  */
 void Boot_Uart_PutU32(uint32_t v)
 {
-    char buf[11];
+    char buf[11] = {0};
     uint32_t i = 0U;
 
     if (v == 0U)
@@ -127,5 +119,5 @@ void Boot_Uart_PutHex(uint32_t v)
 
     Boot_Uart_Puts("0x");
     for (int shift = 28; shift >= 0; shift -= 4)
-        Boot_Uart_PutChar(hex[(v >> shift) & 0x0FU]);
+        Boot_Uart_PutChar(hex[(v >> shift) & 0x0FU]); // 四位二进制表示一位十六进制
 }

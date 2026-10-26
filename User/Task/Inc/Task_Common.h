@@ -21,6 +21,8 @@
 #define EV_WIFI_CRED                   (1UL << 11) // 键盘提交了新的WiFi凭据, 保存并重连
 #define EV_LOCATION_KB                 (1UL << 12) // 点了定位图标, 刷定位输入界面
 #define EV_LOCATION_CRED               (1UL << 13) // 键盘提交了新的定位信息, 立即按新定位取天气
+#define EV_OTA_CHECK                   (1UL << 14) // 用户请求"检查固件更新"(uiTask -> netTask)
+#define EV_OTA_DONE                    (1UL << 15) // OTA 流程结束, 结果在 g_ota_prog.state(uiTask 读)
 /* 注: GPS + 高德逆地理编码的省市显示暂未接入(接口保留) */
 
 extern volatile bool g_lowpower;

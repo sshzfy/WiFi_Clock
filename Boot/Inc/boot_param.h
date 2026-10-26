@@ -5,11 +5,12 @@
 #include <stdbool.h>
 
 #define BOOT_PARAM_MAGIC         0x424F4F54UL // 'BOOT' 
-#define BOOT_PARAM_LAYOUT        1U // 结构体布局版本，改字段就 +1 
+#define BOOT_PARAM_LAYOUT        1U           // 结构体布局版本，改字段就 +1 
 
 #define BOOT_PARAM_SLOT_SIZE         512U // 每条记录 64 B
-#define BOOT_PARAM_SLOT_COUNT        32U // 循环使用 32 条记录
+#define BOOT_PARAM_SLOT_COUNT        32U  // 循环使用 32 条记录
 
+/* 启动标志位 */
 #define BOOT_FLAG_CONFIRMED             (1UL << 0) // App 已确认能正常启动 
 #define BOOT_FLAG_BACKUP_VALID          (1UL << 1) // backup.bin 有效，可回滚 
 #define BOOT_FLAG_OTA_VERIFIED          (1UL << 2) // 待升级固件已通过 CRC 
@@ -27,6 +28,7 @@ typedef enum
     BOOT_ST_RECOVERY         // 无可用固件，等待串口救援 
 } boot_state_t;
 
+/* 参数区记录结构体(均为 4 字节对齐) */
 typedef struct
 {
     uint32_t magic;  // BOOT_PARAM_MAGIC 

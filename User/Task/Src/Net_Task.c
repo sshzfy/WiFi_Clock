@@ -1,4 +1,5 @@
 #include "Net_Task.h"
+#include "OTA_Update.h"
 
 /* 开机网络阶段结果(仅uiTask在EV_NET_READY后读取) */
 static NetBoot_t s_boot = {0};
@@ -43,8 +44,11 @@ static void Net_Task(void *pvParameters)
     for (;;)
     {
         /* 1s 心跳; 同时等待"退出低功耗立即补更"与"键盘提交了新凭据/新定位"三个请求 */
+        /* EV_OTA_CHECK 必须放进等待掩码: 否则它既不会被 xClearOnExit
+         * 清除, 又会在超时返回的 bits 里出现, 导致每秒重复触发 OTA。 */
         EventBits_t bits = xEventGroupWaitBits(Task_Events(),
-                                               EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED,
+                                               EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED |
+                                                   EV_OTA_CHECK,
                                                pdTRUE, pdFALSE, pdMS_TO_TICKS(1000));
 
         /* 低功耗状态变化 → 同步模组的Wi-Fi省电档位。
@@ -63,6 +67,21 @@ static void Net_Task(void *pvParameters)
             weathercnt = 1U;
 
             DBG_PRINTF("[NET] LowPower exit, reset update\r\n");
+        }
+
+        /* OTA 检查更新请求: 阻塞执行(下载期间独占 AT 模组)。
+         * 低功耗/未连 WiFi 时直接回结果, 不折腾模组。 */
+        if (bits & EV_OTA_CHECK)
+        {
+            if (!wifi_up)
+            {
+                g_ota_prog.state = OTA_UPD_ERR_NET;
+            }
+            else
+            {
+                OTA_Update_Run();
+            }
+            xEventGroupSetBits(Task_Events(), EV_OTA_DONE);
         }
 
         /* 低功耗期间: 冻结周期计数器, 不执行任何 update */

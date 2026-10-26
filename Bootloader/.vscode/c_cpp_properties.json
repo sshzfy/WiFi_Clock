@@ -8,15 +8,20 @@
                 "d:\\Code\\Keil\\Project4\\Core\\Startup",
                 "d:\\Code\\Keil\\Project4\\STM32F4xx_StdPeriph_Driver\\inc",
                 "d:\\Code\\Keil\\Project4\\User\\Application\\Inc",
+                "d:\\Code\\Keil\\Project4\\BSP\\Inc",
+                "d:\\Code\\Keil\\Project4\\Middlewares\\LittleFS\\Inc",
                 "D:\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Keil5\\ARM\\ARMCC\\include\\rw",
                 "d:\\Code\\Keil\\Project4\\Boot\\Src",
-                "d:\\Code\\Keil\\Project4\\STM32F4xx_StdPeriph_Driver\\src"
+                "d:\\Code\\Keil\\Project4\\STM32F4xx_StdPeriph_Driver\\src",
+                "d:\\Code\\Keil\\Project4\\Middlewares\\LittleFS\\Src",
+                "d:\\Code\\Keil\\Project4\\BSP\\Src"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",
                 "STM32F40_41xxx",
                 "BOOT_BUILD",
+                "LFS_READONLY",
                 "__CC_ARM",
                 "__arm__",
                 "__align(x)=",

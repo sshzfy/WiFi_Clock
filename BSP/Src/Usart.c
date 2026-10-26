@@ -1,4 +1,5 @@
 #include "Usart.h"
+#include "Timer.h"
 
 /* ==================== USART1 RX 环形缓冲(供AT轮询读取) ====================
  * 说明: USART1 仅1字节RDR无FIFO。任务级轮询(RXNE)在任务睡眠/被抢占期间
@@ -6,7 +7,10 @@
  * ISR优先级=5(configMAX_SYSCALL_INTERRUPT_PRIORITY), 未调用RTOS API。
  * ======================================== */
 
-#define USART1_RX_RING_SIZE 512
+/* 原 512 B：OTA 流式下载时 littlefs 偶发块擦除(数十ms)会来不及读，
+ * 115200bps 下 512 B 仅约 44ms 容量，存在溢出丢流风险；
+ * 加大到 4 KB（约 356 ms 容量）覆盖擦除延迟。 */
+#define USART1_RX_RING_SIZE 4096
 
 static volatile char rx_ring[USART1_RX_RING_SIZE]; // RX环形缓冲区
 static volatile uint16_t rx_head = 0;              // RX头指针
@@ -172,8 +176,14 @@ static void Dbg_Flush(void)
 
     Dbg_Dma_Init();                                   /* 初始化DMA */
     DMA_Cmd(DMA1_Stream6, DISABLE);                   /* 禁用DMA1_Stream6, 允许安全修改 DMA 参数 */
-    while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE) /* 等待DMA流完全进入禁用状态（硬件同步），以便安全修改NDTR/M0AR等寄存器 */
-        ;
+    {
+        uint64_t _t0 = TIM5_Get_ms();
+        while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE) /* 等待DMA流完全进入禁用状态（硬件同步） */
+        {
+            if (TIM5_Get_ms() - _t0 > 1000U)
+                break; /* 1 秒保护：异常时放弃本行输出, 防止整系统卡死 */
+        }
+    }
 
     /* 设置DMA参数 */
     DMA1_Stream6->NDTR = n;                 // 设置要搬运的字节数
@@ -188,18 +198,28 @@ static void Dbg_Flush(void)
     DMA_Cmd(DMA1_Stream6, ENABLE);
 
     /* 等所有字节由DMA搬入DR,传输未完成则让出CPU */
-    while (DMA_GetFlagStatus(DMA1_Stream6, DMA_FLAG_TCIF6) == RESET)
     {
-        if (Dbg_Can_Block())
-            vTaskDelay(1);
+        uint64_t _t1 = TIM5_Get_ms();
+        while (DMA_GetFlagStatus(DMA1_Stream6, DMA_FLAG_TCIF6) == RESET)
+        {
+            if (Dbg_Can_Block())
+                vTaskDelay(1);
+            if (TIM5_Get_ms() - _t1 > 2000U)
+                break; /* 2 秒保护 */
+        }
     }
     DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_TCIF6); /* 清除DMA1_Stream6_TCIF6标志位, 确保下一次发送从头开始 */
 
     /* 等最后一个字节真正移出(整行发送完成), 传输未完成则让出CPU */
-    while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET)
     {
-        if (Dbg_Can_Block())
-            vTaskDelay(1);
+        uint64_t _t2 = TIM5_Get_ms();
+        while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET)
+        {
+            if (Dbg_Can_Block())
+                vTaskDelay(1);
+            if (TIM5_Get_ms() - _t2 > 2000U)
+                break; /* 2 秒保护 */
+        }
     }
 }
 

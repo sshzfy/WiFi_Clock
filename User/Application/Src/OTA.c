@@ -64,12 +64,17 @@ uint32_t OTA_AppSelfSize(void)
     boot_param_t p;
     uint32_t size = 0U;
 
-    /* 一级来源：参数区里 Bootloader 记录的准确大小 */
+    /* 一级来源：参数区 app_size。但只有 APP_UNCONFIRMED 状态可信：
+     * 它由 Bootloader 刚按 .ota 包头 fw_size 写入，精确等于 bin 长度。
+     * IDLE/CONFIRMED 状态的值可能是"上一次 ST-Link 烧录"留下的旧值，
+     * 继承它可能小于当前固件造成备份截断（Phase 1 黑屏事故的变体）。 */
     if (Boot_Param_Load(&p) &&
+        p.state == BOOT_ST_APP_UNCONFIRMED &&
         p.app_size >= 0x1000U && p.app_size <= APP_SIZE)
         size = p.app_size;
 
-    /* 二级来源：参数区为空时的兜底常量 */
+    /* 二级来源：其余场景（参数区空 / ST-Link 烧录后）用兜底常量，
+     * 人工保证 >= 实际固件大小；多读尾部 0xFF 无害。 */
     if (size == 0U)
         size = APP_FW_SIZE_FALLBACK;
 
@@ -258,7 +263,6 @@ fail:
 ota_result_t OTA_Run(void)
 {
     ota_meta_t meta;
-    boot_param_t p;
     uint32_t remaining;
     uint32_t crc;
     uint32_t skipped;
@@ -371,14 +375,33 @@ ota_result_t OTA_Run(void)
         return OTA_ERR_CRC;
     }
 
-    /* 6. tmp -> firmware.bin
-     * rename 在 littlefs 里是原子操作：Bootloader 任何时候打开
-     * .bin 看到的要么是旧文件要么是完整新文件。 */
+    /* 6~9. 先回执 DONE 给 PC，再走与网络升级共用的提交流程 */
+    OTA_Serial_Send(s_ack_done, sizeof(s_ack_done));
+
+    return OTA_CommitFirmware(fw_size, meta.crc32, meta.version);
+}
+
+
+/**
+ * @brief  提交已下载好的 /ota/firmware.tmp：改名 -> 备份 -> 写参数 -> 复位
+ * @param  fw_size    固件 payload 字节数（不含 64 B 包头）
+ * @param  fw_crc32   payload CRC32（调用前必须已校验通过）
+ * @param  fw_version 版本编码（major<<16 | minor<<8 | patch）
+ * @return 失败返回错误码；成功不返回（延时 1 秒后复位）
+ * @note   串口离线升级（OTA_Run）与 Phase 2 网络升级共用本函数。
+ *         调用前必须保证 firmware.tmp 已完整写入且 CRC 已通过。
+ */
+ota_result_t OTA_CommitFirmware(uint32_t fw_size, uint32_t fw_crc32, uint32_t fw_version)
+{
+    boot_param_t p;
+
+    /* 1. tmp -> firmware.bin：littlefs 的 rename 是原子操作，
+     * Bootloader 任何时候打开 .bin 看到的都是完整文件 */
     (void)OTA_Store_Remove(OTA_FW_PATH);
     if (OTA_Store_Rename(OTA_FW_TMP_PATH, OTA_FW_PATH) != LFS_ERR_OK)
         return OTA_ERR_STORE;
 
-    /* 7. 备份当前固件（失败则删除新固件并中止） */
+    /* 2. 备份当前固件（失败则删除新固件并中止） */
     {
         ota_result_t br = Backup_Current();
         if (br != OTA_OK)
@@ -388,9 +411,8 @@ ota_result_t OTA_Run(void)
         }
     }
 
-    /* 8. 写参数：请求 Bootloader 搬运
-     * 写完这条参数，复位后 Bootloader 就会
-     * 擦 App 区开始搬运 */
+    /* 3. 写参数：请求 Bootloader 搬运。这是"点球时刻"：写完这条
+     * 参数，复位后 Bootloader 就会擦 App 区开始搬运 */
     Boot_Param_Default(&p);
     if (Boot_Param_Load(&p))
         p.seq++;
@@ -399,16 +421,14 @@ ota_result_t OTA_Run(void)
 
     p.state = BOOT_ST_OTA_PENDING;
     p.ota_size = fw_size;
-    p.ota_crc32 = meta.crc32;
-    p.ota_version = meta.version;
+    p.ota_crc32 = fw_crc32;
+    p.ota_version = fw_version;
     p.flags |= BOOT_FLAG_BACKUP_VALID;
 
     if (!Boot_Param_Save(&p))
         return OTA_ERR_PARAM;
 
-    /* 9. 回执并复位
-     * 先回 DONE 再延时复位，保证 PC 端来得及收到回执。 */
-    OTA_Serial_Send(s_ack_done, sizeof(s_ack_done));
+    /* 4. 留 1 秒给 UI/串口回执，然后复位进 Bootloader 搬运 */
     vTaskDelay(pdMS_TO_TICKS(1000));
     NVIC_SystemReset();
 

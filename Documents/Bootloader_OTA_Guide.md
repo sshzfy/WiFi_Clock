@@ -752,3 +752,129 @@ App 能跑、能确认，但 UI 黑屏——极具迷惑性。
 - 实验记录：AC5 自动分散加载下 `Load$$LR_IROM1$$Limit` 与
   `Image$$LR_IROM1$$Limit` 均不存在（Undefined Reference）；
   想"一个符号拿总长"必须手写 scatter 文件。
+
+---
+
+## 18. Phase 2：GitHub Releases 网络升级（设计记录）
+
+### 18.1 总体结构
+
+```
+UI(WiFi页 Check Update 按钮) --EV_OTA_CHECK--> netTask
+  OTA_Update_Run()（阻塞，下载期间独占 AT 模组）
+    1. OTA_Net_HttpGet(api.github.com/releases/latest)  → JSON(16KB 缓冲)
+       解析 tag_name（v1.0.6 → 0x010006）与第一个 .ota 资产 URL/size
+    2. 版本比较：latest > APP_VERSION 才继续，否则 UI 显示已最新
+    3. OTA_Net_HttpGetRedirect(github.com → 302 → objects.githubusercontent.com)
+       两阶段：先不带回调探测跟跳拿到最终 URL，再正式下载
+       流式回调 Dl_Sink：写 littlefs tmp + payload CRC + 进度 g_ota_prog
+    4. 包头静态校验（magic/hw_id/version/size）+ payload CRC
+    5. OTA_CommitFirmware()：rename → 备份 → 写参数 OTA_PENDING → 复位
+       （与串口离线升级共用同一函数）
+UI: LVGL 全屏浮层 + 进度条，uiTask 每拍 OTA_UI_Tick() 按 g_ota_prog 刷新，
+    结果态显示 3 秒后自动收起。
+```
+
+### 18.2 关键实现点
+
+- **为什么不用 AT+HTTPCLIENT**：它把整响应缓存在模组内一次性吐出，
+  固件 150KB+ 远超缓冲；改用 CIPSTART(SSL) + CIPSEND 手写请求，
+  +IPD 流式接收。
+- **USART1 环形缓冲加大到 4KB**：littlefs 偶发块擦除（数十 ms）期间
+  不能读串口，4KB ≈ 356ms 容量（115200bps）覆盖擦除延迟。
+- **连接前强制 AT+CIPMUX=0**：保证 +IPD 是 "+IPD,<len>:" 单连接格式。
+- **302 两阶段**：探测跳转不带数据回调（302 响应体不会污染下载文件），
+  拿到最终 URL 后再带回调正式下载。
+- **收满 Content-Length 必须置 finished**：否则服务器随后的 CLOSED 会
+  被误判为 ERR_CLOSED（自查修掉的 bug）。
+- **TLS 校验**：ESP-AT SSL 连接只加密不校验证书，Phase 3 用固件签名补强。
+- **app_size 继承限制**：只有 APP_UNCONFIRMED 状态（Bootloader 刚按
+  .ota 头写入）才精确；ST-Link 烧录后参数区是旧值，必须用
+  APP_FW_SIZE_FALLBACK 兜底，否则备份截断（Phase 1 黑屏事故变体）。
+
+### 18.3 实测步骤
+
+1. 设备烧 1.0.5 测试版（DEBUG_SUPPORT=1，串口可看 [OTA] 日志）；
+2. GitHub 创建 Release：tag `v1.0.6`，上传 `fw_106.ota`；
+3. 主界面 → WiFi 图标 → 点 "Check Update"；
+4. 浮层显示 Checking → Downloading xx% → Verifying → 复位；
+5. Bootloader 搬运 → 1.0.6 启动 → 复位确认 ver=0x010006。
+
+### 18.4 发布约定
+
+- tag 形如 `v1.0.6`（版本号从 tag 解析）；
+- Release 里放任意一个 `.ota` 资产即可（设备自动找第一个 .ota 后缀文件）；
+- 发布说明（body）不要写太长：JSON 缓冲 16KB，body 过长会把
+  assets 字段挤到缓冲外导致解析失败。
+
+---
+
+## 19. Phase 2 实测与踩坑记录（2026-10-25）
+
+### 19.1 最终方案：Gitee 直连下载
+
+校园网环境访问 GitHub 需要 VPN，而设备的 ESP8266 走校园网直连、
+无法享受 PC 的 VPN，因此 GitHub API 与下载均不可达（CIPSTART 15 秒后 ERROR）。
+Gitee 的 `releases/latest` API 可访问，但匿名调用很快触发限流（403）。
+
+最终采用**直连 URL 模式**（`OTA_SOURCE_MODE=0`）：
+不做 API 查询，直接下载固定地址的 `.ota`，版本从包头读取。
+
+```
+https://gitee.com/ssh_zfy/WiFi_Clock/releases/download/v1.0.6/fw_106_gitee.ota
+```
+
+实测链路（22:43）：
+```
+[OTA] direct download: https://gitee.com/.../fw_106_gitee.ota
+[OTA] net: dial AT+CIPSTART="SSL","gitee.com",443
+[OTA] net: http hdr status=302  → 跟随到 foruda.gitee.com（CDN）
+[OTA] net: http hdr status=200 len=160248
+[OTA] direct err=0 got=160248 clen=160248 http=200
+[OTA] direct hdr ver=0x010006 size=160184
+[BOOT] param: state=1 → start update → fw_size=160184 ver=0x00010006
+[BOOT] erase 4/5/6/7 → write → verify → done, jump
+```
+
+耗时：TLS 握手 ×2 + 下载 ×2（探测一次、正式一次）约 45 秒。
+
+### 19.2 本轮修掉的 8 个 bug（按发现顺序）
+
+1. **netTask 栈 1KB 溢出**：OTA 路径局部变量约 1.7KB。修复：栈加到 3KB +
+   大缓冲改 static（.bss）。
+2. **所有忙等缺超时**：Net_SendRaw 的 TXE 轮询、Dbg_Flush 的 DMA/TC 等待、
+   Net_WaitStr 的超时检查写在"无数据"分支里（持续数据流时永不触发）。
+   修复：超时检查前置 + 每个忙等加 1~2 秒保护。
+3. **EV_OTA_CHECK 不在等待掩码**：`xEventGroupWaitBits` 超时返回的 bits
+   包含该位，而 `xClearOnExit` 清不掉掩码外的位 → 每秒重复触发 OTA。
+   修复：把 EV_OTA_CHECK 加入等待掩码。
+4. **Http_ParseHeader 索引死循环**：`i = (eol - line) + 2` 用相对偏移，
+   而 line 已变成 `s_hdr + i`，i 在两个值间来回跳。**用 Keil 调试器
+   Halt 看到调用栈停在 strstr → Http_ParseHeader 才定位**。
+   修复：改成 `(eol - s_hdr) + 2`（绝对偏移）。
+5. **s_hdr 无 `'\0'` 结尾**：`strstr` 会越界扫描。修复：每收一字节补结尾。
+6. **302 响应头超过 1KB**：Gitee 的 302 头很长，原 1024 缓冲撑满后
+   `\r\n\r\n` 检测失效。修复：头缓冲 4KB，Location 192→512 字节。
+7. **CRC32 初值漏初始化**：`memset(&ctx,0,...)` 后 crc=0，而 CRC32 必须
+   从 `0xFFFFFFFF` 开始。修复：下载前 `ctx.crc = 0xFFFFFFFFUL`。
+8. **逐块 +IPD 日志过多**：160 块刷屏。修复：删除逐块打印，保留
+   异常路径与最终结果。
+
+### 19.3 调试方法论收获
+
+- **printf 日志定位不了死循环时，用调试器 Halt 看调用栈**：
+  一眼看到 `strstr ← Http_ParseHeader ← Net_RecvLoop`，
+  比猜十轮快得多。
+- **所有"等待"必须有超时**，且超时检查要放在读数据之前。
+- **FreeRTOS 事件组**：等待掩码外的位置位后不会被自动清除，
+  超时返回的 bits 里也可能带着它——用它做触发条件必须放进掩码。
+- **流式协议解析**（HTTP 头/JSON）要防御三类问题：
+  缓冲边界、字符串结尾、长字段（Location）溢出。
+
+### 19.4 发布约定（Gitee）
+
+1. 仓库：`https://gitee.com/ssh_zfy/WiFi_Clock`
+2. 发版：发行版页 → 新建/编辑 → tag `v1.0.6` → 上传 `fw_106_gitee.ota`
+3. 附件名必须是 `fw_106_gitee.ota`（与 `OTA_DIRECT_URL` 一致），
+   换版时同步改 `BuildConfig.h` 里的 URL 与 tag。
+4. 生成的 `.ota` 用 `ota_pack.py` 打包，版本参数与 `Version.h` 一致。

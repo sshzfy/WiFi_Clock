@@ -13,7 +13,10 @@
 #define UI_BOOT_NET_TIMEOUT_MS              (60000UL) // 开机阶段等 EV_NET_READY 的上限(ms)
 
 #define NET_TASK_PRIORITY                   2
-#define NET_TASK_STACK_SIZE                 256 // 256 * 4 = 1KB
+/* 768 words = 3KB：Phase 2 网络升级路径的调用链
+ * （OTA_Update_Run + OTA_Net 请求缓冲 + printf）栈需求约 2KB，
+ * 原来的 1KB 会溢出踩坏相邻内存（实测表现为日志乱码后死机）。 */
+#define NET_TASK_STACK_SIZE                 768
 
 #define DHT22_TASK_PRIORITY                 4
 #define DHT22_TASK_STACK_SIZE               256 // 256 * 4 = 1KB

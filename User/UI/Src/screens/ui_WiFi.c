@@ -14,6 +14,7 @@ lv_obj_t *ui_Label2 = NULL;
 lv_obj_t *ui_TextArea2 = NULL;
 lv_obj_t *ui_Keyboard1 = NULL;
 lv_obj_t *ui_Button1 = NULL;
+lv_obj_t *ui_CheckUpdate = NULL;
 // event funtions
 void ui_event_TextArea1(lv_event_t *e)
 {
@@ -63,6 +64,17 @@ void ui_event_Keyboard1(lv_event_t *e)
         /* 键盘上的"确认": 提交输入。输入有效时由 Get_WiFiInfo() 内部请求退回主界面,
          * 无效(SSID 为空)时留在界面上做提示。 */
         Get_WiFiInfo(e);
+    }
+}
+
+void ui_event_CheckUpdate(lv_event_t *e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if (event_code == LV_EVENT_CLICKED)
+    {
+        /* 请求检查固件更新: netTask 执行, 结果与进度经 g_ota_prog 回 UI */
+        xEventGroupSetBits(Task_Events(), EV_OTA_CHECK);
     }
 }
 
@@ -144,6 +156,21 @@ void ui_WiFi_screen_init(void)
     lv_obj_set_style_text_color(cancel_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_center(cancel_label);
 
+    /* Phase 2: "检查更新"按钮（SquareLine 之外手动追加） */
+    ui_CheckUpdate = lv_btn_create(ui_WiFi);
+    lv_obj_set_width(ui_CheckUpdate, 160);
+    lv_obj_set_height(ui_CheckUpdate, 36);
+    lv_obj_set_x(ui_CheckUpdate, 40);
+    lv_obj_set_y(ui_CheckUpdate, 130);
+    lv_obj_set_style_bg_color(ui_CheckUpdate, lv_color_hex(0x2B7FDC), LV_PART_MAIN | LV_STATE_DEFAULT);
+    {
+        lv_obj_t * cu_label = lv_label_create(ui_CheckUpdate);
+        lv_label_set_text(cu_label, "Check Update");
+        lv_obj_set_style_text_color(cu_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_center(cu_label);
+    }
+    lv_obj_add_event_cb(ui_CheckUpdate, ui_event_CheckUpdate, LV_EVENT_ALL, NULL);
+
     lv_obj_add_event_cb(ui_TextArea1, ui_event_TextArea1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_TextArea2, ui_event_TextArea2, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Keyboard1, ui_event_Keyboard1, LV_EVENT_ALL, NULL);
@@ -163,4 +190,5 @@ void ui_WiFi_screen_destroy(void)
     ui_TextArea2 = NULL;
     ui_Keyboard1 = NULL;
     ui_Button1 = NULL;
+    ui_CheckUpdate = NULL;
 }

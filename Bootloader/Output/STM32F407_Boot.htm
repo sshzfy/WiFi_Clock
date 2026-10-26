@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Output\STM32F407_Boot.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Output\STM32F407_Boot.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sun Oct 25 00:56:53 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sun Oct 25 20:08:28 2026
 <BR><P>
 <H3>Maximum Stack Usage =        776 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -120,12 +120,13 @@ Function Pointers
  <LI><a href="#[6]">UsageFault_Handler</a> from startup_stm32f40xx.o(.text) referenced from startup_stm32f40xx.o(RESET)
  <LI><a href="#[b]">WWDG_IRQHandler</a> from startup_stm32f40xx.o(.text) referenced from startup_stm32f40xx.o(RESET)
  <LI><a href="#[5f]">__main</a> from entry.o(.ARM.Collect$$$$00000000) referenced from startup_stm32f40xx.o(.text)
- <LI><a href="#[63]">bf_erase</a> from boot_lfs.o(i.bf_erase) referenced from boot_lfs.o(.constdata)
- <LI><a href="#[62]">bf_prog</a> from boot_lfs.o(i.bf_prog) referenced from boot_lfs.o(.constdata)
- <LI><a href="#[61]">bf_read</a> from boot_lfs.o(i.bf_read) referenced from boot_lfs.o(.constdata)
- <LI><a href="#[64]">bf_sync</a> from boot_lfs.o(i.bf_sync) referenced from boot_lfs.o(.constdata)
- <LI><a href="#[60]">lfs_dir_find_match</a> from lfs.o(i.lfs_dir_find_match) referenced from lfs.o(i.lfs_dir_find)
- <LI><a href="#[60]">lfs_dir_find_match</a> from lfs.o(i.lfs_dir_find_match) referenced from lfs.o(i.lfs_mount_)
+ <LI><a href="#[64]">bf_erase</a> from boot_lfs.o(i.bf_erase) referenced from boot_lfs.o(.constdata)
+ <LI><a href="#[63]">bf_prog</a> from boot_lfs.o(i.bf_prog) referenced from boot_lfs.o(.constdata)
+ <LI><a href="#[62]">bf_read</a> from boot_lfs.o(i.bf_read) referenced from boot_lfs.o(.constdata)
+ <LI><a href="#[65]">bf_sync</a> from boot_lfs.o(i.bf_sync) referenced from boot_lfs.o(.constdata)
+ <LI><a href="#[60]">fputc</a> from fputc.o(i.fputc) referenced from printf8.o(i.__0printf$8)
+ <LI><a href="#[61]">lfs_dir_find_match</a> from lfs.o(i.lfs_dir_find_match) referenced from lfs.o(i.lfs_dir_find)
+ <LI><a href="#[61]">lfs_dir_find_match</a> from lfs.o(i.lfs_dir_find_match) referenced from lfs.o(i.lfs_mount_)
  <LI><a href="#[5d]">main</a> from boot_main.o(i.main) referenced from entry9a.o(.ARM.Collect$$$$0000000B)
 </UL>
 <P>
@@ -135,25 +136,25 @@ Global Symbols
 <P><STRONG><a name="[5f]"></a>__main</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry.o(.ARM.Collect$$$$00000000))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f40xx.o(.text)
 </UL>
-<P><STRONG><a name="[cf]"></a>_main_stk</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry2.o(.ARM.Collect$$$$00000001))
+<P><STRONG><a name="[d8]"></a>_main_stk</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry2.o(.ARM.Collect$$$$00000001))
 
-<P><STRONG><a name="[65]"></a>_main_scatterload</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry5.o(.ARM.Collect$$$$00000004))
-<BR><BR>[Calls]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload
+<P><STRONG><a name="[66]"></a>_main_scatterload</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry5.o(.ARM.Collect$$$$00000004))
+<BR><BR>[Calls]<UL><LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload
 </UL>
 
-<P><STRONG><a name="[6a]"></a>__main_after_scatterload</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry5.o(.ARM.Collect$$$$00000004))
-<BR><BR>[Called By]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload
+<P><STRONG><a name="[6e]"></a>__main_after_scatterload</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry5.o(.ARM.Collect$$$$00000004))
+<BR><BR>[Called By]<UL><LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload
 </UL>
 
-<P><STRONG><a name="[d0]"></a>_main_clock</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry7b.o(.ARM.Collect$$$$00000008))
+<P><STRONG><a name="[d9]"></a>_main_clock</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry7b.o(.ARM.Collect$$$$00000008))
 
-<P><STRONG><a name="[d1]"></a>_main_cpp_init</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry8b.o(.ARM.Collect$$$$0000000A))
+<P><STRONG><a name="[da]"></a>_main_cpp_init</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry8b.o(.ARM.Collect$$$$0000000A))
 
-<P><STRONG><a name="[d2]"></a>_main_init</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry9a.o(.ARM.Collect$$$$0000000B))
+<P><STRONG><a name="[db]"></a>_main_init</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry9a.o(.ARM.Collect$$$$0000000B))
 
-<P><STRONG><a name="[d3]"></a>__rt_final_cpp</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry10a.o(.ARM.Collect$$$$0000000D))
+<P><STRONG><a name="[dc]"></a>__rt_final_cpp</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry10a.o(.ARM.Collect$$$$0000000D))
 
-<P><STRONG><a name="[d4]"></a>__rt_final_exit</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry11a.o(.ARM.Collect$$$$0000000F))
+<P><STRONG><a name="[dd]"></a>__rt_final_exit</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, entry11a.o(.ARM.Collect$$$$0000000F))
 
 <P><STRONG><a name="[1]"></a>Reset_Handler</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, startup_stm32f40xx.o(.text))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f40xx.o(RESET)
@@ -471,927 +472,989 @@ Global Symbols
 <P><STRONG><a name="[b]"></a>WWDG_IRQHandler</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, startup_stm32f40xx.o(.text))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f40xx.o(RESET)
 </UL>
-<P><STRONG><a name="[7d]"></a>__aeabi_memcpy</STRONG> (Thumb, 36 bytes, Stack size 0 bytes, memcpya.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
-<LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<P><STRONG><a name="[81]"></a>__aeabi_memcpy</STRONG> (Thumb, 36 bytes, Stack size 0 bytes, memcpya.o(.text))
+<BR><BR>[Called By]<UL><LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
+<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
 
-<P><STRONG><a name="[7e]"></a>__aeabi_memcpy4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memcpya.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
-<LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<P><STRONG><a name="[82]"></a>__aeabi_memcpy4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memcpya.o(.text))
+<BR><BR>[Called By]<UL><LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
+<LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
 </UL>
 
-<P><STRONG><a name="[d5]"></a>__aeabi_memcpy8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memcpya.o(.text), UNUSED)
+<P><STRONG><a name="[de]"></a>__aeabi_memcpy8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memcpya.o(.text), UNUSED)
 
-<P><STRONG><a name="[68]"></a>__aeabi_memset</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, memseta.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[69]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_memset$wrapper
-<LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr
-<LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_cache_zero
+<P><STRONG><a name="[69]"></a>__aeabi_memset</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, memseta.o(.text))
+<BR><BR>[Called By]<UL><LI><a href="#[6a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_memset$wrapper
+<LI><a href="#[68]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr
+<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_cache_zero
 </UL>
 
-<P><STRONG><a name="[d6]"></a>__aeabi_memset4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
+<P><STRONG><a name="[df]"></a>__aeabi_memset4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
 
-<P><STRONG><a name="[d7]"></a>__aeabi_memset8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
+<P><STRONG><a name="[e0]"></a>__aeabi_memset8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
 
-<P><STRONG><a name="[67]"></a>__aeabi_memclr</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, memseta.o(.text))
-<BR><BR>[Calls]<UL><LI><a href="#[68]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
+<P><STRONG><a name="[68]"></a>__aeabi_memclr</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, memseta.o(.text))
+<BR><BR>[Calls]<UL><LI><a href="#[69]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
 </UL>
-<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
-</UL>
-
-<P><STRONG><a name="[7b]"></a>__aeabi_memclr4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
+<BR>[Called By]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
 </UL>
 
-<P><STRONG><a name="[d8]"></a>__aeabi_memclr8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
-
-<P><STRONG><a name="[69]"></a>_memset$wrapper</STRONG> (Thumb, 18 bytes, Stack size 8 bytes, memseta.o(.text), UNUSED)
-<BR><BR>[Calls]<UL><LI><a href="#[68]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
+<P><STRONG><a name="[7f]"></a>__aeabi_memclr4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text))
+<BR><BR>[Called By]<UL><LI><a href="#[7e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
 </UL>
 
-<P><STRONG><a name="[84]"></a>memcmp</STRONG> (Thumb, 26 bytes, Stack size 12 bytes, memcmp.o(.text))
+<P><STRONG><a name="[e1]"></a>__aeabi_memclr8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
+
+<P><STRONG><a name="[6a]"></a>_memset$wrapper</STRONG> (Thumb, 18 bytes, Stack size 8 bytes, memseta.o(.text), UNUSED)
+<BR><BR>[Calls]<UL><LI><a href="#[69]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
+</UL>
+
+<P><STRONG><a name="[88]"></a>memcmp</STRONG> (Thumb, 26 bytes, Stack size 12 bytes, memcmp.o(.text))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = memcmp
 </UL>
-<BR>[Called By]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
-<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
-<LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_cmp
+<BR>[Called By]<UL><LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<LI><a href="#[b0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_cmp
 </UL>
 
-<P><STRONG><a name="[bb]"></a>strspn</STRONG> (Thumb, 28 bytes, Stack size 12 bytes, strspn.o(.text))
+<P><STRONG><a name="[c4]"></a>strspn</STRONG> (Thumb, 28 bytes, Stack size 12 bytes, strspn.o(.text))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = strspn
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
-<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
 </UL>
 
-<P><STRONG><a name="[bc]"></a>strcspn</STRONG> (Thumb, 34 bytes, Stack size 12 bytes, strcspn.o(.text))
+<P><STRONG><a name="[c5]"></a>strcspn</STRONG> (Thumb, 34 bytes, Stack size 12 bytes, strcspn.o(.text))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = strcspn
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
-<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
 </UL>
 
-<P><STRONG><a name="[66]"></a>__scatterload</STRONG> (Thumb, 28 bytes, Stack size 0 bytes, init.o(.text))
-<BR><BR>[Calls]<UL><LI><a href="#[6a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__main_after_scatterload
+<P><STRONG><a name="[6b]"></a>__aeabi_uldivmod</STRONG> (Thumb, 98 bytes, Stack size 40 bytes, uldiv.o(.text), UNUSED)
+<BR><BR>[Calls]<UL><LI><a href="#[6c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_llsr
+<LI><a href="#[6d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_llsl
 </UL>
-<BR>[Called By]<UL><LI><a href="#[65]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_main_scatterload
+<BR>[Called By]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_core
 </UL>
 
-<P><STRONG><a name="[d9]"></a>__scatterload_rt2</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, init.o(.text), UNUSED)
+<P><STRONG><a name="[67]"></a>__scatterload</STRONG> (Thumb, 28 bytes, Stack size 0 bytes, init.o(.text))
+<BR><BR>[Calls]<UL><LI><a href="#[6e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__main_after_scatterload
+</UL>
+<BR>[Called By]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_main_scatterload
+</UL>
 
-<P><STRONG><a name="[6b]"></a>Boot_CRC32</STRONG> (Thumb, 18 bytes, Stack size 4 bytes, boot_crc32.o(i.Boot_CRC32))
+<P><STRONG><a name="[e2]"></a>__scatterload_rt2</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, init.o(.text), UNUSED)
+
+<P><STRONG><a name="[6d]"></a>__aeabi_llsl</STRONG> (Thumb, 30 bytes, Stack size 0 bytes, llshl.o(.text), UNUSED)
+<BR><BR>[Called By]<UL><LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_uldivmod
+</UL>
+
+<P><STRONG><a name="[e3]"></a>__semihosting_library_function</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, semi.o(.text), UNUSED)
+
+<P><STRONG><a name="[e4]"></a>_ll_shift_l</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, llshl.o(.text), UNUSED)
+
+<P><STRONG><a name="[6c]"></a>__aeabi_llsr</STRONG> (Thumb, 32 bytes, Stack size 0 bytes, llushr.o(.text), UNUSED)
+<BR><BR>[Called By]<UL><LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_uldivmod
+</UL>
+
+<P><STRONG><a name="[e5]"></a>_ll_ushift_r</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, llushr.o(.text), UNUSED)
+
+<P><STRONG><a name="[e6]"></a>__I$use$semihosting$fputc</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, iusesemip.o(.text), UNUSED)
+
+<P><STRONG><a name="[6f]"></a>Boot_CRC32</STRONG> (Thumb, 18 bytes, Stack size 4 bytes, boot_crc32.o(i.Boot_CRC32))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = Boot_CRC32 &rArr; Boot_CRC32_Update
 </UL>
-<BR>[Calls]<UL><LI><a href="#[6c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32_Update
+<BR>[Calls]<UL><LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32_Update
 </UL>
-<BR>[Called By]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
-<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
+<BR>[Called By]<UL><LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+<LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
 </UL>
 
-<P><STRONG><a name="[6c]"></a>Boot_CRC32_Update</STRONG> (Thumb, 44 bytes, Stack size 8 bytes, boot_crc32.o(i.Boot_CRC32_Update))
+<P><STRONG><a name="[70]"></a>Boot_CRC32_Update</STRONG> (Thumb, 44 bytes, Stack size 8 bytes, boot_crc32.o(i.Boot_CRC32_Update))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = Boot_CRC32_Update
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
-<LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
+<LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32
 </UL>
 
-<P><STRONG><a name="[6d]"></a>Boot_JumpToApp</STRONG> (Thumb, 78 bytes, Stack size 16 bytes, boot_main.o(i.Boot_JumpToApp))
+<P><STRONG><a name="[71]"></a>Boot_JumpToApp</STRONG> (Thumb, 78 bytes, Stack size 16 bytes, boot_main.o(i.Boot_JumpToApp))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = Boot_JumpToApp
 </UL>
-<BR>[Calls]<UL><LI><a href="#[6e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Cmd
+<BR>[Calls]<UL><LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Cmd
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[6f]"></a>Boot_Lfs_FileClose</STRONG> (Thumb, 28 bytes, Stack size 8 bytes, boot_lfs.o(i.Boot_Lfs_FileClose))
+<P><STRONG><a name="[73]"></a>Boot_Lfs_FileClose</STRONG> (Thumb, 28 bytes, Stack size 8 bytes, boot_lfs.o(i.Boot_Lfs_FileClose))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = Boot_Lfs_FileClose &rArr; lfs_file_close &rArr; lfs_file_close_ &rArr; free
 </UL>
-<BR>[Calls]<UL><LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close
+<BR>[Calls]<UL><LI><a href="#[74]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
 </UL>
 
-<P><STRONG><a name="[71]"></a>Boot_Lfs_FileOpen</STRONG> (Thumb, 58 bytes, Stack size 24 bytes, boot_lfs.o(i.Boot_Lfs_FileOpen))
+<P><STRONG><a name="[75]"></a>Boot_Lfs_FileOpen</STRONG> (Thumb, 58 bytes, Stack size 24 bytes, boot_lfs.o(i.Boot_Lfs_FileOpen))
 <BR><BR>[Stack]<UL><LI>Max Depth = 496<LI>Call Chain = Boot_Lfs_FileOpen &rArr; lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg
+<BR>[Calls]<UL><LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
 </UL>
 
-<P><STRONG><a name="[73]"></a>Boot_Lfs_FileRead</STRONG> (Thumb, 26 bytes, Stack size 0 bytes, boot_lfs.o(i.Boot_Lfs_FileRead))
+<P><STRONG><a name="[77]"></a>Boot_Lfs_FileRead</STRONG> (Thumb, 26 bytes, Stack size 0 bytes, boot_lfs.o(i.Boot_Lfs_FileRead))
 <BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = Boot_Lfs_FileRead &rArr; lfs_file_read &rArr; lfs_file_flushedread &rArr; lfs_dir_getread &rArr; lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[74]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_read
+<BR>[Calls]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_read
 </UL>
-<BR>[Called By]<UL><LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;File_ReadFull
-</UL>
-
-<P><STRONG><a name="[75]"></a>Boot_Lfs_Mount</STRONG> (Thumb, 50 bytes, Stack size 8 bytes, boot_lfs.o(i.Boot_Lfs_Mount))
-<BR><BR>[Stack]<UL><LI>Max Depth = 440<LI>Call Chain = Boot_Lfs_Mount &rArr; lfs_mount &rArr; lfs_mount_ &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
-</UL>
-<BR>[Calls]<UL><LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount
-<LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
-<LI><a href="#[77]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_APB2PeriphClockCmd
-<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_AHB1PeriphClockCmd
-</UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;File_ReadFull
 </UL>
 
-<P><STRONG><a name="[7a]"></a>Boot_Param_Default</STRONG> (Thumb, 26 bytes, Stack size 8 bytes, boot_param.o(i.Boot_Param_Default))
+<P><STRONG><a name="[79]"></a>Boot_Lfs_Mount</STRONG> (Thumb, 50 bytes, Stack size 8 bytes, boot_lfs.o(i.Boot_Lfs_Mount))
+<BR><BR>[Stack]<UL><LI>Max Depth = 448<LI>Call Chain = Boot_Lfs_Mount &rArr; lfs_mount &rArr; lfs_mount_ &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
+</UL>
+<BR>[Calls]<UL><LI><a href="#[7d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount
+<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<LI><a href="#[7b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_APB2PeriphClockCmd
+<LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_AHB1PeriphClockCmd
+</UL>
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+</UL>
+
+<P><STRONG><a name="[7e]"></a>Boot_Param_Default</STRONG> (Thumb, 26 bytes, Stack size 8 bytes, boot_param.o(i.Boot_Param_Default))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = Boot_Param_Default
 </UL>
-<BR>[Calls]<UL><LI><a href="#[7b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
+<BR>[Calls]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[7c]"></a>Boot_Param_Load</STRONG> (Thumb, 110 bytes, Stack size 88 bytes, boot_param.o(i.Boot_Param_Load))
+<P><STRONG><a name="[80]"></a>Boot_Param_Load</STRONG> (Thumb, 110 bytes, Stack size 88 bytes, boot_param.o(i.Boot_Param_Load))
 <BR><BR>[Stack]<UL><LI>Max Depth = 100<LI>Call Chain = Boot_Param_Load &rArr; Boot_CRC32 &rArr; Boot_CRC32_Update
 </UL>
-<BR>[Calls]<UL><LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32
-<LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
-<LI><a href="#[7e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy4
-<LI><a href="#[7d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
+<BR>[Calls]<UL><LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32
+<LI><a href="#[7e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
+<LI><a href="#[82]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy4
+<LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[7f]"></a>Boot_Param_Save</STRONG> (Thumb, 164 bytes, Stack size 24 bytes, boot_param.o(i.Boot_Param_Save))
+<P><STRONG><a name="[83]"></a>Boot_Param_Save</STRONG> (Thumb, 164 bytes, Stack size 24 bytes, boot_param.o(i.Boot_Param_Save))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = Boot_Param_Save &rArr; FLASH_ProgramWord &rArr; FLASH_WaitForLastOperation
 </UL>
-<BR>[Calls]<UL><LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Unlock
-<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_ProgramWord
-<LI><a href="#[82]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Lock
-<LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_EraseSector
-<LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32
-<LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
+<BR>[Calls]<UL><LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Unlock
+<LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_ProgramWord
+<LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Lock
+<LI><a href="#[85]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_EraseSector
+<LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32
+<LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[85]"></a>Boot_Rollback_FromFile</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, boot_update.o(i.Boot_Rollback_FromFile))
+<P><STRONG><a name="[89]"></a>Boot_Rollback_FromFile</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, boot_update.o(i.Boot_Rollback_FromFile))
 <BR><BR>[Stack]<UL><LI>Max Depth = 704<LI>Call Chain = Boot_Rollback_FromFile &rArr; Update_Run &rArr; Payload_Check &rArr; Boot_Lfs_FileOpen &rArr; lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Calls]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[87]"></a>Boot_Uart_Init</STRONG> (Thumb, 136 bytes, Stack size 40 bytes, boot_uart.o(i.Boot_Uart_Init))
+<P><STRONG><a name="[8b]"></a>Boot_Uart_Init</STRONG> (Thumb, 136 bytes, Stack size 40 bytes, boot_uart.o(i.Boot_Uart_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 88<LI>Call Chain = Boot_Uart_Init &rArr; USART_Init &rArr; RCC_GetClocksFreq
 </UL>
-<BR>[Calls]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_StructInit
-<LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Init
-<LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_APB1PeriphClockCmd
-<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_AHB1PeriphClockCmd
-<LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_StructInit
-<LI><a href="#[89]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_PinAFConfig
-<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_Init
-<LI><a href="#[6e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Cmd
+<BR>[Calls]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_StructInit
+<LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Init
+<LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_APB1PeriphClockCmd
+<LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_AHB1PeriphClockCmd
+<LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_StructInit
+<LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_PinAFConfig
+<LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_Init
+<LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Cmd
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[8e]"></a>Boot_Uart_PutChar</STRONG> (Thumb, 30 bytes, Stack size 16 bytes, boot_uart.o(i.Boot_Uart_PutChar))
+<P><STRONG><a name="[92]"></a>Boot_Uart_PutChar</STRONG> (Thumb, 30 bytes, Stack size 16 bytes, boot_uart.o(i.Boot_Uart_PutChar))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = Boot_Uart_PutChar
 </UL>
-<BR>[Calls]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_SendData
-<LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_GetFlagStatus
+<BR>[Calls]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_SendData
+<LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_GetFlagStatus
 </UL>
-<BR>[Called By]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
-<LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutU32
-<LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
+<BR>[Called By]<UL><LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
+<LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutU32
+<LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
 </UL>
 
-<P><STRONG><a name="[91]"></a>Boot_Uart_PutHex</STRONG> (Thumb, 36 bytes, Stack size 16 bytes, boot_uart.o(i.Boot_Uart_PutHex))
+<P><STRONG><a name="[95]"></a>Boot_Uart_PutHex</STRONG> (Thumb, 36 bytes, Stack size 16 bytes, boot_uart.o(i.Boot_Uart_PutHex))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = Boot_Uart_PutHex &rArr; Boot_Uart_Puts &rArr; Boot_Uart_PutChar
 </UL>
-<BR>[Calls]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
-<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
+<BR>[Calls]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
+<LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[93]"></a>Boot_Uart_PutU32</STRONG> (Thumb, 60 bytes, Stack size 24 bytes, boot_uart.o(i.Boot_Uart_PutU32))
+<P><STRONG><a name="[97]"></a>Boot_Uart_PutU32</STRONG> (Thumb, 60 bytes, Stack size 24 bytes, boot_uart.o(i.Boot_Uart_PutU32))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = Boot_Uart_PutU32 &rArr; Boot_Uart_PutChar
 </UL>
-<BR>[Calls]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
+<BR>[Calls]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[92]"></a>Boot_Uart_Puts</STRONG> (Thumb, 48 bytes, Stack size 8 bytes, boot_uart.o(i.Boot_Uart_Puts))
+<P><STRONG><a name="[96]"></a>Boot_Uart_Puts</STRONG> (Thumb, 48 bytes, Stack size 8 bytes, boot_uart.o(i.Boot_Uart_Puts))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = Boot_Uart_Puts &rArr; Boot_Uart_PutChar
 </UL>
-<BR>[Calls]<UL><LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_GetFlagStatus
-<LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
+<BR>[Calls]<UL><LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_GetFlagStatus
+<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
 <LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[94]"></a>Boot_Update_FromFile</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, boot_update.o(i.Boot_Update_FromFile))
+<P><STRONG><a name="[98]"></a>Boot_Update_FromFile</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, boot_update.o(i.Boot_Update_FromFile))
 <BR><BR>[Stack]<UL><LI>Max Depth = 704<LI>Call Chain = Boot_Update_FromFile &rArr; Update_Run &rArr; Payload_Check &rArr; Boot_Lfs_FileOpen &rArr; lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Calls]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[81]"></a>FLASH_EraseSector</STRONG> (Thumb, 104 bytes, Stack size 16 bytes, stm32f4xx_flash.o(i.FLASH_EraseSector))
+<P><STRONG><a name="[85]"></a>FLASH_EraseSector</STRONG> (Thumb, 104 bytes, Stack size 16 bytes, stm32f4xx_flash.o(i.FLASH_EraseSector))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = FLASH_EraseSector &rArr; FLASH_WaitForLastOperation
 </UL>
-<BR>[Calls]<UL><LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WaitForLastOperation
+<BR>[Calls]<UL><LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WaitForLastOperation
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
-</UL>
-
-<P><STRONG><a name="[96]"></a>FLASH_GetStatus</STRONG> (Thumb, 56 bytes, Stack size 0 bytes, stm32f4xx_flash.o(i.FLASH_GetStatus))
-<BR><BR>[Called By]<UL><LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WaitForLastOperation
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
 </UL>
 
-<P><STRONG><a name="[82]"></a>FLASH_Lock</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, stm32f4xx_flash.o(i.FLASH_Lock))
-<BR><BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+<P><STRONG><a name="[9a]"></a>FLASH_GetStatus</STRONG> (Thumb, 56 bytes, Stack size 0 bytes, stm32f4xx_flash.o(i.FLASH_GetStatus))
+<BR><BR>[Called By]<UL><LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WaitForLastOperation
 </UL>
 
-<P><STRONG><a name="[83]"></a>FLASH_ProgramWord</STRONG> (Thumb, 56 bytes, Stack size 16 bytes, stm32f4xx_flash.o(i.FLASH_ProgramWord))
+<P><STRONG><a name="[86]"></a>FLASH_Lock</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, stm32f4xx_flash.o(i.FLASH_Lock))
+<BR><BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+</UL>
+
+<P><STRONG><a name="[87]"></a>FLASH_ProgramWord</STRONG> (Thumb, 56 bytes, Stack size 16 bytes, stm32f4xx_flash.o(i.FLASH_ProgramWord))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = FLASH_ProgramWord &rArr; FLASH_WaitForLastOperation
 </UL>
-<BR>[Calls]<UL><LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WaitForLastOperation
+<BR>[Calls]<UL><LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WaitForLastOperation
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
-</UL>
-
-<P><STRONG><a name="[80]"></a>FLASH_Unlock</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, stm32f4xx_flash.o(i.FLASH_Unlock))
-<BR><BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
 </UL>
 
-<P><STRONG><a name="[95]"></a>FLASH_WaitForLastOperation</STRONG> (Thumb, 30 bytes, Stack size 8 bytes, stm32f4xx_flash.o(i.FLASH_WaitForLastOperation))
+<P><STRONG><a name="[84]"></a>FLASH_Unlock</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, stm32f4xx_flash.o(i.FLASH_Unlock))
+<BR><BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+</UL>
+
+<P><STRONG><a name="[99]"></a>FLASH_WaitForLastOperation</STRONG> (Thumb, 30 bytes, Stack size 8 bytes, stm32f4xx_flash.o(i.FLASH_WaitForLastOperation))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = FLASH_WaitForLastOperation
 </UL>
-<BR>[Calls]<UL><LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_GetStatus
+<BR>[Calls]<UL><LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_GetStatus
 </UL>
-<BR>[Called By]<UL><LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_ProgramWord
-<LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_EraseSector
+<BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_ProgramWord
+<LI><a href="#[85]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_EraseSector
 </UL>
 
-<P><STRONG><a name="[8b]"></a>GPIO_Init</STRONG> (Thumb, 162 bytes, Stack size 20 bytes, stm32f4xx_gpio.o(i.GPIO_Init))
+<P><STRONG><a name="[8f]"></a>GPIO_Init</STRONG> (Thumb, 162 bytes, Stack size 20 bytes, stm32f4xx_gpio.o(i.GPIO_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = GPIO_Init
 </UL>
-<BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
-<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
+<BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
 </UL>
 
-<P><STRONG><a name="[89]"></a>GPIO_PinAFConfig</STRONG> (Thumb, 32 bytes, Stack size 8 bytes, stm32f4xx_gpio.o(i.GPIO_PinAFConfig))
+<P><STRONG><a name="[8d]"></a>GPIO_PinAFConfig</STRONG> (Thumb, 32 bytes, Stack size 8 bytes, stm32f4xx_gpio.o(i.GPIO_PinAFConfig))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = GPIO_PinAFConfig
 </UL>
-<BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
-<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
+<BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
 </UL>
 
-<P><STRONG><a name="[9e]"></a>GPIO_ResetBits</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, stm32f4xx_gpio.o(i.GPIO_ResetBits))
-<BR><BR>[Called By]<UL><LI><a href="#[9d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_Low
+<P><STRONG><a name="[a2]"></a>GPIO_ResetBits</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, stm32f4xx_gpio.o(i.GPIO_ResetBits))
+<BR><BR>[Called By]<UL><LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_Low
 </UL>
 
-<P><STRONG><a name="[9c]"></a>GPIO_SetBits</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, stm32f4xx_gpio.o(i.GPIO_SetBits))
-<BR><BR>[Called By]<UL><LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_High
+<P><STRONG><a name="[a0]"></a>GPIO_SetBits</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, stm32f4xx_gpio.o(i.GPIO_SetBits))
+<BR><BR>[Called By]<UL><LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_High
 </UL>
 
-<P><STRONG><a name="[8a]"></a>GPIO_StructInit</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_gpio.o(i.GPIO_StructInit))
-<BR><BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
-<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
+<P><STRONG><a name="[8e]"></a>GPIO_StructInit</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_gpio.o(i.GPIO_StructInit))
+<BR><BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
 </UL>
 
-<P><STRONG><a name="[76]"></a>RCC_AHB1PeriphClockCmd</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_rcc.o(i.RCC_AHB1PeriphClockCmd))
-<BR><BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
-<LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<P><STRONG><a name="[7a]"></a>RCC_AHB1PeriphClockCmd</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_rcc.o(i.RCC_AHB1PeriphClockCmd))
+<BR><BR>[Called By]<UL><LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
+<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
 </UL>
 
-<P><STRONG><a name="[88]"></a>RCC_APB1PeriphClockCmd</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_rcc.o(i.RCC_APB1PeriphClockCmd))
-<BR><BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<P><STRONG><a name="[8c]"></a>RCC_APB1PeriphClockCmd</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_rcc.o(i.RCC_APB1PeriphClockCmd))
+<BR><BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
 </UL>
 
-<P><STRONG><a name="[77]"></a>RCC_APB2PeriphClockCmd</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_rcc.o(i.RCC_APB2PeriphClockCmd))
-<BR><BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
+<P><STRONG><a name="[7b]"></a>RCC_APB2PeriphClockCmd</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, stm32f4xx_rcc.o(i.RCC_APB2PeriphClockCmd))
+<BR><BR>[Called By]<UL><LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
 </UL>
 
-<P><STRONG><a name="[9a]"></a>RCC_GetClocksFreq</STRONG> (Thumb, 132 bytes, Stack size 16 bytes, stm32f4xx_rcc.o(i.RCC_GetClocksFreq))
+<P><STRONG><a name="[9e]"></a>RCC_GetClocksFreq</STRONG> (Thumb, 132 bytes, Stack size 16 bytes, stm32f4xx_rcc.o(i.RCC_GetClocksFreq))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = RCC_GetClocksFreq
 </UL>
-<BR>[Called By]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Init
+<BR>[Called By]<UL><LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Init
 </UL>
 
-<P><STRONG><a name="[a2]"></a>SPI_Cmd</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_Cmd))
-<BR><BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<P><STRONG><a name="[a6]"></a>SPI_Cmd</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_Cmd))
+<BR><BR>[Called By]<UL><LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
 </UL>
 
-<P><STRONG><a name="[a5]"></a>SPI_I2S_GetFlagStatus</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_I2S_GetFlagStatus))
-<BR><BR>[Called By]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
+<P><STRONG><a name="[a9]"></a>SPI_I2S_GetFlagStatus</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_I2S_GetFlagStatus))
+<BR><BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
 </UL>
 
-<P><STRONG><a name="[a7]"></a>SPI_I2S_ReceiveData</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_I2S_ReceiveData))
-<BR><BR>[Called By]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
+<P><STRONG><a name="[ab]"></a>SPI_I2S_ReceiveData</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_I2S_ReceiveData))
+<BR><BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
 </UL>
 
-<P><STRONG><a name="[a6]"></a>SPI_I2S_SendData</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_I2S_SendData))
-<BR><BR>[Called By]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
+<P><STRONG><a name="[aa]"></a>SPI_I2S_SendData</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_I2S_SendData))
+<BR><BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
 </UL>
 
-<P><STRONG><a name="[a1]"></a>SPI_Init</STRONG> (Thumb, 56 bytes, Stack size 12 bytes, stm32f4xx_spi.o(i.SPI_Init))
+<P><STRONG><a name="[a5]"></a>SPI_Init</STRONG> (Thumb, 56 bytes, Stack size 12 bytes, stm32f4xx_spi.o(i.SPI_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = SPI_Init
 </UL>
-<BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<BR>[Called By]<UL><LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
 </UL>
 
-<P><STRONG><a name="[a0]"></a>SPI_StructInit</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_StructInit))
-<BR><BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<P><STRONG><a name="[a4]"></a>SPI_StructInit</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, stm32f4xx_spi.o(i.SPI_StructInit))
+<BR><BR>[Called By]<UL><LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
 </UL>
 
 <P><STRONG><a name="[5e]"></a>SystemInit</STRONG> (Thumb, 74 bytes, Stack size 8 bytes, system_stm32f4xx.o(i.SystemInit))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = SystemInit &rArr; SetSysClock
 </UL>
-<BR>[Calls]<UL><LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SetSysClock
+<BR>[Calls]<UL><LI><a href="#[9d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SetSysClock
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f40xx.o(.text)
 </UL>
-<P><STRONG><a name="[6e]"></a>USART_Cmd</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_Cmd))
-<BR><BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
-<LI><a href="#[6d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_JumpToApp
+<P><STRONG><a name="[72]"></a>USART_Cmd</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_Cmd))
+<BR><BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_JumpToApp
 </UL>
 
-<P><STRONG><a name="[8f]"></a>USART_GetFlagStatus</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_GetFlagStatus))
-<BR><BR>[Called By]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
-<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
+<P><STRONG><a name="[93]"></a>USART_GetFlagStatus</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_GetFlagStatus))
+<BR><BR>[Called By]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
+<LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
 </UL>
 
-<P><STRONG><a name="[8d]"></a>USART_Init</STRONG> (Thumb, 164 bytes, Stack size 32 bytes, stm32f4xx_usart.o(i.USART_Init))
+<P><STRONG><a name="[91]"></a>USART_Init</STRONG> (Thumb, 164 bytes, Stack size 32 bytes, stm32f4xx_usart.o(i.USART_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = USART_Init &rArr; RCC_GetClocksFreq
 </UL>
-<BR>[Calls]<UL><LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_GetClocksFreq
+<BR>[Calls]<UL><LI><a href="#[9e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCC_GetClocksFreq
 </UL>
-<BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
-</UL>
-
-<P><STRONG><a name="[90]"></a>USART_SendData</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_SendData))
-<BR><BR>[Called By]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
+<BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
 </UL>
 
-<P><STRONG><a name="[8c]"></a>USART_StructInit</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_StructInit))
-<BR><BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<P><STRONG><a name="[94]"></a>USART_SendData</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_SendData))
+<BR><BR>[Called By]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutChar
 </UL>
 
-<P><STRONG><a name="[78]"></a>W25Q64_Init</STRONG> (Thumb, 114 bytes, Stack size 32 bytes, w25q64.o(i.W25Q64_Init))
+<P><STRONG><a name="[90]"></a>USART_StructInit</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, stm32f4xx_usart.o(i.USART_StructInit))
+<BR><BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+</UL>
+
+<P><STRONG><a name="[7c]"></a>W25Q64_Init</STRONG> (Thumb, 114 bytes, Stack size 32 bytes, w25q64.o(i.W25Q64_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 84<LI>Call Chain = W25Q64_Init &rArr; W25Q64_GPIO_Init &rArr; GPIO_Init
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
-<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
-<LI><a href="#[9d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_Low
-<LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_High
-<LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_StructInit
-<LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_Init
-<LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_Cmd
+<BR>[Calls]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
+<LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_GPIO_Init
+<LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_Low
+<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_High
+<LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_StructInit
+<LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_Init
+<LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_Cmd
 </UL>
-<BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
+<BR>[Called By]<UL><LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
 </UL>
 
-<P><STRONG><a name="[a4]"></a>W25Q64_Read</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, w25q64.o(i.W25Q64_Read))
+<P><STRONG><a name="[a8]"></a>W25Q64_Read</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, w25q64.o(i.W25Q64_Read))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = W25Q64_Read &rArr; W25Q64_SpiReadWriteByte
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
-<LI><a href="#[9d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_Low
-<LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_High
+<BR>[Calls]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_SpiReadWriteByte
+<LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_Low
+<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_CS_High
 </UL>
-<BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bf_read
+<BR>[Called By]<UL><LI><a href="#[62]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bf_read
 </UL>
 
-<P><STRONG><a name="[da]"></a>__scatterload_copy</STRONG> (Thumb, 14 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_copy), UNUSED)
+<P><STRONG><a name="[ac]"></a>__0printf$8</STRONG> (Thumb, 22 bytes, Stack size 24 bytes, printf8.o(i.__0printf$8), UNUSED)
+<BR><BR>[Calls]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_core
+</UL>
 
-<P><STRONG><a name="[db]"></a>__scatterload_null</STRONG> (Thumb, 2 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_null), UNUSED)
+<P><STRONG><a name="[e7]"></a>__1printf$8</STRONG> (Thumb, 0 bytes, Stack size 24 bytes, printf8.o(i.__0printf$8), UNUSED)
 
-<P><STRONG><a name="[dc]"></a>__scatterload_zeroinit</STRONG> (Thumb, 14 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_zeroinit), UNUSED)
+<P><STRONG><a name="[c1]"></a>__2printf</STRONG> (Thumb, 0 bytes, Stack size 24 bytes, printf8.o(i.__0printf$8))
+<BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = __2printf
+</UL>
+<BR>[Called By]<UL><LI><a href="#[d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tortoise_detectcycles
+<LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+</UL>
 
-<P><STRONG><a name="[b5]"></a>free</STRONG> (Thumb, 76 bytes, Stack size 8 bytes, malloc.o(i.free))
+<P><STRONG><a name="[e8]"></a>__scatterload_copy</STRONG> (Thumb, 14 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_copy), UNUSED)
+
+<P><STRONG><a name="[e9]"></a>__scatterload_null</STRONG> (Thumb, 2 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_null), UNUSED)
+
+<P><STRONG><a name="[ea]"></a>__scatterload_zeroinit</STRONG> (Thumb, 14 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_zeroinit), UNUSED)
+
+<P><STRONG><a name="[60]"></a>fputc</STRONG> (Thumb, 18 bytes, Stack size 16 bytes, fputc.o(i.fputc))
+<BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = fputc
+</UL>
+<BR>[Address Reference Count : 1]<UL><LI> printf8.o(i.__0printf$8)
+</UL>
+<P><STRONG><a name="[bd]"></a>free</STRONG> (Thumb, 76 bytes, Stack size 8 bytes, malloc.o(i.free))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = free
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
-<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_deinit
+<BR>[Called By]<UL><LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
+<LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_deinit
 </UL>
 
-<P><STRONG><a name="[ab]"></a>lfs_crc</STRONG> (Thumb, 50 bytes, Stack size 16 bytes, lfs_util.o(i.lfs_crc))
+<P><STRONG><a name="[b3]"></a>lfs_crc</STRONG> (Thumb, 50 bytes, Stack size 16 bytes, lfs_util.o(i.lfs_crc))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = lfs_crc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-<LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_crc
+<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<LI><a href="#[b2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_crc
 </UL>
 
-<P><STRONG><a name="[70]"></a>lfs_file_close</STRONG> (Thumb, 30 bytes, Stack size 16 bytes, lfs.o(i.lfs_file_close))
+<P><STRONG><a name="[74]"></a>lfs_file_close</STRONG> (Thumb, 30 bytes, Stack size 16 bytes, lfs.o(i.lfs_file_close))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = lfs_file_close &rArr; lfs_file_close_ &rArr; free
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_isopen
-<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
+<BR>[Calls]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_isopen
+<LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
 </UL>
-<BR>[Called By]<UL><LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileClose
+<BR>[Called By]<UL><LI><a href="#[73]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileClose
 </UL>
 
-<P><STRONG><a name="[72]"></a>lfs_file_opencfg</STRONG> (Thumb, 44 bytes, Stack size 32 bytes, lfs.o(i.lfs_file_opencfg))
+<P><STRONG><a name="[76]"></a>lfs_file_opencfg</STRONG> (Thumb, 44 bytes, Stack size 32 bytes, lfs.o(i.lfs_file_opencfg))
 <BR><BR>[Stack]<UL><LI>Max Depth = 472<LI>Call Chain = lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_isopen
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<BR>[Calls]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_isopen
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
 </UL>
-<BR>[Called By]<UL><LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileOpen
+<BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileOpen
 </UL>
 
-<P><STRONG><a name="[74]"></a>lfs_file_read</STRONG> (Thumb, 48 bytes, Stack size 24 bytes, lfs.o(i.lfs_file_read))
+<P><STRONG><a name="[78]"></a>lfs_file_read</STRONG> (Thumb, 48 bytes, Stack size 24 bytes, lfs.o(i.lfs_file_read))
 <BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = lfs_file_read &rArr; lfs_file_flushedread &rArr; lfs_dir_getread &rArr; lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_isopen
-<LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
+<BR>[Calls]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_isopen
+<LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
 </UL>
-<BR>[Called By]<UL><LI><a href="#[73]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileRead
+<BR>[Called By]<UL><LI><a href="#[77]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileRead
 </UL>
 
-<P><STRONG><a name="[79]"></a>lfs_mount</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, lfs.o(i.lfs_mount))
-<BR><BR>[Stack]<UL><LI>Max Depth = 432<LI>Call Chain = lfs_mount &rArr; lfs_mount_ &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
+<P><STRONG><a name="[7d]"></a>lfs_mount</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, lfs.o(i.lfs_mount))
+<BR><BR>[Stack]<UL><LI>Max Depth = 440<LI>Call Chain = lfs_mount &rArr; lfs_mount_ &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<BR>[Calls]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
 </UL>
-<BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
+<BR>[Called By]<UL><LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
 </UL>
 
 <P><STRONG><a name="[5d]"></a>main</STRONG> (Thumb, 250 bytes, Stack size 72 bytes, boot_main.o(i.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 776<LI>Call Chain = main &rArr; Boot_Update_FromFile &rArr; Update_Run &rArr; Payload_Check &rArr; Boot_Lfs_FileOpen &rArr; lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Update_FromFile
-<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
-<LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutU32
-<LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
-<LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
-<LI><a href="#[85]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Rollback_FromFile
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
-<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
-<LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
-<LI><a href="#[6d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_JumpToApp
-<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;App_QuickValid
+<BR>[Calls]<UL><LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Update_FromFile
+<LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
+<LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutU32
+<LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
+<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Init
+<LI><a href="#[89]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Rollback_FromFile
+<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+<LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
+<LI><a href="#[7e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
+<LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_JumpToApp
+<LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;App_QuickValid
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> entry9a.o(.ARM.Collect$$$$0000000B)
 </UL>
-<P><STRONG><a name="[c9]"></a>malloc</STRONG> (Thumb, 92 bytes, Stack size 20 bytes, malloc.o(i.malloc))
+<P><STRONG><a name="[d2]"></a>malloc</STRONG> (Thumb, 92 bytes, Stack size 20 bytes, malloc.o(i.malloc))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = malloc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_malloc
+<BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_malloc
 </UL>
 <P>
 <H3>
 Local Symbols
 </H3>
-<P><STRONG><a name="[ce]"></a>App_QuickValid</STRONG> (Thumb, 76 bytes, Stack size 8 bytes, boot_main.o(i.App_QuickValid))
+<P><STRONG><a name="[d7]"></a>App_QuickValid</STRONG> (Thumb, 76 bytes, Stack size 8 bytes, boot_main.o(i.App_QuickValid))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = App_QuickValid
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[63]"></a>bf_erase</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, boot_lfs.o(i.bf_erase))
+<P><STRONG><a name="[64]"></a>bf_erase</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, boot_lfs.o(i.bf_erase))
 <BR>[Address Reference Count : 1]<UL><LI> boot_lfs.o(.constdata)
 </UL>
-<P><STRONG><a name="[62]"></a>bf_prog</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, boot_lfs.o(i.bf_prog))
+<P><STRONG><a name="[63]"></a>bf_prog</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, boot_lfs.o(i.bf_prog))
 <BR>[Address Reference Count : 1]<UL><LI> boot_lfs.o(.constdata)
 </UL>
-<P><STRONG><a name="[61]"></a>bf_read</STRONG> (Thumb, 22 bytes, Stack size 8 bytes, boot_lfs.o(i.bf_read))
+<P><STRONG><a name="[62]"></a>bf_read</STRONG> (Thumb, 22 bytes, Stack size 8 bytes, boot_lfs.o(i.bf_read))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = bf_read &rArr; W25Q64_Read &rArr; W25Q64_SpiReadWriteByte
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
+<BR>[Calls]<UL><LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> boot_lfs.o(.constdata)
 </UL>
-<P><STRONG><a name="[64]"></a>bf_sync</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, boot_lfs.o(i.bf_sync))
+<P><STRONG><a name="[65]"></a>bf_sync</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, boot_lfs.o(i.bf_sync))
 <BR>[Address Reference Count : 1]<UL><LI> boot_lfs.o(.constdata)
 </UL>
-<P><STRONG><a name="[97]"></a>File_ReadFull</STRONG> (Thumb, 38 bytes, Stack size 16 bytes, boot_update.o(i.File_ReadFull))
+<P><STRONG><a name="[9b]"></a>File_ReadFull</STRONG> (Thumb, 38 bytes, Stack size 16 bytes, boot_update.o(i.File_ReadFull))
 <BR><BR>[Stack]<UL><LI>Max Depth = 296<LI>Call Chain = File_ReadFull &rArr; Boot_Lfs_FileRead &rArr; lfs_file_read &rArr; lfs_file_flushedread &rArr; lfs_dir_getread &rArr; lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[73]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileRead
+<BR>[Calls]<UL><LI><a href="#[77]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileRead
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
-<LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
 </UL>
 
-<P><STRONG><a name="[98]"></a>Payload_Check</STRONG> (Thumb, 106 bytes, Stack size 24 bytes, boot_update.o(i.Payload_Check))
+<P><STRONG><a name="[9c]"></a>Payload_Check</STRONG> (Thumb, 106 bytes, Stack size 24 bytes, boot_update.o(i.Payload_Check))
 <BR><BR>[Stack]<UL><LI>Max Depth = 520<LI>Call Chain = Payload_Check &rArr; Boot_Lfs_FileOpen &rArr; lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;File_ReadFull
-<LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileOpen
-<LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileClose
-<LI><a href="#[6c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32_Update
+<BR>[Calls]<UL><LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;File_ReadFull
+<LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileOpen
+<LI><a href="#[73]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileClose
+<LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32_Update
 </UL>
-<BR>[Called By]<UL><LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
+<BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Update_Run
 </UL>
 
-<P><STRONG><a name="[86]"></a>Update_Run</STRONG> (Thumb, 610 bytes, Stack size 184 bytes, boot_update.o(i.Update_Run))
+<P><STRONG><a name="[8a]"></a>Update_Run</STRONG> (Thumb, 610 bytes, Stack size 184 bytes, boot_update.o(i.Update_Run))
 <BR><BR>[Stack]<UL><LI>Max Depth = 704<LI>Call Chain = Update_Run &rArr; Payload_Check &rArr; Boot_Lfs_FileOpen &rArr; lfs_file_opencfg &rArr; lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
-<LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;File_ReadFull
-<LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
-<LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileOpen
-<LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileClose
-<LI><a href="#[6c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32_Update
-<LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Unlock
-<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_ProgramWord
-<LI><a href="#[82]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Lock
-<LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_EraseSector
-<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
-<LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutU32
-<LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
-<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
-<LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
-<LI><a href="#[6d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_JumpToApp
+<BR>[Calls]<UL><LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Payload_Check
+<LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;File_ReadFull
+<LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_Mount
+<LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileOpen
+<LI><a href="#[73]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Lfs_FileClose
+<LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_CRC32_Update
+<LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Unlock
+<LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_ProgramWord
+<LI><a href="#[86]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_Lock
+<LI><a href="#[85]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_EraseSector
+<LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_Puts
+<LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutU32
+<LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Uart_PutHex
+<LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Save
+<LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Load
+<LI><a href="#[7e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Param_Default
+<LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_JumpToApp
 </UL>
-<BR>[Called By]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Update_FromFile
-<LI><a href="#[85]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Rollback_FromFile
+<BR>[Called By]<UL><LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Update_FromFile
+<LI><a href="#[89]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Boot_Rollback_FromFile
 </UL>
 
-<P><STRONG><a name="[99]"></a>SetSysClock</STRONG> (Thumb, 162 bytes, Stack size 12 bytes, system_stm32f4xx.o(i.SetSysClock))
+<P><STRONG><a name="[9d]"></a>SetSysClock</STRONG> (Thumb, 162 bytes, Stack size 12 bytes, system_stm32f4xx.o(i.SetSysClock))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = SetSysClock
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemInit
 </UL>
 
-<P><STRONG><a name="[ac]"></a>lfs_alignup</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, lfs.o(i.lfs_alignup))
-<BR><BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<P><STRONG><a name="[b4]"></a>lfs_alignup</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, lfs.o(i.lfs_alignup))
+<BR><BR>[Called By]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
 
-<P><STRONG><a name="[a8]"></a>lfs_bd_cmp</STRONG> (Thumb, 102 bytes, Stack size 80 bytes, lfs.o(i.lfs_bd_cmp))
+<P><STRONG><a name="[b0]"></a>lfs_bd_cmp</STRONG> (Thumb, 102 bytes, Stack size 80 bytes, lfs.o(i.lfs_bd_cmp))
 <BR><BR>[Stack]<UL><LI>Max Depth = 144<LI>Call Chain = lfs_bd_cmp &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<BR>[Calls]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
-<BR>[Called By]<UL><LI><a href="#[60]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find_match
+<BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find_match
 </UL>
 
-<P><STRONG><a name="[aa]"></a>lfs_bd_crc</STRONG> (Thumb, 90 bytes, Stack size 80 bytes, lfs.o(i.lfs_bd_crc))
+<P><STRONG><a name="[b2]"></a>lfs_bd_crc</STRONG> (Thumb, 90 bytes, Stack size 80 bytes, lfs.o(i.lfs_bd_crc))
 <BR><BR>[Stack]<UL><LI>Max Depth = 144<LI>Call Chain = lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_crc
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<BR>[Calls]<UL><LI><a href="#[b3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_crc
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
 </UL>
 
-<P><STRONG><a name="[a9]"></a>lfs_bd_read</STRONG> (Thumb, 342 bytes, Stack size 64 bytes, lfs.o(i.lfs_bd_read))
+<P><STRONG><a name="[b1]"></a>lfs_bd_read</STRONG> (Thumb, 342 bytes, Stack size 64 bytes, lfs.o(i.lfs_bd_read))
 <BR><BR>[Stack]<UL><LI>Max Depth = 64<LI>Call Chain = lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[7d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
-<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[ac]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_alignup
+<BR>[Calls]<UL><LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
+<LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_alignup
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-<LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
-<LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_crc
-<LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_cmp
+<BR>[Called By]<UL><LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
+<LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
+<LI><a href="#[b2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_crc
+<LI><a href="#[b0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_cmp
 </UL>
 
-<P><STRONG><a name="[ae]"></a>lfs_cache_zero</STRONG> (Thumb, 24 bytes, Stack size 8 bytes, lfs.o(i.lfs_cache_zero))
+<P><STRONG><a name="[b6]"></a>lfs_cache_zero</STRONG> (Thumb, 24 bytes, Stack size 8 bytes, lfs.o(i.lfs_cache_zero))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = lfs_cache_zero
 </UL>
-<BR>[Calls]<UL><LI><a href="#[68]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
+<BR>[Calls]<UL><LI><a href="#[69]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<BR>[Called By]<UL><LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
 </UL>
 
-<P><STRONG><a name="[af]"></a>lfs_ctz_find</STRONG> (Thumb, 152 bytes, Stack size 72 bytes, lfs.o(i.lfs_ctz_find))
+<P><STRONG><a name="[b7]"></a>lfs_ctz_find</STRONG> (Thumb, 152 bytes, Stack size 72 bytes, lfs.o(i.lfs_ctz_find))
 <BR><BR>[Stack]<UL><LI>Max Depth = 136<LI>Call Chain = lfs_ctz_find &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
-<LI><a href="#[b0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_index
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<BR>[Calls]<UL><LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
+<LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_index
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
+<BR>[Called By]<UL><LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
 </UL>
 
-<P><STRONG><a name="[b2]"></a>lfs_ctz_fromle32</STRONG> (Thumb, 22 bytes, Stack size 8 bytes, lfs.o(i.lfs_ctz_fromle32))
+<P><STRONG><a name="[ba]"></a>lfs_ctz_fromle32</STRONG> (Thumb, 22 bytes, Stack size 8 bytes, lfs.o(i.lfs_ctz_fromle32))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = lfs_ctz_fromle32
 </UL>
-<BR>[Calls]<UL><LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
+<BR>[Calls]<UL><LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
 </UL>
 
-<P><STRONG><a name="[b0]"></a>lfs_ctz_index</STRONG> (Thumb, 64 bytes, Stack size 24 bytes, lfs.o(i.lfs_ctz_index))
+<P><STRONG><a name="[b8]"></a>lfs_ctz_index</STRONG> (Thumb, 64 bytes, Stack size 24 bytes, lfs.o(i.lfs_ctz_index))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = lfs_ctz_index
 </UL>
-<BR>[Calls]<UL><LI><a href="#[b3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_popc
+<BR>[Calls]<UL><LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_popc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
+<BR>[Called By]<UL><LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
 </UL>
 
-<P><STRONG><a name="[b4]"></a>lfs_deinit</STRONG> (Thumb, 44 bytes, Stack size 8 bytes, lfs.o(i.lfs_deinit))
+<P><STRONG><a name="[bc]"></a>lfs_deinit</STRONG> (Thumb, 44 bytes, Stack size 8 bytes, lfs.o(i.lfs_deinit))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = lfs_deinit &rArr; free
 </UL>
-<BR>[Calls]<UL><LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;free
+<BR>[Calls]<UL><LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;free
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
 </UL>
 
-<P><STRONG><a name="[b6]"></a>lfs_dir_fetchmatch</STRONG> (Thumb, 1074 bytes, Stack size 152 bytes, lfs.o(i.lfs_dir_fetchmatch))
+<P><STRONG><a name="[be]"></a>lfs_dir_fetchmatch</STRONG> (Thumb, 1098 bytes, Stack size 152 bytes, lfs.o(i.lfs_dir_fetchmatch))
 <BR><BR>[Stack]<UL><LI>Max Depth = 296<LI>Call Chain = lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_crc
-<LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_dsize
-<LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_fromle32
-<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_gstate_hasmovehere
-<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
-<LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_crc
+<BR>[Calls]<UL><LI><a href="#[b3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_crc
+<LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_dsize
+<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_fromle32
+<LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_gstate_hasmovehere
+<LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<LI><a href="#[b2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_crc
+<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
 </UL>
 
-<P><STRONG><a name="[ba]"></a>lfs_dir_find</STRONG> (Thumb, 336 bytes, Stack size 88 bytes, lfs.o(i.lfs_dir_find))
+<P><STRONG><a name="[c3]"></a>lfs_dir_find</STRONG> (Thumb, 336 bytes, Stack size 88 bytes, lfs.o(i.lfs_dir_find))
 <BR><BR>[Stack]<UL><LI>Max Depth = 384<LI>Call Chain = lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strcspn
-<LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strspn
-<LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
-<LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_fromle32
-<LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<BR>[Calls]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strcspn
+<LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strspn
+<LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
+<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_fromle32
+<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
 </UL>
 
-<P><STRONG><a name="[60]"></a>lfs_dir_find_match</STRONG> (Thumb, 82 bytes, Stack size 40 bytes, lfs.o(i.lfs_dir_find_match))
+<P><STRONG><a name="[61]"></a>lfs_dir_find_match</STRONG> (Thumb, 82 bytes, Stack size 40 bytes, lfs.o(i.lfs_dir_find_match))
 <BR><BR>[Stack]<UL><LI>Max Depth = 184<LI>Call Chain = lfs_dir_find_match &rArr; lfs_bd_cmp &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_cmp
+<BR>[Calls]<UL><LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[b0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_cmp
 </UL>
 <BR>[Address Reference Count : 2]<UL><LI> lfs.o(i.lfs_dir_find)
 <LI> lfs.o(i.lfs_mount_)
 </UL>
-<P><STRONG><a name="[bd]"></a>lfs_dir_get</STRONG> (Thumb, 20 bytes, Stack size 32 bytes, lfs.o(i.lfs_dir_get))
+<P><STRONG><a name="[c6]"></a>lfs_dir_get</STRONG> (Thumb, 20 bytes, Stack size 32 bytes, lfs.o(i.lfs_dir_get))
 <BR><BR>[Stack]<UL><LI>Max Depth = 168<LI>Call Chain = lfs_dir_get &rArr; lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<BR>[Calls]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
-<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
 </UL>
 
-<P><STRONG><a name="[bf]"></a>lfs_dir_getread</STRONG> (Thumb, 230 bytes, Stack size 64 bytes, lfs.o(i.lfs_dir_getread))
+<P><STRONG><a name="[c8]"></a>lfs_dir_getread</STRONG> (Thumb, 230 bytes, Stack size 64 bytes, lfs.o(i.lfs_dir_getread))
 <BR><BR>[Stack]<UL><LI>Max Depth = 200<LI>Call Chain = lfs_dir_getread &rArr; lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[7d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
-<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
-<LI><a href="#[ac]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_alignup
+<BR>[Calls]<UL><LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
+<LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_alignup
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
+<BR>[Called By]<UL><LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_flushedread
 </UL>
 
-<P><STRONG><a name="[be]"></a>lfs_dir_getslice</STRONG> (Thumb, 310 bytes, Stack size 72 bytes, lfs.o(i.lfs_dir_getslice))
+<P><STRONG><a name="[c7]"></a>lfs_dir_getslice</STRONG> (Thumb, 310 bytes, Stack size 72 bytes, lfs.o(i.lfs_dir_getslice))
 <BR><BR>[Stack]<UL><LI>Max Depth = 136<LI>Call Chain = lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr
-<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_isdelete
-<LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_dsize
-<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_gstate_hasmovehere
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<BR>[Calls]<UL><LI><a href="#[68]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr
+<LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_isdelete
+<LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_dsize
+<LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_gstate_hasmovehere
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
-<BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
-<LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
+<BR>[Called By]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
+<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
 </UL>
 
-<P><STRONG><a name="[c2]"></a>lfs_file_close_</STRONG> (Thumb, 26 bytes, Stack size 16 bytes, lfs.o(i.lfs_file_close_))
+<P><STRONG><a name="[cb]"></a>lfs_file_close_</STRONG> (Thumb, 26 bytes, Stack size 16 bytes, lfs.o(i.lfs_file_close_))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = lfs_file_close_ &rArr; free
 </UL>
-<BR>[Calls]<UL><LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;free
-<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_remove
+<BR>[Calls]<UL><LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mlist_remove
+<LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;free
 </UL>
-<BR>[Called By]<UL><LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<BR>[Called By]<UL><LI><a href="#[74]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
 </UL>
 
-<P><STRONG><a name="[c4]"></a>lfs_file_flushedread</STRONG> (Thumb, 226 bytes, Stack size 56 bytes, lfs.o(i.lfs_file_flushedread))
+<P><STRONG><a name="[cd]"></a>lfs_file_flushedread</STRONG> (Thumb, 226 bytes, Stack size 56 bytes, lfs.o(i.lfs_file_flushedread))
 <BR><BR>[Stack]<UL><LI>Max Depth = 256<LI>Call Chain = lfs_file_flushedread &rArr; lfs_dir_getread &rArr; lfs_dir_getslice &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
-<LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<BR>[Calls]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
+<LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
 </UL>
-<BR>[Called By]<UL><LI><a href="#[74]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_read
+<BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_read
 </UL>
 
-<P><STRONG><a name="[c5]"></a>lfs_file_opencfg_</STRONG> (Thumb, 390 bytes, Stack size 56 bytes, lfs.o(i.lfs_file_opencfg_))
+<P><STRONG><a name="[ce]"></a>lfs_file_opencfg_</STRONG> (Thumb, 390 bytes, Stack size 56 bytes, lfs.o(i.lfs_file_opencfg_))
 <BR><BR>[Stack]<UL><LI>Max Depth = 440<LI>Call Chain = lfs_file_opencfg_ &rArr; lfs_dir_find &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strcspn
-<LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strspn
-<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_malloc
-<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
-<LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
-<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
-<LI><a href="#[b2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_fromle32
-<LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_cache_zero
+<BR>[Calls]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strcspn
+<LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strspn
+<LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_malloc
+<LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
+<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_fromle32
+<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_cache_zero
 </UL>
-<BR>[Called By]<UL><LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg
-</UL>
-
-<P><STRONG><a name="[b1]"></a>lfs_fromle32</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, lfs.o(i.lfs_fromle32))
-<BR><BR>[Called By]<UL><LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_superblock_fromle32
-<LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_fromle32
-<LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-<LI><a href="#[b2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_fromle32
-<LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
+<BR>[Called By]<UL><LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg
 </UL>
 
-<P><STRONG><a name="[b9]"></a>lfs_gstate_hasmovehere</STRONG> (Thumb, 26 bytes, Stack size 8 bytes, lfs.o(i.lfs_gstate_hasmovehere))
+<P><STRONG><a name="[b9]"></a>lfs_fromle32</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, lfs.o(i.lfs_fromle32))
+<BR><BR>[Called By]<UL><LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_superblock_fromle32
+<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_fromle32
+<LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_fromle32
+<LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
+</UL>
+
+<P><STRONG><a name="[c2]"></a>lfs_gstate_hasmovehere</STRONG> (Thumb, 26 bytes, Stack size 8 bytes, lfs.o(i.lfs_gstate_hasmovehere))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = lfs_gstate_hasmovehere &rArr; lfs_pair_cmp
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_cmp
+<BR>[Calls]<UL><LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_cmp
 </UL>
-<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<BR>[Called By]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
 </UL>
 
-<P><STRONG><a name="[c8]"></a>lfs_init</STRONG> (Thumb, 440 bytes, Stack size 24 bytes, lfs.o(i.lfs_init))
+<P><STRONG><a name="[d1]"></a>lfs_init</STRONG> (Thumb, 440 bytes, Stack size 24 bytes, lfs.o(i.lfs_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 44<LI>Call Chain = lfs_init &rArr; lfs_malloc &rArr; malloc
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_malloc
-<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_deinit
-<LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_cache_zero
+<BR>[Calls]<UL><LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_malloc
+<LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_deinit
+<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_cache_zero
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
 </UL>
 
-<P><STRONG><a name="[c6]"></a>lfs_malloc</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, lfs.o(i.lfs_malloc))
+<P><STRONG><a name="[cf]"></a>lfs_malloc</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, lfs.o(i.lfs_malloc))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = lfs_malloc &rArr; malloc
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;malloc
+<BR>[Calls]<UL><LI><a href="#[d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;malloc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
-</UL>
-
-<P><STRONG><a name="[ad]"></a>lfs_min</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, lfs.o(i.lfs_min))
-<BR><BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
-<LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
-<LI><a href="#[60]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find_match
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-<LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+<BR>[Called By]<UL><LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
 </UL>
 
-<P><STRONG><a name="[c1]"></a>lfs_mlist_isopen</STRONG> (Thumb, 22 bytes, Stack size 12 bytes, lfs.o(i.lfs_mlist_isopen))
+<P><STRONG><a name="[b5]"></a>lfs_min</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, lfs.o(i.lfs_min))
+<BR><BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg_
+<LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getread
+<LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find_match
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_find
+<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_bd_read
+</UL>
+
+<P><STRONG><a name="[ca]"></a>lfs_mlist_isopen</STRONG> (Thumb, 22 bytes, Stack size 12 bytes, lfs.o(i.lfs_mlist_isopen))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = lfs_mlist_isopen
 </UL>
-<BR>[Called By]<UL><LI><a href="#[74]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_read
-<LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg
-<LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close
+<BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_read
+<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_opencfg
+<LI><a href="#[74]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close
 </UL>
 
-<P><STRONG><a name="[c3]"></a>lfs_mlist_remove</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, lfs.o(i.lfs_mlist_remove))
-<BR><BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
+<P><STRONG><a name="[cc]"></a>lfs_mlist_remove</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, lfs.o(i.lfs_mlist_remove))
+<BR><BR>[Called By]<UL><LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_file_close_
 </UL>
 
-<P><STRONG><a name="[ca]"></a>lfs_mount_</STRONG> (Thumb, 442 bytes, Stack size 136 bytes, lfs.o(i.lfs_mount_))
-<BR><BR>[Stack]<UL><LI>Max Depth = 432<LI>Call Chain = lfs_mount_ &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
+<P><STRONG><a name="[d3]"></a>lfs_mount_</STRONG> (Thumb, 640 bytes, Stack size 144 bytes, lfs.o(i.lfs_mount_))
+<BR><BR>[Stack]<UL><LI>Max Depth = 440<LI>Call Chain = lfs_mount_ &rArr; lfs_dir_fetchmatch &rArr; lfs_bd_crc &rArr; lfs_bd_read
 </UL>
-<BR>[Calls]<UL><LI><a href="#[7e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy4
-<LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tortoise_detectcycles
-<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_isdelete
-<LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_superblock_fromle32
-<LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_isnull
-<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
-<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
-<LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
-<LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_deinit
+<BR>[Calls]<UL><LI><a href="#[82]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy4
+<LI><a href="#[d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tortoise_detectcycles
+<LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_isdelete
+<LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_superblock_fromle32
+<LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_pair_isnull
+<LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_min
+<LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_init
+<LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
+<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_get
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
+<LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_deinit
+<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
-<BR>[Called By]<UL><LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount
+<BR>[Called By]<UL><LI><a href="#[7d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount
 </UL>
 
-<P><STRONG><a name="[c7]"></a>lfs_pair_cmp</STRONG> (Thumb, 34 bytes, Stack size 8 bytes, lfs.o(i.lfs_pair_cmp))
+<P><STRONG><a name="[d0]"></a>lfs_pair_cmp</STRONG> (Thumb, 34 bytes, Stack size 8 bytes, lfs.o(i.lfs_pair_cmp))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = lfs_pair_cmp
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_gstate_hasmovehere
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_gstate_hasmovehere
 </UL>
 
-<P><STRONG><a name="[b8]"></a>lfs_pair_fromle32</STRONG> (Thumb, 22 bytes, Stack size 8 bytes, lfs.o(i.lfs_pair_fromle32))
+<P><STRONG><a name="[c0]"></a>lfs_pair_fromle32</STRONG> (Thumb, 22 bytes, Stack size 8 bytes, lfs.o(i.lfs_pair_fromle32))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = lfs_pair_fromle32
 </UL>
-<BR>[Calls]<UL><LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
+<BR>[Calls]<UL><LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-</UL>
-
-<P><STRONG><a name="[cd]"></a>lfs_pair_isnull</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, lfs.o(i.lfs_pair_isnull))
-<BR><BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<BR>[Called By]<UL><LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_find
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
 </UL>
 
-<P><STRONG><a name="[b3]"></a>lfs_popc</STRONG> (Thumb, 46 bytes, Stack size 0 bytes, lfs.o(i.lfs_popc))
-<BR><BR>[Called By]<UL><LI><a href="#[b0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_index
+<P><STRONG><a name="[d6]"></a>lfs_pair_isnull</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, lfs.o(i.lfs_pair_isnull))
+<BR><BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
 </UL>
 
-<P><STRONG><a name="[cc]"></a>lfs_superblock_fromle32</STRONG> (Thumb, 54 bytes, Stack size 8 bytes, lfs.o(i.lfs_superblock_fromle32))
+<P><STRONG><a name="[bb]"></a>lfs_popc</STRONG> (Thumb, 46 bytes, Stack size 0 bytes, lfs.o(i.lfs_popc))
+<BR><BR>[Called By]<UL><LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_ctz_index
+</UL>
+
+<P><STRONG><a name="[d5]"></a>lfs_superblock_fromle32</STRONG> (Thumb, 54 bytes, Stack size 8 bytes, lfs.o(i.lfs_superblock_fromle32))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = lfs_superblock_fromle32
 </UL>
-<BR>[Calls]<UL><LI><a href="#[b1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
+<BR>[Calls]<UL><LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_fromle32
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
 </UL>
 
-<P><STRONG><a name="[b7]"></a>lfs_tag_dsize</STRONG> (Thumb, 18 bytes, Stack size 8 bytes, lfs.o(i.lfs_tag_dsize))
+<P><STRONG><a name="[bf]"></a>lfs_tag_dsize</STRONG> (Thumb, 18 bytes, Stack size 8 bytes, lfs.o(i.lfs_tag_dsize))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = lfs_tag_dsize
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_isdelete
+<BR>[Calls]<UL><LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_isdelete
 </UL>
-<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
-</UL>
-
-<P><STRONG><a name="[c0]"></a>lfs_tag_isdelete</STRONG> (Thumb, 16 bytes, Stack size 0 bytes, lfs.o(i.lfs_tag_isdelete))
-<BR><BR>[Called By]<UL><LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_dsize
-<LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<BR>[Called By]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
+<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_fetchmatch
 </UL>
 
-<P><STRONG><a name="[cb]"></a>lfs_tortoise_detectcycles</STRONG> (Thumb, 66 bytes, Stack size 12 bytes, lfs.o(i.lfs_tortoise_detectcycles))
-<BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = lfs_tortoise_detectcycles
-</UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
-</UL>
-
-<P><STRONG><a name="[9b]"></a>W25Q64_CS_High</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, w25q64.o(i.W25Q64_CS_High))
-<BR><BR>[Calls]<UL><LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_SetBits
-</UL>
-<BR>[Called By]<UL><LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
-<LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<P><STRONG><a name="[c9]"></a>lfs_tag_isdelete</STRONG> (Thumb, 16 bytes, Stack size 0 bytes, lfs.o(i.lfs_tag_isdelete))
+<BR><BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_tag_dsize
+<LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
+<LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_dir_getslice
 </UL>
 
-<P><STRONG><a name="[9d]"></a>W25Q64_CS_Low</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, w25q64.o(i.W25Q64_CS_Low))
-<BR><BR>[Calls]<UL><LI><a href="#[9e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_ResetBits
+<P><STRONG><a name="[d4]"></a>lfs_tortoise_detectcycles</STRONG> (Thumb, 80 bytes, Stack size 16 bytes, lfs.o(i.lfs_tortoise_detectcycles))
+<BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = lfs_tortoise_detectcycles &rArr; __2printf
 </UL>
-<BR>[Called By]<UL><LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
-<LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
+</UL>
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;lfs_mount_
 </UL>
 
-<P><STRONG><a name="[9f]"></a>W25Q64_GPIO_Init</STRONG> (Thumb, 108 bytes, Stack size 32 bytes, w25q64.o(i.W25Q64_GPIO_Init))
+<P><STRONG><a name="[9f]"></a>W25Q64_CS_High</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, w25q64.o(i.W25Q64_CS_High))
+<BR><BR>[Calls]<UL><LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_SetBits
+</UL>
+<BR>[Called By]<UL><LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
+<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+</UL>
+
+<P><STRONG><a name="[a1]"></a>W25Q64_CS_Low</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, w25q64.o(i.W25Q64_CS_Low))
+<BR><BR>[Calls]<UL><LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_ResetBits
+</UL>
+<BR>[Called By]<UL><LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
+<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+</UL>
+
+<P><STRONG><a name="[a3]"></a>W25Q64_GPIO_Init</STRONG> (Thumb, 108 bytes, Stack size 32 bytes, w25q64.o(i.W25Q64_GPIO_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 52<LI>Call Chain = W25Q64_GPIO_Init &rArr; GPIO_Init
 </UL>
-<BR>[Calls]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_StructInit
-<LI><a href="#[89]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_PinAFConfig
-<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_Init
+<BR>[Calls]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_StructInit
+<LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_PinAFConfig
+<LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_Init
 </UL>
-<BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<BR>[Called By]<UL><LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
 </UL>
 
-<P><STRONG><a name="[a3]"></a>W25Q64_SpiReadWriteByte</STRONG> (Thumb, 48 bytes, Stack size 16 bytes, w25q64.o(i.W25Q64_SpiReadWriteByte))
+<P><STRONG><a name="[a7]"></a>W25Q64_SpiReadWriteByte</STRONG> (Thumb, 48 bytes, Stack size 16 bytes, w25q64.o(i.W25Q64_SpiReadWriteByte))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = W25Q64_SpiReadWriteByte
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_I2S_SendData
-<LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_I2S_ReceiveData
-<LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_I2S_GetFlagStatus
+<BR>[Calls]<UL><LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_I2S_SendData
+<LI><a href="#[ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_I2S_ReceiveData
+<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_I2S_GetFlagStatus
 </UL>
-<BR>[Called By]<UL><LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
-<LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+<BR>[Called By]<UL><LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Read
+<LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;W25Q64_Init
+</UL>
+
+<P><STRONG><a name="[ad]"></a>_printf_core</STRONG> (Thumb, 996 bytes, Stack size 104 bytes, printf8.o(i._printf_core), UNUSED)
+<BR><BR>[Calls]<UL><LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_uldivmod
+<LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_pre_padding
+<LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_post_padding
+</UL>
+<BR>[Called By]<UL><LI><a href="#[ac]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__0printf$8
+</UL>
+
+<P><STRONG><a name="[af]"></a>_printf_post_padding</STRONG> (Thumb, 36 bytes, Stack size 24 bytes, printf8.o(i._printf_post_padding), UNUSED)
+<BR><BR>[Called By]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_core
+</UL>
+
+<P><STRONG><a name="[ae]"></a>_printf_pre_padding</STRONG> (Thumb, 46 bytes, Stack size 24 bytes, printf8.o(i._printf_pre_padding), UNUSED)
+<BR><BR>[Called By]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_core
 </UL>
 <P>
 <H3>

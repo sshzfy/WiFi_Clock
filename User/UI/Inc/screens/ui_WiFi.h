@@ -24,6 +24,8 @@ extern void ui_event_Keyboard1(lv_event_t * e);
 extern lv_obj_t * ui_Keyboard1;
 extern void ui_event_Button1(lv_event_t * e);
 extern lv_obj_t * ui_Button1;
+extern lv_obj_t * ui_CheckUpdate;
+extern void ui_event_CheckUpdate(lv_event_t * e);
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

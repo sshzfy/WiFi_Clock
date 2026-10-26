@@ -13,4 +13,4 @@ int Boot_Lfs_FileClose(void);
 
 int Boot_Lfs_FileSize(const char *path, uint32_t *size);
 
-#endif
+#endif /* __BOOT_LFS_H__ */

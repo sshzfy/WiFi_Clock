@@ -20,29 +20,21 @@
 
 typedef void (*pFunc)(void);
 
-/**
- * @brief  App 轻量合法性检查
- * @return true = 看起来像一个合法 App
- * @note   不做整包 CRC，保证正常启动在几十毫秒内完成。
- *         检查三项：
- *           1. 向量表第 0 字（栈顶）在 SRAM/CCM 范围内；
- *           2. 向量表第 1 字（复位向量）在 App 区内且 bit0=1；
- *           3. 前 8 个字不能全是 0xFF（说明从未烧录）。
- *         整包 CRC 留给搬运后的回读校验（boot_update.c）。
- */
+/** @brief  App 轻量合法性检查 */
 static bool App_QuickValid(void)
 {
-    uint32_t sp = *(volatile uint32_t *)APP_BASE;
-    uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U);
-    bool all_erased = true;
+    uint32_t sp = *(volatile uint32_t *)APP_BASE;        // 栈顶
+    uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U); // 复位向量
+    bool all_erased = true;                              // 假设全擦除
 
+    /* 检查栈顶在 SRAM/CCM 范围内 */
     if (!((sp >= 0x20000000UL && sp <= 0x20020000UL) ||
           (sp >= 0x10000000UL && sp <= 0x10010000UL)))
         return false;
-
+    /* 复位向量在 App 区内且 bit0=1 */
     if (pc < APP_BASE || pc >= APP_END || (pc & 1U) == 0U)
         return false;
-
+    /* 前 8 个字不能全是 0xFF(说明从未烧录) */
     for (uint32_t i = 0U; i < 8U; i++)
     {
         if (*(volatile uint32_t *)(APP_BASE + i * 4U) != 0xFFFFFFFFUL)
@@ -55,43 +47,42 @@ static bool App_QuickValid(void)
     return !all_erased;
 }
 
-/**
- * @brief  跳转到 App
- * @note   跳转顺序不能乱：
- *           关中断 -> 关 SysTick -> 清 NVIC -> 关外设 ->
- *           设 VTOR -> 设 MSP -> 开中断 -> 跳转。
- *         不设 VTOR，App 中断会打到 Bootloader 的向量表；
- *         不设 MSP，App 会继续用 Bootloader 的栈；
- *         最后不开中断，App 的 SysTick/FreeRTOS 起不来。
- *         导出给 boot_update.c：搬运完成后由它直接跳转。
- */
+/** @brief  跳转到 App */
 void Boot_JumpToApp(void)
 {
     uint32_t sp = *(volatile uint32_t *)APP_BASE;
     uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U);
     pFunc jump = (pFunc)pc;
 
+    /* 关中断 */
     __disable_irq();
 
+    /* 关 SysTick */
     SysTick->CTRL = 0U;
     SysTick->LOAD = 0U;
     SysTick->VAL = 0U;
 
-    for (uint32_t i = 0U; i < 8U; i++)
+    /* 清 NVIC */
+    for (uint32_t i = 0U; i < sizeof(NVIC->ICER) / sizeof(NVIC->ICER[0]); i++)
     {
         NVIC->ICER[i] = 0xFFFFFFFFUL;
         NVIC->ICPR[i] = 0xFFFFFFFFUL;
     }
 
+    /* 关外设 */
     USART_Cmd(USART2, DISABLE);
 
+    /* 重新定位 VTOR */
     SCB->VTOR = APP_BASE;
     __DSB();
     __ISB();
 
-    /* __set_MSP 之后不能再依赖 Bootloader 的栈 */
+    /* 设置 App 的栈SP
+     * __set_MSP 之后不能再依赖 Bootloader 的栈 */
     __set_MSP(sp);
     __enable_irq();
+
+    /* 跳转到 App */
     jump();
 }
 
