@@ -16,11 +16,11 @@
 
 #define APP_VERSION_MAJOR        1
 #define APP_VERSION_MINOR        0
-#define APP_VERSION_PATCH        7
+#define APP_VERSION_PATCH        12
 
 #define APP_VERSION         ((APP_VERSION_MAJOR << 16) | \
                              (APP_VERSION_MINOR << 8)  | \
                              APP_VERSION_PATCH)
-#define APP_VERSION_STR     "1.0.7"
+#define APP_VERSION_STR     "1.0.12"
 
 #endif /* __VERSION_H__ */

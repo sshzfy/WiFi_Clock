@@ -306,7 +306,13 @@ void OTA_Update_Run(void)
     if (err != OTA_NET_OK || !ctx.store_ok || ctx.got < OTA_PKG_HEADER_SIZE)
     {
         (void)OTA_Store_Remove(OTA_FW_TMP_PATH);
-        g_ota_prog.state = (err == OTA_NET_OK) ? OTA_UPD_ERR_HTTP : OTA_UPD_ERR_NET;
+
+        if (err == OTA_NET_ERR_HTTP)
+            g_ota_prog.state = OTA_UPD_ERR_HTTP;
+        else if (err != OTA_NET_OK)
+            g_ota_prog.state = OTA_UPD_ERR_NET;
+        else
+            g_ota_prog.state = OTA_UPD_ERR_STORE;
         return;
     }
 

@@ -135,6 +135,12 @@ static void Net_LogChar(char c)
         s_at_log[s_at_log_len++] = c;
         s_at_log[s_at_log_len] = '\0';
     }
+
+#if (DEBUG_SUPPORT == 0)
+    /* 正式版 DBG_PRINTF 展开为空, s_at_log 变成只写不读, AC5 报 #550-D。
+     * 读一次首字节, 让编译器认为它被使用过。 */
+    (void)s_at_log[0];
+#endif
 }
 
 /**
