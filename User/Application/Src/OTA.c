@@ -50,38 +50,26 @@ static uint8_t s_buf[OTA_CHUNK]; // 4 KB 收发缓冲
 /**
  * @brief  计算自身固件大小（备份/回滚/自检共用）
  * @return 固件字节数（4 字节对齐）；0 = 无可用来源
- * @note   两级来源：
- *           1. 参数区 app_size：OTA 升级时 Bootloader 按 .ota
- *              包头 fw_size 写入，精确等于 bin 长度；
- *           2. APP_FW_SIZE_FALLBACK：参数区为空（ST-Link 直接
- *              烧录、从未 OTA 过）时的兜底常量，BuildConfig.h
- *              中维护，必须 >= 实际固件大小。
- *         备份读多少字节就按多少算 CRC、回滚写多少字节，
- *         两条路径各自自洽，不要求与打包工具完全一致。
  */
 uint32_t OTA_AppSelfSize(void)
 {
     boot_param_t p;
     uint32_t size = 0U;
 
-    /* 一级来源：参数区 app_size。但只有 APP_UNCONFIRMED 状态可信：
-     * 它由 Bootloader 刚按 .ota 包头 fw_size 写入，精确等于 bin 长度。
-     * IDLE/CONFIRMED 状态的值可能是"上一次 ST-Link 烧录"留下的旧值，
-     * 继承它可能小于当前固件造成备份截断（Phase 1 黑屏事故的变体）。 */
+    /* 一级来源：参数区 app_size。但只有 APP_UNCONFIRMED 状态可信 */
     if (Boot_Param_Load(&p) &&
         p.state == BOOT_ST_APP_UNCONFIRMED &&
         p.app_size >= 0x1000U && p.app_size <= APP_SIZE)
         size = p.app_size;
 
-    /* 二级来源：其余场景（参数区空 / ST-Link 烧录后）用兜底常量，
-     * 人工保证 >= 实际固件大小；多读尾部 0xFF 无害。 */
+    /* 二级来源：BuildConfig.h 中手动维护的常量兜底 */
     if (size == 0U)
         size = APP_FW_SIZE_FALLBACK;
 
     if (size == 0U || size > APP_SIZE)
         return 0U;
 
-    /* 向上取整到 4：Bootloader 按 4 字节写 Flash */
+    /* 向上取整到 4 字节写 Flash */
     return (size + 3U) & ~3U;
 }
 
@@ -90,13 +78,10 @@ uint32_t OTA_AppSelfSize(void)
  * @param  size  输出：固件字节数（可为 NULL）
  * @param  crc32 输出：固件 CRC32（可为 NULL）
  * @return true = 计算成功
- * @note   Boot_Confirm_Task（app_task.c）在启动确认时调用，
- *         把结果写进参数区，Bootloader 显示版本、OTA 备份时复用。
- *         读内部 Flash 约 0.3 s，只执行一次。
  */
 bool OTA_CalcAppInfo(uint32_t *size, uint32_t *crc32)
 {
-    uint32_t sz = OTA_AppSelfSize();
+    uint32_t sz = OTA_AppSelfSize(); // 固件大小
     uint32_t crc = 0xFFFFFFFFUL;
 
     if (sz == 0U || sz > APP_SIZE)
@@ -123,8 +108,6 @@ bool OTA_CalcAppInfo(uint32_t *size, uint32_t *crc32)
  * @param  data 数据首地址
  * @param  len  字节数
  * @return 16 位校验值
- * @note   用于 backup.bin 的包头 header_crc16，与打包工具算法一致；
- *         和 CRC32 一样，PC 端必须用同一套参数，否则对不上。
  */
 static uint16_t Ota_Crc16(const uint8_t *data, uint32_t len)
 {
@@ -180,18 +163,11 @@ static bool Wait_Bytes(uint8_t *buf, uint32_t len, uint32_t timeout_ms)
 /**
  * @brief  备份当前固件为 .ota 格式写入 backup.bin
  * @return OTA_OK 成功；OTA_ERR_BACKUP 失败
- * @note   新固件可能"CRC 正确但跑不起来"（逻辑 bug），回滚是
- *         唯一不需要人工介入的恢复手段。
-
- *         为什么在写参数 OTA_PENDING 之前做？
- *         备份失败就直接中止，旧 App 完好无损。
- *         流程：读自身 Flash -> 算 CRC -> 构造 .ota 头 ->
- *         写 .tmp -> rename（原子替换）。
  */
 static ota_result_t Backup_Current(void)
 {
     ota_hdr_t hdr;
-    uint32_t size = OTA_AppSelfSize();
+    uint32_t size = OTA_AppSelfSize(); // 固件大小
     uint32_t crc = 0xFFFFFFFFUL;
     int err;
 
@@ -256,9 +232,6 @@ fail:
 /**
  * @brief  执行一次完整 OTA 会话
  * @return 错误码；成功路径以 NVIC_SystemReset 结束，OTA_OK 不会返回
- * @note   九步流程：握手 -> 元数据 -> 目录与空间 -> 接收写 tmp
- *         （边收边算 CRC）-> CRC 校验 -> rename -> 备份 ->
- *         写参数 OTA_PENDING -> 回执并复位。
  */
 ota_result_t OTA_Run(void)
 {
@@ -275,15 +248,14 @@ ota_result_t OTA_Run(void)
     /* 1. 握手
      * 五字节魔数，用于和串口助手乱发的内容区分。
      * 超时给 60 s：等待用户操作 PC 工具。 */
-    {
-        uint8_t hs[5];
+    uint8_t hs[5];
 
-        if (!Wait_Bytes(hs, sizeof(hs), 60000U))
-            return OTA_ERR_TIMEOUT;
+    if (!Wait_Bytes(hs, sizeof(hs), 60000U))
+        return OTA_ERR_TIMEOUT;
 
-        if (memcmp(hs, "\x55\xAAOTA", 5) != 0)
-            return OTA_ERR_PROTO;
-    }
+    if (memcmp(hs, "\x55\xAAOTA", 5) != 0)
+        return OTA_ERR_PROTO;
+
     OTA_Serial_Send(s_ack_ok, sizeof(s_ack_ok));
 
     /* 2. 元数据
@@ -305,16 +277,15 @@ ota_result_t OTA_Run(void)
     OTA_Serial_Send(s_ack_ok, sizeof(s_ack_ok));
 
     /* 3. 目录与空间
-     * 需要容纳：新固件 + 即将写入的备份 + 64 KB 余量。
-     * 提前检查，避免写到一半 littlefs 报 NOSPC。 */
+     * 需要容纳：新固件 + 即将写入的备份 + 64 KB 余量 */
     if (OTA_Store_EnsureDir() != LFS_ERR_OK)
         return OTA_ERR_STORE;
     if (OTA_Store_FreeBytes() < meta.total_len * 2U + 65536U)
         return OTA_ERR_SIZE;
 
     /* 4. 接收并写入 firmware.tmp，边收边算 payload CRC
-     * CRC 跳过前 64 B 包头（包头有自己的 header_crc16）。
-     * 接收超时 5 s/块：115200 下 4 KB 约 0.36 s，5 s 很宽松。 */
+     * CRC 跳过前 64 B 包头(包头有自己的 header_crc16)
+     * 接收超时 5s/块：115200 下 4KB 约 0.36s，5s 足够。 */
     if (OTA_Store_OpenWrite(OTA_FW_TMP_PATH) != LFS_ERR_OK)
         return OTA_ERR_STORE;
 
@@ -326,12 +297,13 @@ ota_result_t OTA_Run(void)
     {
         uint32_t n = (remaining > OTA_CHUNK) ? OTA_CHUNK : remaining; // 每次接收 OTA_CHUNK 字节
 
+        /* 接收数据 */
         if (!Wait_Bytes(s_buf, n, 5000U))
         {
             (void)OTA_Store_Close();
             return OTA_ERR_TIMEOUT;
         }
-
+        /* 写入数据 */
         if (OTA_Store_Write(s_buf, n) != (int)n)
         {
             (void)OTA_Store_Close();
@@ -341,7 +313,7 @@ ota_result_t OTA_Run(void)
         /* 收流 = 64 B 头 + payload；头不参与 payload CRC */
         if (skipped < OTA_PKG_HEADER_SIZE)
         {
-            uint32_t skip = (uint32_t)OTA_PKG_HEADER_SIZE - skipped; // 还余没有跳过的头字节
+            uint32_t skip = (uint32_t)OTA_PKG_HEADER_SIZE - skipped; // 没有跳过的头字节数
 
             /* 本块全是头字节 */
             if (n <= skip)
@@ -381,15 +353,12 @@ ota_result_t OTA_Run(void)
     return OTA_CommitFirmware(fw_size, meta.crc32, meta.version);
 }
 
-
 /**
  * @brief  提交已下载好的 /ota/firmware.tmp：改名 -> 备份 -> 写参数 -> 复位
  * @param  fw_size    固件 payload 字节数（不含 64 B 包头）
  * @param  fw_crc32   payload CRC32（调用前必须已校验通过）
- * @param  fw_version 版本编码（major<<16 | minor<<8 | patch）
+ * @param  fw_version 版本编码
  * @return 失败返回错误码；成功不返回（延时 1 秒后复位）
- * @note   串口离线升级（OTA_Run）与 Phase 2 网络升级共用本函数。
- *         调用前必须保证 firmware.tmp 已完整写入且 CRC 已通过。
  */
 ota_result_t OTA_CommitFirmware(uint32_t fw_size, uint32_t fw_crc32, uint32_t fw_version)
 {
@@ -402,17 +371,14 @@ ota_result_t OTA_CommitFirmware(uint32_t fw_size, uint32_t fw_crc32, uint32_t fw
         return OTA_ERR_STORE;
 
     /* 2. 备份当前固件（失败则删除新固件并中止） */
+    ota_result_t bk_ret = Backup_Current();
+    if (bk_ret != OTA_OK)
     {
-        ota_result_t br = Backup_Current();
-        if (br != OTA_OK)
-        {
-            (void)OTA_Store_Remove(OTA_FW_PATH);
-            return br;
-        }
+        (void)OTA_Store_Remove(OTA_FW_PATH);
+        return bk_ret;
     }
 
-    /* 3. 写参数：请求 Bootloader 搬运。这是"点球时刻"：写完这条
-     * 参数，复位后 Bootloader 就会擦 App 区开始搬运 */
+    /* 3. 写参数：请求 Bootloader 搬运 */
     Boot_Param_Default(&p);
     if (Boot_Param_Load(&p))
         p.seq++;

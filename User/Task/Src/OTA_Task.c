@@ -12,7 +12,7 @@
  * 优先级 2：低于 ui(3)、dht22(4)，与 net 同级。
  *   - 不能高于 ui：下载期间 ui 每 50 ms 还要刷屏/轮询触摸；
  *   - 不担心被抢占：字节由 USART2 中断收进 4 KB 环形缓冲，
- *     任务被抢占几十毫秒也不会丢数据
+ *     任务被抢占毫秒不会丢数据
  * ============================================================ */
 
 /* 失败应答：OTA_Run 出错返回后统一回复 PC */
@@ -20,7 +20,6 @@ static const uint8_t s_fail[6] = {0xAA, 0x55, 'F', 'A', 'I', 'L'};
 
 /**
  * @brief  OTA 任务主体
- * @param  pvParameters 未使用
  * @note   循环等待握手 -> 执行会话 -> 失败回 FAIL -> 清缓冲重来。
  *         升级成功会在 OTA_Run 里复位，OTA_OK 实际上不会返回。
  */
@@ -32,9 +31,9 @@ static void OTA_Task(void *pvParameters)
     {
         /* 阻塞在握手等待上；升级成功会在 OTA_Run 里复位，
          * 因此 OTA_OK 实际上永远不会返回。 */
-        ota_result_t r = OTA_Run();
+        ota_result_t ret = OTA_Run();
 
-        if (r != OTA_OK)
+        if (ret != OTA_OK)
             OTA_Serial_Send(s_fail, sizeof(s_fail));
 
         /* 一次会话结束：清掉缓冲里残留的半帧数据，

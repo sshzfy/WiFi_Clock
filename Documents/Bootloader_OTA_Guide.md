@@ -8,7 +8,15 @@
 
 ## 0. 这份文档怎么用
 
-代码里只保留必要的短注释，完整的原理、设计取舍和踩坑点集中在这里。建议按下面的顺序读：
+`Documents/` 下有三份互补的文档，按"想解决什么问题"来选：
+
+| 文档 | 定位 | 什么时候看 |
+| --- | --- | --- |
+| **Bootloader_OTA_Flow.md** | 现状流程（12 章 + 7 张流程图） | 想快速搞清"现在到底怎么跑的" |
+| **Bootloader_OTA_Guide.md**（本文） | 原理、设计取舍、踩坑历史 | 想理解"为什么要这么设计" |
+| **OTA_Test_Record.md** | Phase 0/1/2 的测试方法与实测记录 | 想复现测试，或查某个 bug 的来龙去脉 |
+
+代码里只保留必要的短注释，完整的原理、设计取舍和踩坑点集中在这里。本文建议按下面的顺序读：
 
 1. 先读第 1~3 章，建立“Bootloader 到底在干什么”的整体图景；
 2. 再读第 4~7 章，理解 Flash、向量表、跳转、参数区这些底层机制；
@@ -602,7 +610,7 @@ STM32 的独立看门狗（IWDG）由内部 LSI 驱动，**一旦启动就不能
 | 搬运状态机（升级/回滚/重入） | 已实现 |
 | 串口离线 OTA（USART2 + 自定义协议） | 已实现，待上机验证 |
 | 备份 / 回滚（`backup.bin` + confirmed + try） | 已实现，待上机验证 |
-| GitHub 下载 | 规划中（Phase 2） |
+| Gitee 自动发现下载（`releases/latest` 推导 tag） | 已实现，实测通过 |
 | 看门狗 / 串口救援 | 规划中（Phase 3） |
 
 ---
@@ -711,15 +719,18 @@ STM32 的独立看门狗（IWDG）由内部 LSI 驱动，**一旦启动就不能
 ## 16. 下一步
 
 Phase 0（跳转 + 参数区）与 Phase 1（离线 OTA + 回滚 + 掉电恢复）已全部完成，
-并经过硬件实测（A/B1/B2/B3/B4 全过），记录见《Phase1_OTA_Test.md》第 8 节。
+并经过硬件实测（A/B1/B2/B3/B4 全过），记录见《OTA_Test_Record.md》第 2 节。
 
-下一阶段（Phase 2，GitHub Releases 下载）建议顺序：
+Phase 2（Gitee Releases 网络升级）已完成并硬件实测通过，详见第 18、19 节。
+其中"更新源写死在固件里、导致设备只能升级一次"的缺陷，修复记录见 19.5。
 
-1. App 增加 HTTP 客户端，从 GitHub Releases 拉取 `.ota`；
-   复用 Phase 1 的"校验 → 备份 → 写参数 → 复位搬运"流程，
-   只把"串口收流"替换成"网络收流"；
-2. UI 显示下载进度与校验结果；
-3. Phase 3 再补：看门狗、串口救援（RECOVERY 状态）、签名校验。
+下一阶段（Phase 3）待办，按"能不能把设备救回来"排序：
+
+1. 看门狗：IWDG + 各任务心跳监控，而不是单纯喂狗；
+2. 串口救援：`boot_main.c` 三处 `halt` 改为 YMODEM 接收
+   （`BOOT_FLAG_FORCE_RECOVERY` 已预留但尚未使用）；
+3. 失败原因落盘：参数区 `reserved[0]` 改为 `last_error`，UI 显示；
+4. 可选：固件签名（Ed25519），公钥烧在 Bootloader。
 
 ---
 
@@ -755,7 +766,7 @@ App 能跑、能确认，但 UI 黑屏——极具迷惑性。
 
 ---
 
-## 18. Phase 2：GitHub Releases 网络升级（设计记录）
+## 18. Phase 2：网络升级（设计记录，最终落地为 Gitee 直连）
 
 ### 18.1 总体结构
 
@@ -871,10 +882,189 @@ https://gitee.com/ssh_zfy/WiFi_Clock/releases/download/v1.0.6/fw_106_gitee.ota
 - **流式协议解析**（HTTP 头/JSON）要防御三类问题：
   缓冲边界、字符串结尾、长字段（Location）溢出。
 
-### 19.4 发布约定（Gitee）
+### 19.4 发布约定（2026-10-26 更新）
 
 1. 仓库：`https://gitee.com/ssh_zfy/WiFi_Clock`
-2. 发版：发行版页 → 新建/编辑 → tag `v1.0.6` → 上传 `fw_106_gitee.ota`
-3. 附件名必须是 `fw_106_gitee.ota`（与 `OTA_DIRECT_URL` 一致），
-   换版时同步改 `BuildConfig.h` 里的 URL 与 tag。
-4. 生成的 `.ota` 用 `ota_pack.py` 打包，版本参数与 `Version.h` 一致。
+2. 发版：发行版页 → 新建/编辑 → tag `v1.0.7` → 上传 `fw_1.0.7.ota`
+3. **附件名必须能从 tag 推出来**：`"fw_" + tag去掉'v' + ".ota"`。
+   设备端直接按这条规则拼地址，不再读 `BuildConfig.h`，**发版不需要改代码**。
+4. `.ota` 用 `ota_pack.py` 打包，`--version` 与 `Version.h` 一致。
+
+旧约定（"改 `OTA_DIRECT_URL` 再重新发布"）已废弃，原因见 19.5。
+
+### 19.5 更新源改为自动发现（Phase 2 bug 修复）
+
+#### 问题：设备只能升级一次
+
+Phase 2 把下载地址写死在 `BuildConfig.h`：
+
+```c
+#define OTA_DIRECT_URL "https://gitee.com/ssh_zfy/WiFi_Clock/releases/download/v1.0.6/fw_106_gitee.ota"
+```
+
+这个 URL 存在于**正在运行的固件**里，于是形成死循环：
+
+1. 发 1.0.7 时改了源码里的 URL → 编译出的是 1.0.7 固件；
+2. 但设备上跑的还是 1.0.6，它内部的 URL 仍指向 `v1.0.6`；
+3. 1.0.6 设备去拉 `v1.0.6/fw_106_gitee.ota`，拿到的版本等于自己，
+   判定"已是最新"。
+
+**结果：设备只能升级一次（1.0.5 → 1.0.6），之后永远卡住。**
+改源码对已经出厂的设备完全无效——这就是引导式自举悖论。
+
+#### 为什么不用 manifest.json
+
+考虑过在仓库里维护一个版本清单文件，但实测 Gitee 的 raw 通道会 302 到
+`raw.giteeusercontent.com`，`Location` 长达 **400 字节**（带 `metadata` +
+`signature` 签名参数），逼近设备 512 字节的 `location` 缓冲，而且路径越长越长。
+放弃。
+
+#### 方案：用 `releases/latest` 的 302 推导
+
+实测 Gitee 三个关键行为：
+
+| 请求 | 响应 | `Location` 长度 |
+| --- | --- | --- |
+| `/releases/latest` | 302 → `.../releases/tag/v1.0.6` | **56 B** |
+| `/releases/download/v1.0.6/fw_106_gitee.ota` | 302 → `.../attach_files/<id>/download/...` | 83 B |
+| `/raw/main/README.md` | 302 → `raw.giteeusercontent.com/...` | 400 B |
+
+于是设备端三步走：
+
+```text
+① GET /releases/latest      -> 302，Location 尾部就是最新 tag
+② 抠出 tag，拼附件地址       -> releases/download/<tag>/fw_<ver>.ota
+③ 版本 > 当前？是则下载      -> 复用原有 302 跟随 + 流式写 littlefs
+```
+
+一个容易写错的点：`OTA_Net_HttpGet` 在 3xx 时会返回 `OTA_NET_ERR_HTTP`，
+但 `resp` 已经完整填充，所以调用方必须判断 `resp.status_code`，
+不能拿 `err != OTA_NET_OK` 当失败。
+
+#### 顺带的性能修复
+
+旧实现是"先下完 160 KB，再从 .ota 包头里读版本比较"，
+已是最新也要空跑约 45 秒。
+
+新实现把版本比较提到下载之前，只读一个 302 头（56 字节），
+**几秒钟就能判定"已是最新"**。
+
+#### 代码清理
+
+按"只保留一条验证通过的路径"的原则删除：
+
+| 删除项 | 原因 |
+| --- | --- |
+| `OTA_SOURCE_MODE` 三选一 | 只留 Gitee 自动发现 |
+| Gitee / GitHub API 分支 | 匿名 API 会 403 限流 |
+| `OTA_DIRECT_URL` 硬编码地址 | 正是本轮要修的 bug |
+| `Json_GetStr` / `Json_Sink` / `Json_FindOtaAsset` | 不再解析 JSON |
+| `StrsEqNoCase` / `s_json[16 KB]` / `s_api_path` | 同上 |
+| `Documents/Tools/test_json_parse.py` | 由 `test_tag_parse.py` 取代 |
+
+结果：`OTA_Update.c` 从 518 行降到 347 行，固件从 171,600 B 降到 159,864 B
+（省 11.7 KB）。
+
+#### 新增校验
+
+包头校验多一条 `hdr->fw_version != latest_ver`：**附件里的版本必须与 tag 一致**。
+防止把 1.0.6 的包挂在 v1.0.7 的 tag 下，设备装了旧版本却以为升级成功。
+
+#### 离线回归
+
+`Documents/Tools/test_tag_parse.py` 用 Python 复刻了 `OTA_ParseTag` /
+`Ver_Parse` / `OTA_BuildAssetUrl` 的边界行为，覆盖真实 302、带查询参数、
+带锚点、缺 tag、版本段越界、带后缀 tag 等 8 个用例，无需硬件即可回归。
+
+```bash
+py Documents/Tools/test_tag_parse.py
+```
+
+#### 迁移
+
+1.0.6 的固件内置的是错误地址，**无法通过 OTA 自愈**，必须用 Keil / ST-Link
+烧一次 1.0.7。从 1.0.7 起才进入自动升级循环。
+
+#### 本轮验收标准
+
+- 编译 0 Error 0 Warning
+- `fw_1.0.7.ota` 包头：`magic=0x4F544131`、`ver=0x010007`、
+  `size=159864`、`crc32=0xDD07D266`、`hw_id=0x04074001`
+- 设备烧入 1.0.7 后，点 Check Update 应打印
+  `[OTA] probe http=302` → `[OTA] latest tag=v1.0.7` → `[OTA] up to date`
+  （因为当前就是 1.0.7）
+- 发布 1.0.8 后再次点击，应打印 `[OTA] latest tag=v1.0.8` 并完成升级
+---
+
+## 20. 附录：设计沿革（早期方案 vs 最终实现）
+
+> 本节由 2026-10-22 的设计稿《Bootloader_Design.md》提炼而来（原文件已合并删除）。
+> 记下当时怎么选、后来推翻了什么、为什么改。**与正文冲突时以正文为准。**
+
+### 20.1 早期方案中被采纳的部分
+
+| 设计项 | 当时的方案 | 现状 |
+| --- | --- | --- |
+| 三段式分区 | Bootloader 48 KB + 参数区 16 KB + App 448 KB | 完全按此实现 |
+| Bootloader 职责边界 | 只做校验、搬运、跳转；不联网、不带 RTOS | 一直守住 |
+| 日志式参数区 | 追加写 + seq + CRC32，不覆盖写 | 实现为 32 × 64 B |
+| confirmed + boot_try 回滚 | 3 次未确认自动回滚 | 已实现并实测 |
+| 先校验后擦除 | 任何擦除前必须整包 CRC 通过 | 已实现 |
+| PC 端打包工具 | `ota_pack.py` | 已实现 |
+
+### 20.2 被推翻的七个决策
+
+| # | 早期方案 | 最终实现 | 为什么改 |
+| --- | --- | --- | --- |
+| 1 | W25Q64 划 1 MB **裸区双 slot**（A 放新固件、B 放备份） | littlefs 里的 `/ota/firmware.bin` + `/ota/backup.bin` | 裸区要缩容 littlefs 并**重新格式化 + 重烧 3 批资源**（约 30 分钟）。用文件系统反而简单：`rename` 天然原子，不用自己管块分配和磨损均衡 |
+| 2 | littlefs 从 2048 block 缩到 1536（8 MB → 6 MB） | 保持 2048 block 不动 | 同上。固件放文件里只占约 300 KB，没必要为它腾裸区 |
+| 3 | 参数记录 **32 × 512 B** | 32 × 64 B | 64 B 已能放下全部字段。512 B 会把 16 KB 参数区正好用满，以后加字段没余地 |
+| 4 | Bootloader 带 **LCD 驱动**（`boot_lcd.c`，精简 ST7789 + 8×16 字模） | 只用串口日志 | 省下约 3 KB Flash 和整套 SPI 初始化。搬运进度串口看得到，屏幕留给 App |
+| 5 | 独立传输层 `OTA_Transport.c` | `BSP/Src/OTA_Net.c` | 职责合并少一层抽象。HTTP 解析和 AT 收发本来就强耦合（要边收 `+IPD` 边解析头），硬拆反而绕 |
+| 6 | 串口救援用 **XMODEM** | 计划改 **YMODEM**（Phase 3） | YMODEM 支持 1 KB 包和"文件名 + 大小"元信息，比 XMODEM 快一倍 |
+| 7 | 共享 `system_stm32f4xx.c`，用 `VECT_TAB_OFFSET` 条件编译 | Bootloader 用独立启动文件；App 在 `app_task.c` 里显式写 `SCB->VTOR` | 该文件是 GBK 编码，改它容易破坏中文注释；显式设置 VTOR 也更直观，不依赖编译宏 |
+
+### 20.3 至今仍生效的五条原则
+
+1. **Bootloader 尽量小、尽量笨**——只做校验、搬运、跳转。网络、文件系统、界面全部留在 App。
+2. **先校验后破坏**——任何擦除 App 的动作之前，必须确认新固件 CRC 正确且完整。
+3. **任何一步掉电都可恢复**——状态机 + 日志式参数 + 备份。
+4. **正常启动不加负担**——App 有效时只做几十毫秒的轻量检查，不初始化 W25Q64。
+5. **不改现有业务分层**——OTA 作为新的应用层模块接入，BSP 只增加传输封装。
+
+### 20.4 早期识别的约束，现状如何
+
+| 约束 | 当时的判断 | 现状 |
+| --- | --- | --- |
+| `FLASH_Sector_x` 是位掩码不是序号 | 已识别 | 用显式扇区表；但仍为此踩了一次全片擦除（Phase 1 Bug 1） |
+| USART1 环形缓冲只有 512 B | 已识别，计划扩到 4096 | 已扩 |
+| AT 层逐行解析，扛不住二进制流 | 已识别 | 改用 `+IPD` 原始流 + `AT+CIPSEND` |
+| LCD 由 uiTask 独占 | 已识别 | OTA 进度走 `g_ota_prog`，由 uiTask 绘制 |
+| W25Q64 是 SPI1 单总线，需互斥 | 已识别 | 复用 littlefs 的锁 |
+| App 擦参数区停顿 200~400 ms | 已识别 | 仍存在，靠"只在写满 32 条时才擦"缓解 |
+
+### 20.5 明确不做的事
+
+| 方案 | 不做的理由 |
+| --- | --- |
+| 内部 Flash A/B 双分区 | 512 KB 放不下两份 448 KB App |
+| Bootloader 自升级 | 风险收益不匹配，写坏就是真砖 |
+| 差分升级 | bspatch 需要同时持有两份固件，448 KB 放不下 |
+| 固件加密 | 解密密钥必须存在设备上，等于没有 |
+
+### 20.6 威胁模型现状
+
+| 威胁 | 当前措施 | 缺口 |
+| --- | --- | --- |
+| 传输误码 | 包 CRC32 + 长度校验 | 无 |
+| 下载中断 | 参数不写，旧 App 不动 | 无 |
+| 搬运掉电 | `OTA_WRITING` 重入 | 无 |
+| 新固件崩溃 | confirmed + boot_try + 回滚 | 无 |
+| Flash 位翻转 | 搬运后回读校验 | 无 |
+| 参数区损坏 | 32 条日志 + 单条 CRC + seq | 无 |
+| 刷错板型 | `hw_id` 校验 | 无 |
+| **恶意固件** | **无** | ESP-AT 的 TLS 不校验证书，应用层也没有签名 |
+| **降级攻击** | 版本比较（拒绝不新） | 未限制"最低可接受版本" |
+| **Bootloader 自身损坏** | 无法自恢复 | 只能 SWD 重烧 |
+
+加粗的三项是 Phase 3 的候选范围，详见第 16 节。

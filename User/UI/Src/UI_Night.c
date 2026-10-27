@@ -144,6 +144,11 @@ void UI_Night_Enter(void)
     s_last_day = t.day;
 
     DBG_PRINTF("[LP] OLED clock source=%s\r\n", time_source ? "RTC" : "SoftClock");
+
+#if (DEBUG_SUPPORT == 0)
+    /* 正式版 DBG_PRINTF 展开为空, 上面的读取消失, 显式标记避免 #550-D */
+    (void)time_source;
+#endif
 }
 
 void UI_Night_Leave(void)

@@ -4,12 +4,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/** OTA 升级结果 */
 typedef enum
 {
     OTA_OK = 0,
     OTA_ERR_TIMEOUT, // 等待数据超时
     OTA_ERR_PROTO,   // 协议帧不对（握手/元数据 magic 错）
-    OTA_ERR_HWID,    // 板型标识不匹配，包是给别的机型的
+    OTA_ERR_HWID,    // 板型标识不匹配
     OTA_ERR_SIZE,    // 包大小非法，或剩余空间不足
     OTA_ERR_VERSION, // 版本不高于当前运行版本
     OTA_ERR_STORE,   // littlefs 读写失败
@@ -23,7 +24,7 @@ typedef enum
 typedef struct
 {
     uint16_t magic;     // 0x55AA
-    uint16_t len;       // 20
+    uint16_t len;       // 元数据帧长度(20 B)
     uint32_t total_len; // .ota 包总字节数（64 头 + payload，4 对齐）
     uint32_t crc32;     // payload 的 CRC32（zlib，跳过 64 B 头）
     uint32_t version;   // major<<16 | minor<<8 | patch

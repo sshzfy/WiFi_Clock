@@ -15,34 +15,34 @@
 /* ============================================================
  * 内部常量
  * ============================================================ */
-#define OTA_NET_SSL_PORT        443U
-#define OTA_NET_CONN_TIMEOUT    15000U  /* CIPSTART 等待 */
-#define OTA_NET_SEND_RETRY      3U      /* CIPSEND 重试(连接/握手未就绪) */
-#define OTA_NET_PROMPT_TIMEOUT  5000U   /* 等 CIPSEND 的 '>' */
-#define OTA_NET_BODY_TIMEOUT    10000U  /* 两次数据间的最大间隔 */
-#define OTA_NET_TOTAL_TIMEOUT   60000U  /* 整次会话总超时(ms) */
-#define OTA_NET_HDR_MAX         4096U   /* 响应头最大字节数（Gitee 的 302 头可超 1 KB） */
-#define OTA_NET_REDIRECT_MAX    3U      /* 302 最大跟随次数 */
+#define OTA_NET_SSL_PORT 443U
+#define OTA_NET_CONN_TIMEOUT 15000U  /* CIPSTART 等待 */
+#define OTA_NET_SEND_RETRY 3U        /* CIPSEND 重试(连接/握手未就绪) */
+#define OTA_NET_PROMPT_TIMEOUT 5000U /* 等 CIPSEND 的 '>' */
+#define OTA_NET_BODY_TIMEOUT 10000U  /* 两次数据间的最大间隔 */
+#define OTA_NET_TOTAL_TIMEOUT 60000U /* 整次会话总超时(ms) */
+#define OTA_NET_HDR_MAX 4096U        /* 响应头最大字节数（Gitee 的 302 头可超 1 KB） */
+#define OTA_NET_REDIRECT_MAX 3U      /* 302 最大跟随次数 */
 
 /* ============================================================
  * 会话状态
  * ============================================================ */
-static char s_hdr[OTA_NET_HDR_MAX];     /* 响应头缓冲 */
-static uint32_t s_hdr_len;              /* 响应头已收字节数 */
+static char s_hdr[OTA_NET_HDR_MAX]; /* 响应头缓冲 */
+static uint32_t s_hdr_len;          /* 响应头已收字节数 */
 
-static ota_http_resp_t s_resp;          /* 解析结果 */
-static ota_net_sink_t  s_sink;
-static void           *s_sink_arg;
-static uint32_t        s_body_got;      /* 已交给回调的字节数 */
-static bool             s_hdr_done;     /* \r\n\r\n 已到 */
-static bool             s_finished;     /* 响应体收完 */
-static bool             s_aborted;      /* 回调请求中止 */
+static ota_http_resp_t s_resp; /* 解析结果 */
+static ota_net_sink_t s_sink;
+static void *s_sink_arg;
+static uint32_t s_body_got; /* 已交给回调的字节数 */
+static bool s_hdr_done;     /* \r\n\r\n 已到 */
+static bool s_finished;     /* 响应体收完 */
+static bool s_aborted;      /* 回调请求中止 */
 
 /* chunked: 0=大小行 1=数据 2=数据CR 3=数据LF 4=trailer行 */
-static int      s_ch_state;
+static int s_ch_state;
 static uint32_t s_ch_remain;
 static uint32_t s_ch_size_len;
-static char     s_ch_size[16];
+static char s_ch_size[16];
 
 /* ============================================================
  * 底层收发
@@ -117,7 +117,7 @@ static bool Net_WaitStr(const char *str, uint32_t timeout_ms)
 /* ============================================================
  * AT 原始回复记录（失败时打印，便于定位模组差异）
  * ============================================================ */
-static char     s_at_log[256];
+static char s_at_log[256];
 static uint32_t s_at_log_len;
 
 /** @brief 清空 AT 回复记录 */
@@ -240,7 +240,7 @@ static ota_net_err_t Net_ConnectAndSend(const char *host, uint16_t port,
     /* static：只在 netTask 单线程调用，608 B 缓冲放 .bss 不占任务栈 */
     static char cmd[96];
     static char req[512];
-    int  req_len;
+    int req_len;
 
     DBG_PRINTF("[OTA] net: enter host=%s port=%u ssl=%d\r\n", host, port, (int)use_ssl);
 
@@ -252,7 +252,7 @@ static ota_net_err_t Net_ConnectAndSend(const char *host, uint16_t port,
     (void)Net_WaitStr("OK", 2000U);
     DBG_PRINTF("[OTA] net: mux wait done\r\n");
     Usart1_RX_Flush();
-    if (!Net_SendLine("AT+CIPCLOSE"))     /* 无连接时回 ERROR, 忽略 */
+    if (!Net_SendLine("AT+CIPCLOSE")) /* 无连接时回 ERROR, 忽略 */
         return OTA_NET_ERR_SEND;
     (void)Net_WaitStr("OK", 1000U);
     DBG_PRINTF("[OTA] net: close wait done\r\n");
@@ -442,7 +442,7 @@ static void Http_ParseHeader(void)
                 s_resp.status_code = atoi(sp);
         }
         *eol = '\r';
-        i = (uint32_t)(eol - s_hdr) + 2U;   /* 绝对偏移, 否则 i 来回跳 */
+        i = (uint32_t)(eol - s_hdr) + 2U; /* 绝对偏移, 否则 i 来回跳 */
     }
 
     /* 字段行 */
@@ -472,7 +472,7 @@ static void Http_ParseHeader(void)
         }
 
         *eol = '\r';
-        i = (uint32_t)(eol - s_hdr) + 2U;   /* 绝对偏移, 否则 i 来回跳 */
+        i = (uint32_t)(eol - s_hdr) + 2U; /* 绝对偏移, 否则 i 来回跳 */
     }
 }
 
@@ -496,11 +496,11 @@ static void Http_ChunkSizeLine(void)
 
     if (s_ch_remain == 0U)
     {
-        s_ch_state = 4;  /* 0 块: 等 trailer 空行即结束 */
+        s_ch_state = 4; /* 0 块: 等 trailer 空行即结束 */
     }
     else
     {
-        s_ch_state = 1;  /* 进数据态 */
+        s_ch_state = 1; /* 进数据态 */
     }
     s_ch_size_len = 0U;
     memset(s_ch_size, 0, sizeof(s_ch_size));
@@ -578,18 +578,18 @@ static bool Http_BodyByte(uint8_t c)
 static ota_net_err_t Net_RecvLoop(void)
 {
     /* 行缓冲：识别 +IPD,/CLOSED/ERROR 关键字 */
-    char     line[64];
+    char line[64];
     uint32_t line_len = 0U;
 
     /* +IPD 数据模式: s_ipd_remain 为当前块剩余字节数 */
     uint32_t ipd_remain = 0U;
-    bool     ipd_mode = false;
+    bool ipd_mode = false;
 
     /* 连接已被对端关闭 */
     bool closed = false;
 
-    uint64_t last_data = TIM5_Get_ms();  /* 最后一次收到数据 */
-    uint64_t session_start = TIM5_Get_ms();   /* 会话总超时起点 */
+    uint64_t last_data = TIM5_Get_ms();     /* 最后一次收到数据 */
+    uint64_t session_start = TIM5_Get_ms(); /* 会话总超时起点 */
 
     /* 已收到完整头且无 body（如 302, Content-Length:0）→ 立即结束 */
     if (s_hdr_done && !s_resp.chunked && s_resp.content_length == 0U)
@@ -771,7 +771,7 @@ ota_net_err_t OTA_Net_HttpGet(const char *host, uint16_t port, bool use_ssl,
 ota_net_err_t OTA_Net_HttpGetUrl(const char *url, ota_http_resp_t *final_resp,
                                  ota_net_sink_t sink, void *arg)
 {
-    static char cur_url[320];   /* static: 放 .bss, 不占任务栈 */
+    static char cur_url[320]; /* static: 放 .bss, 不占任务栈 */
     uint32_t hop;
 
     if (url == NULL)
@@ -781,10 +781,10 @@ ota_net_err_t OTA_Net_HttpGetUrl(const char *url, ota_http_resp_t *final_resp,
 
     for (hop = 0U; hop < OTA_NET_REDIRECT_MAX; hop++)
     {
-        char     host[128];
-        char     path[256];
+        char host[128];
+        char path[256];
         uint16_t port;
-        bool     ssl;
+        bool ssl;
         const char *rest;
         const char *slash;
         const char *colon;

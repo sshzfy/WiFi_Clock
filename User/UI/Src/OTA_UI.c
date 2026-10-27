@@ -7,53 +7,60 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-/* ============================================================
- * 状态
- * ============================================================ */
-static lv_obj_t *s_scr   = NULL;  /* 浮层屏 */
-static lv_obj_t *s_text  = NULL;  /* 状态文本 */
-static lv_obj_t *s_bar   = NULL;  /* 进度条 */
-static bool      s_active = false; /* 浮层当前是否在屏上 */
-static uint32_t  s_term_ms = 0U;   /* 结果状态开始显示的时刻 */
-
-/* ============================================================
- * 实现
- * ============================================================ */
+/* 状态 */
+static lv_obj_t *s_scr = NULL;  // 浮层屏
+static lv_obj_t *s_text = NULL; // 状态文本
+static lv_obj_t *s_bar = NULL;  // 进度条
+static bool s_active = false;   // 浮层当前是否在屏上
+static uint32_t s_term_ms = 0U; // 结果状态开始显示的时刻
 
 /** @brief 是否为"结果"状态（显示 3 秒后自动关闭） */
-static bool State_IsTerminal(uint32_t st)
+static bool State_IsTerminal(uint32_t state)
 {
-    if (st == OTA_UPD_UP_TO_DATE)
+    if (state == OTA_UPD_UP_TO_DATE)
         return true;
-    return st >= OTA_UPD_ERR_NET && st <= OTA_UPD_ERR_PARAM;
+    return state >= OTA_UPD_ERR_NET && state <= OTA_UPD_ERR_PARAM;
 }
 
 /** @brief 状态 -> 显示文本 */
-static const char *State_Text(uint32_t st)
+static const char *State_Text(uint32_t state)
 {
-    switch (st)
+    switch (state)
     {
-    case OTA_UPD_CHECKING:    return "Checking update...";
-    case OTA_UPD_UP_TO_DATE:  return "Already up to date";
-    case OTA_UPD_DOWNLOADING: return NULL; /* 动态显示百分比 */
-    case OTA_UPD_APPLYING:    return "Verifying & backup...";
-    case OTA_UPD_REBOOTING:   return "Rebooting...";
-    case OTA_UPD_ERR_NET:     return "Network error";
-    case OTA_UPD_ERR_HTTP:    return "HTTP error";
-    case OTA_UPD_ERR_JSON:    return "Bad release info";
-    case OTA_UPD_ERR_NO_ASSET:return "No .ota in release";
-    case OTA_UPD_ERR_CRC:     return "CRC mismatch";
-    case OTA_UPD_ERR_STORE:   return "Storage error";
-    case OTA_UPD_ERR_SPACE:   return "Not enough space";
-    case OTA_UPD_ERR_BACKUP:  return "Backup failed";
-    case OTA_UPD_ERR_PARAM:   return "Param write failed";
-    default:                  return "Updating...";
+    case OTA_UPD_CHECKING:
+        return "Checking update...";
+    case OTA_UPD_UP_TO_DATE:
+        return "Already up to date";
+    case OTA_UPD_DOWNLOADING:
+        return NULL; // 动态显示百分比
+    case OTA_UPD_APPLYING:
+        return "Verifying & backup...";
+    case OTA_UPD_REBOOTING:
+        return "Rebooting...";
+    case OTA_UPD_ERR_NET:
+        return "Network error";
+    case OTA_UPD_ERR_HTTP:
+        return "HTTP error";
+    case OTA_UPD_ERR_JSON:
+        return "No latest tag";
+    case OTA_UPD_ERR_NO_ASSET:
+        return "Bad asset url";
+    case OTA_UPD_ERR_CRC:
+        return "CRC mismatch";
+    case OTA_UPD_ERR_STORE:
+        return "Storage error";
+    case OTA_UPD_ERR_SPACE:
+        return "Not enough space";
+    case OTA_UPD_ERR_BACKUP:
+        return "Backup failed";
+    case OTA_UPD_ERR_PARAM:
+        return "Param write failed";
+    default:
+        return "Updating...";
     }
 }
 
-/**
- * @brief  创建浮层（LVGL 初始化后调用一次）
- */
+/** @brief  创建浮层 */
 void OTA_UI_Init(void)
 {
     s_scr = lv_obj_create(NULL);
@@ -73,21 +80,19 @@ void OTA_UI_Init(void)
     lv_bar_set_value(s_bar, 0, LV_ANIM_OFF);
 }
 
-/**
- * @brief  每拍刷新（uiTask 主循环调用；LVGL 未就绪时直接返回）
- */
+/** @brief  每拍刷新(uiTask 主循环调用；LVGL 未就绪时直接返回)*/
 void OTA_UI_Tick(void)
 {
-    uint32_t st;
+    uint32_t state;
     uint32_t now;
 
     if (s_scr == NULL)
         return;
 
-    st = g_ota_prog.state;
+    state = g_ota_prog.state;
 
-    /* ---- 空闲: 收起浮层回 WiFi 页 ---- */
-    if (st == OTA_UPD_IDLE)
+    /* 空闲: 收起浮层回 WiFi 页 */
+    if (state == OTA_UPD_IDLE)
     {
         if (s_active)
         {
@@ -100,7 +105,7 @@ void OTA_UI_Tick(void)
 
     now = (uint32_t)xTaskGetTickCount();
 
-    /* ---- 首次进入: 载入浮层 ---- */
+    /* 首次进入: 载入浮层 */
     if (!s_active)
     {
         s_active = true;
@@ -108,8 +113,8 @@ void OTA_UI_Tick(void)
         lv_scr_load(s_scr);
     }
 
-    /* ---- 按状态刷新 ---- */
-    if (st == OTA_UPD_DOWNLOADING)
+    /* 按状态刷新 */
+    if (state == OTA_UPD_DOWNLOADING)
     {
         if (g_ota_prog.total > 0U)
         {
@@ -128,11 +133,11 @@ void OTA_UI_Tick(void)
     else
     {
         lv_bar_set_value(s_bar, 0, LV_ANIM_OFF);
-        lv_label_set_text(s_text, State_Text(st));
+        lv_label_set_text(s_text, State_Text(state));
     }
 
-    /* ---- 结果状态: 3 秒后自动回空闲 ---- */
-    if (State_IsTerminal(st))
+    /* 结果状态: 3 秒后自动回空闲 */
+    if (State_IsTerminal(state))
     {
         if (s_term_ms == 0U)
             s_term_ms = now;

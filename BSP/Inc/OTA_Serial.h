@@ -13,4 +13,4 @@ uint16_t OTA_Serial_OverflowCount(void);
 
 void OTA_Serial_Send(const uint8_t *buf, uint16_t len);
 
-#endif
+#endif /* __OTA_SERIAL_H__ */

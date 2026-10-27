@@ -19,16 +19,16 @@
 /* ============================================================
  * 内部常量
  * ============================================================ */
-#define OTA_GITEE_HOST      "gitee.com"
-#define OTA_GITEE_PORT      443U
+#define OTA_GITEE_HOST "gitee.com"
+#define OTA_GITEE_PORT 443U
 
 /* 最新版本探测路径。服务器回 302，Location 里带 tag：
  *   Location: https://gitee.com/<owner>/<repo>/releases/tag/v1.0.7 */
-#define OTA_LATEST_PATH     "/" OTA_GITEE_OWNER "/" OTA_GITEE_REPO "/releases/latest"
+#define OTA_LATEST_PATH "/" OTA_GITEE_OWNER "/" OTA_GITEE_REPO "/releases/latest"
 
-#define OTA_DL_EXTRA    65536U  /* 空间预检: 固件 x2 + 本值 */
-#define OTA_TAG_MAX     32U     /* tag 缓冲，"v255.255.255" 足够 */
-#define OTA_URL_MAX     256U    /* 附件地址缓冲，实测约 85 字节 */
+#define OTA_DL_EXTRA 65536U /* 空间预检: 固件 x2 + 本值 */
+#define OTA_TAG_MAX 32U     /* tag 缓冲，"v255.255.255" 足够 */
+#define OTA_URL_MAX 256U    /* 附件地址缓冲，实测约 85 字节 */
 
 /* ============================================================
  * 进度共享区
@@ -98,7 +98,7 @@ static bool OTA_ParseTag(const char *loc, char *tag, uint32_t tag_len)
     }
     tag[n] = '\0';
 
-    return n > 1U;   /* 至少 "v1" 才值得继续解析 */
+    return n > 1U; /* 至少 "v1" 才值得继续解析 */
 }
 
 /**
@@ -127,13 +127,13 @@ static bool OTA_BuildAssetUrl(const char *tag, const char *tag_ver,
  * ============================================================ */
 typedef struct
 {
-    uint8_t  hdr[64];       /* .ota 包头缓存（前 64 字节） */
-    uint32_t hdr_got;       /* 包头已收字节 */
-    uint32_t got;           /* 已收总字节 */
-    uint32_t expect;        /* 期望总字节（0 = 长度未知） */
-    uint32_t crc;           /* payload CRC 累加 */
-    uint32_t skipped;       /* 头字节跳过计数 */
-    bool     store_ok;      /* littlefs 写入是否正常 */
+    uint8_t hdr[64];  /* .ota 包头缓存（前 64 字节） */
+    uint32_t hdr_got; /* 包头已收字节 */
+    uint32_t got;     /* 已收总字节 */
+    uint32_t expect;  /* 期望总字节（0 = 长度未知） */
+    uint32_t crc;     /* payload CRC 累加 */
+    uint32_t skipped; /* 头字节跳过计数 */
+    bool store_ok;    /* littlefs 写入是否正常 */
 } dl_ctx_t;
 
 static bool Dl_Sink(const uint8_t *data, uint32_t len, void *arg)
@@ -204,14 +204,14 @@ void OTA_Update_Run(void)
     /* 大缓冲用 static：本流程只在 netTask 单线程执行，放 .bss 可把
      * 约 700 B 从任务栈挪走（栈曾在 1KB 时溢出导致死机） */
     static ota_http_resp_t resp;
-    static dl_ctx_t        ctx;
-    static char            tag[OTA_TAG_MAX];
-    static char            tag_ver[16];
-    static char            url[OTA_URL_MAX];
+    static dl_ctx_t ctx;
+    static char tag[OTA_TAG_MAX];
+    static char tag_ver[16];
+    static char url[OTA_URL_MAX];
 
     ota_net_err_t err;
-    ota_hdr_t    *hdr;
-    uint32_t      latest_ver = 0U;
+    ota_hdr_t *hdr;
+    uint32_t latest_ver = 0U;
 
     memset(&resp, 0, sizeof(resp));
     memset(&ctx, 0, sizeof(ctx));
@@ -288,9 +288,9 @@ void OTA_Update_Run(void)
         return;
     }
 
-    ctx.expect = 0U;          /* 长度未知，边收边算 */
+    ctx.expect = 0U; /* 长度未知，边收边算 */
     ctx.store_ok = true;
-    ctx.crc = 0xFFFFFFFFUL;   /* CRC32 初值，缺了会校验失败 */
+    ctx.crc = 0xFFFFFFFFUL; /* CRC32 初值，缺了会校验失败 */
 
     g_ota_prog.state = OTA_UPD_DOWNLOADING;
     g_ota_prog.total = 0U;

@@ -14,4 +14,4 @@ int OTA_Store_FileSize(const char *path, uint32_t *size);
 
 uint32_t OTA_Store_FreeBytes(void);
 
-#endif
+#endif /* __OTA_STORE_H__ */
