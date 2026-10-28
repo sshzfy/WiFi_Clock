@@ -13,9 +13,7 @@ static const AT_ACK_Match_t AT_ACK_Match[] =
 };
 
 /* ================ static 函数 ================ */
-static void AT_GPIO_Init(void);
 static void AT_USART_Init(void);
-static void AT_NVIC_Init(void);
 static void AT_Usart_Send(const char *data);
 static AT_ACK_t AT_Match_Internal_ACK(const char *str);
 static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout);
@@ -27,36 +25,9 @@ static uint8_t Month2Num(const char *month_str);
 static uint8_t Weekday3Num(const char *weekday_str);
 
 /* ================ AT 初始化相关函数 ================ */
-static void AT_GPIO_Init(void)
-{
-    /* 初始化GPIOA */
-    GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource9, GPIO_AF_USART1);
-    GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource10, GPIO_AF_USART1);
-
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_StructInit(&GPIO_InitStruct);
-    GPIO_InitStruct.GPIO_Pin = AT_USART1_GPIO_PIN_TX | AT_USART1_GPIO_PIN_RX;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF; // 复用模式
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP; // 推挽输出
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;   // 上拉
-    GPIO_Init(AT_USART1_GPIO_PORT, &GPIO_InitStruct);
-}
-
 static void AT_USART_Init(void)
 {
     USART1_Init();
-}
-
-static void AT_NVIC_Init(void)
-{
-    /* 初始化NVIC */
-    NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;         // 使能USART1_IRQn
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // 抢占优先级
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;        // 子优先级
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStruct);
 }
 
 /* ================ AT底层通信相关函数 ================ */
@@ -67,26 +38,33 @@ static void AT_NVIC_Init(void)
  */
 static void AT_Usart_Send(const char *data)
 {
+    /* 发送AT指令 */
     while (data && *data)
     {
-        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET) // 等待发送缓冲区为空
-            ;
-        USART_SendData(USART1, *data++);                            // 发送字符
-        while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // 等待发送完成
-            ;
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
+        {
+        }
+        USART_SendData(USART1, *data++);
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
+        {
+        }
     }
 
     /* 补充AT命令末尾的\r\n（AT命令格式：AT+命令\r\n） */
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
-        ;
+    {
+    }
     USART_SendData(USART1, '\r');
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // 等待发送完成
-        ;
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
+    {
+    }
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
-        ;
+    {
+    }
     USART_SendData(USART1, '\n');
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) // 等待发送完成
-        ;
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
+    {
+    }
 }
 
 /**
@@ -376,9 +354,7 @@ static uint8_t Weekday3Num(const char *weekday_str)
 bool AT_Init(void)
 {
     /* 外设初始化 */
-    AT_GPIO_Init();
     AT_USART_Init();
-    AT_NVIC_Init();
     /* 等模组能应答 "AT": 拿到 OK 就说明它已经启动完成、可以接收命令了。
      * 这里不下发 AT+RESTORE: 恢复出厂会擦掉模组保存的配置并强制重启,
      * 而那次重启是"模组还没准备好, 先回 busy p... / ready"这类偶发失败的来源
@@ -422,12 +398,13 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
 
     for (;;)
     {
-        Usart1_RX_Flush(); // 清场: 丢弃上一条命令的尾巴/启动日志/URC
+        /* 清场: 丢弃上一条命令的尾巴/启动日志/URC */
+        Usart1_RX_Flush();
 
         /* 发送AT指令 */
         AT_Usart_Send(command);
 
-        uint32_t used = (uint32_t)(TIM5_Get_ms() - start);
+        uint32_t used = (uint32_t)(TIM5_Get_ms() - start); // 发送指令耗时
         if (used >= timeout)
             return false;
 
@@ -473,11 +450,7 @@ bool AT_Wait_Ready(uint32_t timeout)
     return false;
 }
 
-/**
- * @brief 获取AT指令回复
- * @return char* 回复字符串
- * @note 回复字符串会覆盖在rx_buf中, 不建议直接打印
- */
+/** @brief 获取AT指令回复 */
 const char *AT_Get_Response(void)
 {
     return rx_buf;

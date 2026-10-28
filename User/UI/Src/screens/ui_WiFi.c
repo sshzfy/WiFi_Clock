@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "App.h"
 #include "Task_Common.h"
+#include "Version.h"
 
 lv_obj_t *ui_WiFi = NULL;
 lv_obj_t *ui_TextArea1 = NULL;
@@ -170,6 +171,15 @@ void ui_WiFi_screen_init(void)
         lv_obj_center(cu_label);
     }
     lv_obj_add_event_cb(ui_CheckUpdate, ui_event_CheckUpdate, LV_EVENT_ALL, NULL);
+
+    /* Phase 3: 当前固件版本（取自 Version.h，升级后随固件一起变化） */
+    {
+        lv_obj_t *ver_label = lv_label_create(ui_WiFi);
+        lv_label_set_text_fmt(ver_label, "FW v%s", APP_VERSION_STR);
+        lv_obj_align(ver_label, LV_ALIGN_TOP_MID, 0, 172);
+        lv_obj_set_style_text_color(ver_label, lv_color_hex(0x808080),
+                                    LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
 
     lv_obj_add_event_cb(ui_TextArea1, ui_event_TextArea1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_TextArea2, ui_event_TextArea2, LV_EVENT_ALL, NULL);
