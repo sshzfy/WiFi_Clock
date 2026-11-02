@@ -20,9 +20,7 @@
 
 typedef void (*pFunc)(void); // 跳转函数指针
 
-/** @brief App 轻量合法性检查
- *  @note 仅检查栈顶、复位向量
- */
+/** @brief App 轻量合法性检查 */
 static bool App_QuickValid(void)
 {
     const uint32_t sp = *(volatile uint32_t *)APP_BASE;        // 栈顶
