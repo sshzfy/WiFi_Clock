@@ -560,6 +560,12 @@ App（新固件启动）
 
 ### 7.1 两个 Keil 工程
 
+> **首次编译前**：`User/Application/Inc/Secrets.h` 不入库，需从同目录的
+> `Secrets.example.h` 复制一份并填入 WiFi、天气私钥、OTA 仓库等真实值：
+> `copy User\Application\Inc\Secrets.example.h User\Application\Inc\Secrets.h`。
+> 任意层级的 `Secrets.h` 都已被 `.gitignore` 忽略；提交前可用
+> `scripts/check_secrets.ps1`（无需 Python）或 `.pre-commit-config.yaml` 自查是否误提交明文凭据。
+
 | 工程 | 路径 | 起始地址/大小 | 宏 | 输出 |
 | --- | --- | --- | --- | --- |
 | Bootloader | `Bootloader/STM32F407_Boot.uvprojx` | `0x08000000` / 48KB | `BOOT_BUILD,LFS_READONLY` | `Bootloader/Output/STM32F407_Boot.bin` |
@@ -601,7 +607,7 @@ LVGL 24KB 池）**，主 SRAM 还剩约 **34.1KB**；Bootloader bin 为 **13432 
 | `PROVISION_BATCH` | 1 | 资源烧录批次 1~3 |
 | `RESOURCE_DATA_IN_ROM` | 0 | 1=把资源数据编译进固件（烧录时自动置 1） |
 | `APP_FW_SIZE_FALLBACK` | 160KB | 参数区无 app_size 时的备份长度兜底 |
-| `OTA_GITEE_OWNER/REPO` | `ssh_zfy/WiFi_Clock` | OTA 更新源 |
+| `OTA_GITEE_OWNER/REPO` | 见 `Secrets.h` | OTA 更新源（宏定义在 `Secrets.h`，不在 `BuildConfig.h`） |
 | `TOUCH_FORCE_CALIBRATE` | 0 | 1=每次上电强制重新校准触摸 |
 
 ### 7.4 资源烧录

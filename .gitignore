@@ -1,9 +1,12 @@
 # ============================================================
 # 敏感凭据
-# 真实 WiFi 密码 / 接口 key 只写在本地的 User/Application/Inc/Secrets.h
+# 真实 WiFi 密码 / 接口 key 只写在本地的 Secrets.h
+# 模板 Secrets.example.h 入库, 里面只有占位符
 # 注意: 一旦真实值曾经提交过, 加 .gitignore 并不能把它从历史里删掉。
+# 规则按"任意层级"匹配, 避免换个目录放 Secrets.h 就漏掉。
 # ============================================================
-User/Application/Inc/Secrets.h
+**/Secrets.h
+!**/Secrets.example.h
 
 # ============================================================
 # Keil MDK 构建产物
@@ -11,6 +14,7 @@ User/Application/Inc/Secrets.h
 # 让 git diff 完全不可读, 也容易把 index.lock 拖住。
 # ============================================================
 MDK/Output/
+Bootloader/Output/
 
 # Keil 命令行构建日志 (UV4 -o 输出), 内容每次编译都变
 MDK/build.log
@@ -18,6 +22,7 @@ MDK/*.log
 
 # Keil 中间文件与调试器产物 (即根目录 KeilClear.bat 清理的对象)
 *.bak
+*.bak[0-9]*
 *.lst
 *.obj
 *.crf
@@ -43,6 +48,8 @@ JLinkSettings.ini
 # ============================================================
 MDK/.vscode/*.log
 MDK/.vscode/*.log.lock
+Bootloader/.vscode/*.log
+Bootloader/.vscode/*.log.lock
 
 # ============================================================
 # 通用

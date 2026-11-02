@@ -62,13 +62,6 @@ typedef struct
     uint8_t weekday; // 星期 1=周一 ... 7=周日
 } AT_Date_Info_t;
 
-// /* 高德逆地理编码 —— 省 / 市(UTF-8 原文) */
-// typedef struct
-// {
-//     char city[32];     // 城市 (sscanf %31)
-//     char province[32]; // 省份 (sscanf %31)
-// } AT_Location_Info_t;
-
 bool AT_Init(void);
 bool AT_Factory_Reset(void);
 bool AT_Send_Command(const char *command, uint32_t timeout);
@@ -85,7 +78,5 @@ const char *AT_Get_HTTP(const char *url);
 bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info);
 bool AT_Get_IP(char *ip);
 bool Parse_Http_IP_Response(const char *response, char *ip);
-// bool AT_Get_Location(float latitude, float longitude, AT_Location_Info_t *info);
-// bool Parse_Http_Location_Response(const char *response, AT_Location_Info_t *info);
 
 #endif /* __AT_H__ */

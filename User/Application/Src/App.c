@@ -9,7 +9,6 @@ AT_WiFi_Info_t wifi_info = {0};
 AT_Date_Info_t date_info = {0};
 AT_Weather_Info_t weather_info = {0};
 DHT22_Data_t room_info = {0};
-// AT_Location_Info_t location_info = {0}; // 逆地理编码省/市; 当前应用未接入(见 Service_Location_Update)
 
 const char *weekdays[] =
     {"Monday",
@@ -783,36 +782,6 @@ bool Service_Weather_Update(void)
 
     return true;
 }
-
-// /**
-//  * @brief 按GPS经纬度反查省/市(高德逆地理编码)
-//  * @param latitude  纬度(十进制度, 南纬为负)
-//  * @param longitude 经度(十进制度, 西经为负)
-//  * @return true 成功
-//  * @note  **当前应用未接入** —— 界面上的城市名改由天气接口按公网IP定位提供
-//  *        (weather_info.city), 所以这里没有任何调用者。接口与实现保留, 将来
-//  *        要做"按实际位置显示省市"时, 在 netTask 里调它即可(见 4.13)。
-//  *        调用方约定: 失败时本函数**不清空** location_info, 界面可继续显示上一次
-//  *        的结果, 避免信号短暂丢失就把顶部条闪成空白。
-//  */
-// bool Service_Location_Update(float latitude, float longitude)
-// {
-//     AT_Location_Info_t tmp;
-
-//     if (!AT_Get_Location(latitude, longitude, &tmp))
-//     {
-//         DBG_PRINTF("[NET] Location FAILED\r\n");
-//         return false;
-//     }
-
-//     taskENTER_CRITICAL();
-//     location_info = tmp; // 一次性整体替换, 避免ui读到半写状态
-//     taskEXIT_CRITICAL();
-
-//     /* 打印的是接口返回的UTF-8原文, 调试终端需按UTF-8显示 */
-//     DBG_PRINTF("[NET] Location OK: %s%s\r\n", location_info.province, location_info.city);
-//     return true;
-// }
 
 /**
  * @brief 房间温湿度更新(每20min, DHT22)
