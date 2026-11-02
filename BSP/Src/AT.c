@@ -1,4 +1,8 @@
 #include "AT.h"
+#include "Timer.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "Usart.h"
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // 数组元素个数
 

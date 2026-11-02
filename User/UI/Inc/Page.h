@@ -2,11 +2,9 @@
 #define __PAGE_H__
 
 #include "main.h"
-#include "Timer.h"
 #include "LCD.h"
 #include "Image.h"
 #include "Font.h"
-#include "App.h"
 
 #define WEATHER_MAP_SIZE               (sizeof(weather_map) / sizeof(weather_map[0])) // 天气图标与中文映射表大小
 #define MAIN_TOP_BACK_COLOR            COLOR_GRAY                                     // 时间日期模块背景色

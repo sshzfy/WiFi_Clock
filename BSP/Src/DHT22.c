@@ -1,4 +1,7 @@
 #include "DHT22.h"
+#include "Timer.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* ================ DHT22/AM2302 传感器协议规范  ================
  * - SDA 总线空闲时高电平

@@ -16,14 +16,8 @@
 #define __ASSET_H__
 
 #include "main.h"
-#include "BuildConfig.h"
-#include <stdio.h>
-#include <stdbool.h>
-#include "Font.h"
 #include "Image.h"
 #include "lfs.h"
-#include "lfs_port.h"
-#include "W25Q64.h"
 
 #define ASSET_IMAGE_HEADER_SIZE        4U                                   // 图片文件头: width(2, 大端) + height(2, 大端), 与 LFS_Operation 的格式一致
 #define ASSET_DATA_NAME_MAX            32U                                  // 运行数据文件名长度上限(不含结尾 '\0')

@@ -2,13 +2,8 @@
 #define __APP_H__
 
 #include "main.h"
-#include "BuildConfig.h"
-#include "FreeRTOS.h"
-#include "task.h"
 #include "AT.h"
 #include "DHT22.h"
-#include "External_RTC.h"
-#include "Asset.h"
 #include "Secrets.h"
 
 #define WIFI_SSID_MAX_LEN        32U // SSID 最大长度

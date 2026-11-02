@@ -5,12 +5,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "event_groups.h"
-#include "BuildConfig.h"
-#include "Task_Common.h"
-#include "Task_Config.h"
-#include "UI_Day.h"
-#include "UI_Night.h"
-#include "UI_Input.h"
 
 void UI_Mode_Init(void);
 void UI_Mode_SwitchToNight(void);

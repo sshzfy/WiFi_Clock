@@ -1,4 +1,10 @@
 #include "LCD.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+#include "Asset.h"
+#include "Profiling.h"
+#include "Timer.h"
 /* ================ ST7789 驱动 LCD 相关信息 ================
  * - 屏幕信息：240x320，TSC2046驱动触摸屏
  * - 支持12-bit/pixel：RGB444，4K 色

@@ -3,8 +3,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include "stm32f4xx_adc.h"
-#include "stm32f4xx_exti.h"
 
 /* AO/DO 选择: 1 = 模拟量 AO，0 = 数字量 DO */
 #define AO_DO_SWITCH 0

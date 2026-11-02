@@ -1,4 +1,16 @@
 #include "UI_Input.h"
+#include "BuildConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "event_groups.h"
+#include "ui.h"
+#include "lv_port_disp.h"
+#include "lv_port_indev.h"
+#include "LCD.h"
+#include "Touch.h"
+#include "Timer.h"
+#include "Task_Common.h"
+#include "App.h"
 #include "OTA_UI.h"
 
 /* 新增图标时只要在这张表里加一行, 不用改命中判断 */

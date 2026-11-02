@@ -1,4 +1,6 @@
 #include "Page.h"
+#include "Timer.h"
+#include "App.h"
 
 extern AT_WiFi_Info_t wifi_info;
 static char fail_msg[32] = {0};

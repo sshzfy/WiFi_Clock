@@ -1,4 +1,5 @@
 #include "Profiling.h"
+#include "stm32f4xx.h"
 
 /* DWT(Data Watchpoint and Trace) 的 CYCCNT 是一个自由运行的 32 位周期计数器,
  * 在 168MHz 下约 25.6 秒回绕一次, 足够覆盖单次渲染的测量窗口。 */

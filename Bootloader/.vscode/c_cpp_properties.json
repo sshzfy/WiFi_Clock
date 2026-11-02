@@ -5,7 +5,6 @@
             "includePath": [
                 "d:\\Code\\Keil\\Project4\\Boot\\Inc",
                 "d:\\Code\\Keil\\Project4\\Core",
-                "d:\\Code\\Keil\\Project4\\Core\\Startup",
                 "d:\\Code\\Keil\\Project4\\STM32F4xx_StdPeriph_Driver\\inc",
                 "d:\\Code\\Keil\\Project4\\User\\Application\\Inc",
                 "d:\\Code\\Keil\\Project4\\BSP\\Inc",
@@ -13,6 +12,7 @@
                 "D:\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Keil5\\ARM\\ARMCC\\include\\rw",
                 "d:\\Code\\Keil\\Project4\\Boot\\Src",
+                "d:\\Code\\Keil\\Project4\\Core\\Startup",
                 "d:\\Code\\Keil\\Project4\\STM32F4xx_StdPeriph_Driver\\src",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\LittleFS\\Src",
                 "d:\\Code\\Keil\\Project4\\BSP\\Src"

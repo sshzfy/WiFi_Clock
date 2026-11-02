@@ -3,7 +3,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include "Timer.h"
 
 /* 软件 I2C 结构体 */
 typedef struct

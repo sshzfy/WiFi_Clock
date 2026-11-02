@@ -1,4 +1,12 @@
 #include "UI_Day.h"
+#include "BuildConfig.h"
+#include "Page.h"
+#include "App.h"
+#include "LCD.h"
+#include "Image.h"
+#include "Font.h"
+#include "Profiling.h"
+#include "Task_Common.h"
 
 static void UI_TopBar_Draw(void);
 

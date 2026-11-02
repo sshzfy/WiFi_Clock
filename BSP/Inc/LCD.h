@@ -6,12 +6,6 @@
 #include "BuildConfig.h"
 #include "Font.h"
 #include "Image.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-#include "Asset.h"
-#include "Profiling.h"
-#include "Timer.h"
 
 /* LCD œ‘ æ«¯”Ú */
 #define WIDTH         240

@@ -2,6 +2,7 @@
 #define __TASK_MONITOR_H__
 
 #include "main.h"
+#include "FreeRTOS.h"
 
 #define STACK_MAP_COUNT        ((uint32_t)(sizeof(s_stack_map) / sizeof(s_stack_map[0])))
 #define WORD_BYTES             ((uint32_t)sizeof(StackType_t))

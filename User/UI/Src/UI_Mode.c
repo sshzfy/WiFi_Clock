@@ -1,4 +1,10 @@
 #include "UI_Mode.h"
+#include "BuildConfig.h"
+#include "Task_Common.h"
+#include "Task_Config.h"
+#include "UI_Day.h"
+#include "UI_Night.h"
+#include "UI_Input.h"
 
 /* ==================== ״̬ ==================== */
 

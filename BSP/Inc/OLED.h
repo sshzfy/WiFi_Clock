@@ -3,11 +3,8 @@
 
 #include "main.h"
 #include "I2C.h"
+#include "stm32f4xx.h"
 #include "Font.h"
-#include "Timer.h"
-#include "App.h"
-#include "AT.h"
-#include "Asset.h"
 
 /* OLED Òý½Å¶¨Òå */
 #define OLED_GPIO_PORT           GPIOB

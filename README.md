@@ -8,18 +8,18 @@
 
 ## 总览
 
-| 项目 | 说明 |
-| --- | --- |
-| 主控 | STM32F407VET6，Cortex-M4F，168MHz，512KB Flash，128KB SRAM + 64KB CCM |
-| 操作系统 | FreeRTOS V10.4.3 LTS Patch 3，1kHz tick，heap_4 |
-| 显示 | ST7789 240×320 SPI 彩屏；SSD1306 128×64 OLED |
-| 交互 | XPT2046 电阻触摸、单用户按键、光敏电阻 |
-| 联网 | ESP32-C3-MINI-1，AT 指令，USART1 |
-| 传感器 | DHT22 温湿度、DS1302 外部 RTC |
-| 存储 | W25Q64 8MB SPI Flash，littlefs 文件系统 |
-| 图形库 | LVGL 8.3.11，用于配网、定位输入和 OTA 界面 |
-| 开发环境 | Keil MDK 5 + ARMCC V5.06 |
-| 当前版本 | App `1.0.0` |
+| 项目     | 说明                                                                  |
+| -------- | --------------------------------------------------------------------- |
+| 主控     | STM32F407VET6，Cortex-M4F，168MHz，512KB Flash，128KB SRAM + 64KB CCM |
+| 操作系统 | FreeRTOS V10.4.3 LTS Patch 3，1kHz tick，heap_4                       |
+| 显示     | ST7789 240×320 SPI 彩屏；SSD1306 128×64 OLED                          |
+| 交互     | 2046 电阻触摸、单用户按键、光敏电阻                                   |
+| 联网     | ESP32-C3-MINI-1，AT 指令，USART1                                      |
+| 传感器   | DHT22 温湿度、DS1302 外部 RTC                                         |
+| 存储     | W25Q64 8MB SPI Flash，littlefs 文件系统                               |
+| 图形库   | LVGL 8.3.11，用于配网、定位输入和 OTA 界面                            |
+| 开发环境 | Keil MDK 5 + ARMCC V5.06                                              |
+| 当前版本 | App `1.0.0`                                                           |
 
 ### 主要功能
 
@@ -178,15 +178,6 @@ Bootloader 搬运
   └─ 未确认累计 3 次：Bootloader 自动回滚到 backup.bin
 ```
 
-OTA 包由 `ota_pack.py` 生成，Gitee 发布时 tag 和附件名必须对应：
-
-```text
-tag:      v1.0.7
-附件名:   fw_1.0.7.ota
-```
-
----
-
 ## 目录结构
 
 ```text
@@ -219,13 +210,6 @@ Project4/
 2. 打开 `MDK/STM32F407.uvprojx`，编译并烧录 App 到 `0x08010000`。
 3. 首次使用需要在 `User/Application/Inc/BuildConfig.h` 中开启 `RESOURCE_PROVISION`，分 3 批把字库和图片写入 W25Q64；完成后恢复为 `0` 并重新编译正式固件。
 4. 需要串口日志时，将 `DEBUG_SUPPORT` 设为 `1`；正式固件保持 `0`。
-5. 生成 OTA 包：
-
-```bash
-py ota_pack.py MDK\Output\STM32F407.bin fw_1.0.0.ota --version 1.0.0
-```
-
-`User/Application/Inc/Version.h` 是版本号的唯一来源，打包参数、Gitee tag 和附件名需要保持一致。发布到 Gitee Releases 后，设备即可在 WiFi 界面点击 **Check Update** 检查升级。
 
 ---
 
@@ -240,11 +224,3 @@ py ota_pack.py MDK\Output\STM32F407.bin fw_1.0.0.ota --version 1.0.0
 | `Boot/Inc/ota_pkg.h` | OTA 包头格式、硬件 ID |
 
 ---
-
-## 已知限制
-
-- 采用单 App 区 + 备份回滚，不是真正的 A/B 双分区；升级搬运期间设备不可用。
-- Bootloader 的串口救援和 IWDG 看门狗尚未实现，升级失败进入 halt 后需要 ST-Link 重新烧录。
-- OTA 包目前只做包头、硬件 ID 和 CRC32 校验，没有签名和加密。
-- OTA 需要用户手动触发，没有后台自动轮询新版本。
-- `Boot/Src/boot_main.c` 中的 `App_QuickValid()` 栈顶判断条件仍需修正，当前逻辑与注释不一致。

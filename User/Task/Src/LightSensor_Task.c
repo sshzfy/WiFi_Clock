@@ -1,4 +1,8 @@
 #include "LightSensor_Task.h"
+#include "BuildConfig.h"
+#include "Task_Common.h"
+#include "Task_Config.h"
+#include "Light_Sensor.h"
 
 /* ==================== 任务间共享状态(仅本文件内) ==================== */
 static TaskHandle_t s_light_task = NULL;         // 光敏任务句柄, 供中断回调与按键请求通知

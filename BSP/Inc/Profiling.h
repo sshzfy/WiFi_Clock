@@ -2,8 +2,6 @@
 #define __PROFILING_H__
 
 #include "main.h"
-#include "stm32f4xx.h"
-#include <stdint.h>
 
 /* ============================================================
  * 基于 DWT->CYCCNT 的微秒级计时

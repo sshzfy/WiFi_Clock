@@ -3,9 +3,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include "Timer.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 /* DHT22 Òý½Å */
 #define DHT22_PIN        GPIO_Pin_6

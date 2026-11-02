@@ -1,4 +1,6 @@
 #include "Page.h"
+#include "Timer.h"
+#include "App.h"
 
 extern AT_WiFi_Info_t wifi_info;
 extern AT_Date_Info_t date_info;

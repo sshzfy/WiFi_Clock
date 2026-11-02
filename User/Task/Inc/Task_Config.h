@@ -10,12 +10,7 @@
 #define UI_TASK_PRIORITY                    3
 #define UI_TASK_STACK_SIZE                  512 // 512 * 4 = 2KB, 比其它任务大: LVGL 的按键处理与刷屏都跑在这个任务里
 
-#define UI_BOOT_NET_TIMEOUT_MS              (60000UL) // 开机阶段等 EV_NET_READY 的上限(ms)
-
 #define NET_TASK_PRIORITY                   2
-/* 768 words = 3KB：Phase 2 网络升级路径的调用链
- * （OTA_Update_Run + OTA_Net 请求缓冲 + printf）栈需求约 2KB，
- * 原来的 1KB 会溢出踩坏相邻内存（实测表现为日志乱码后死机）。 */
 #define NET_TASK_STACK_SIZE                 768
 
 #define DHT22_TASK_PRIORITY                 4
@@ -26,6 +21,9 @@
 
 #define KEY_TASK_PRIORITY                   2
 #define KEY_TASK_STACK_SIZE                 128 // 128 * 4 = 512B
+
+/* ================ 开机阶段网络等待超时(单位: ms) ================ */
+#define UI_BOOT_NET_TIMEOUT_MS              (60000UL) // 开机阶段等 EV_NET_READY 的上限(ms)
 
 /* ================ 周期参数(单位: 秒) ================ */
 #define SNTP_PERIOD_S           (4UL * 60UL * 60UL) // SNTP 4h

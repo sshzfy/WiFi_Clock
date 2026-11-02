@@ -336,7 +336,7 @@
               <MiscControls>--diag_suppress=177</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx,BOOT_BUILD,LFS_READONLY</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Boot\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\User\Application\Inc;..\BSP\Inc;..\Middlewares\LittleFS\Inc</IncludePath>
+              <IncludePath>..\Boot\Inc;..\Core;..\STM32F4xx_StdPeriph_Driver\inc;..\User\Application\Inc;..\BSP\Inc;..\Middlewares\LittleFS\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

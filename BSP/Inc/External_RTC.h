@@ -3,7 +3,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include "Timer.h"
 
 /* DS1302 Ó²¼þÒý½Å */
 #define DS1302_PORT                     GPIOE

@@ -3,8 +3,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include <stdbool.h>
-#include <stdint.h>
 
 /* 定义W25Q64 Flash的GPIO引脚配置 */
 #define W25Q64_GPIO_PORT        GPIOA

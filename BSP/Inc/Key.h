@@ -3,8 +3,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 /* 按键: PA0, 硬件消抖, 空闲下拉(低), 按下为高 */
 #define KEY_GPIO_PORT               GPIOA

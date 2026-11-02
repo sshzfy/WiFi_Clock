@@ -1,4 +1,10 @@
 #include "App.h"
+#include "Timer.h"
+#include "BuildConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "External_RTC.h"
+#include "Asset.h"
 
 char g_ssid[WIFI_SSID_MAX_LEN + 1U] = {0};     // WiFi SSID
 char g_password[WIFI_PASS_MAX_LEN + 1U] = {0}; // WiFi √‹¬Î

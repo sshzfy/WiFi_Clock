@@ -1,4 +1,9 @@
 #include "Asset.h"
+#include "BuildConfig.h"
+#include "stdio.h"
+#include "Font.h"
+#include "W25Q64.h"
+#include "lfs_port.h"
 
 static const Asset_FontFile_t s_fontFiles[ASSET_FID_COUNT] =
     {

@@ -1,4 +1,8 @@
 #include "Key_Task.h"
+#include "BuildConfig.h"
+#include "Task_Common.h"
+#include "Task_Config.h"
+#include "LightSensor_Task.h"
 
 static TaskHandle_t s_key_task = NULL; // 按键任务句柄, 供中断回调通知
 

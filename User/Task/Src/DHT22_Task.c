@@ -1,4 +1,8 @@
 #include "DHT22_Task.h"
+#include "BuildConfig.h"
+#include "Task_Common.h"
+#include "Task_Config.h"
+#include "App.h"
 
 static void DHT22_Task(void *pvParameters)
 {

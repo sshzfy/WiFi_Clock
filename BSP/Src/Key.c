@@ -1,4 +1,6 @@
 #include "Key.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* ================= Key 用于通知任务 =================
  * 按键已有硬件消抖

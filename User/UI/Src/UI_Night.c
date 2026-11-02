@@ -1,4 +1,9 @@
 #include "UI_Night.h"
+#include "BuildConfig.h"
+#include "App.h"
+#include "OLED.h"
+#include "External_RTC.h"
+#include "Task_Config.h"
 
 /* ==================== 模块内状态(仅uiTask访问) ==================== */
 static bool s_oled_inited = false; // OLED 是否已初始化(只初始化一次)

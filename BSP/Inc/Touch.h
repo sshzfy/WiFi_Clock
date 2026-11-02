@@ -1,5 +1,5 @@
 /* ============================================================
- * 触摸屏驱动: XPT2046/TSC2046 四线电阻屏控制器
+ * 触摸屏驱动: TSC2046 四线电阻屏控制器
  * ------------------------------------------------------------
  * 与 ST7789 共用 SPI3 的 SCK/MISO/MOSI, 片选各自独立:
  *   LCD : PE2 (ST7789_CS) / 背光 PE5 / DC PE4 / RESET PE3
@@ -10,13 +10,6 @@
 
 #include "main.h"
 #include "stm32f4xx.h"
-#include "BuildConfig.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "Timer.h"
-#include "Usart.h"
-#include "LCD.h"
-#include "Asset.h"
 
 /* 触摸屏引脚 (SCK/MISO/MOSI 与 ST7789 共用, 由 LCD 的 GPIO 初始化配成复用) */
 #define TOUCH_SPI             SPI3
@@ -29,10 +22,14 @@
 #define TOUCH_CS_PIN         GPIO_Pin_0
 #define TOUCH_IRQ_PIN        GPIO_Pin_1
 
+/* 触摸屏控制字 */
+#define TOUCH_CMD_X        0xD0U
+#define TOUCH_CMD_Y        0x90U
+
 /* 参数定义 */
 #define TOUCH_WIDTH                  240U
 #define TOUCH_HEIGHT                 320U
-#define TOUCH_MAX_SAMPLES            10U  // 每次取坐标的采样次数(至少 3 次才能去掉最大最小值)
+#define TOUCH_MAX_SAMPLES            10U
 #define TOUCH_SAMPLE_SPAN_MAX        300U // 一次采样里(最大-最小)的允许跨度, 超出判为滑动/干扰
 #define TOUCH_CMD_GAP_US             2U   // 两条转换命令之间的间隔, 给通道切换后的内部采集留时间
 
@@ -40,10 +37,6 @@
 #define TOUCH_CAL_PRESS_TIMEOUT_MS          30000U // 等待点击一个校准点的超时
 #define TOUCH_CAL_RELEASE_TIMEOUT_MS        5000U  // 等待松手的超时
 #define TOUCH_CAL_POLL_MS                   10U    // 轮询步长
-
-/* 触摸屏控制字 */
-#define TOUCH_CMD_X        0xD0U // 通道 101
-#define TOUCH_CMD_Y        0x90U // 通道 001
 
 /* ================ 屏幕横竖方向与通道的对应 ================
  * 本模块实测(四点校准数据):
@@ -70,11 +63,11 @@ typedef struct
 /* 校准参数结构体: 屏幕坐标 = k * 原始坐标 + b */
 typedef struct
 {
-    float kx;        // X方向比例系数
-    float ky;        // Y方向比例系数
-    int16_t bx;      // X方向偏移量
-    int16_t by;      // Y方向偏移量
-    bool calibrated; // 校准标志: true-已校准, false-未校准
+    float kx;   // X方向比例系数
+    float ky;   // Y方向比例系数
+    int16_t bx; // X方向偏移量
+    int16_t by; // Y方向偏移量
+    bool calibrated;
 } CalibrationParams_t;
 
 /* 落到 /data/touch_cal.bin 的定长结构 */

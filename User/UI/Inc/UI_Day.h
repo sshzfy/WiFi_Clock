@@ -5,14 +5,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "event_groups.h"
-#include "BuildConfig.h"
-#include "Page.h"
-#include "App.h"
-#include "LCD.h"
-#include "Image.h"
-#include "Font.h"
-#include "Profiling.h"
-#include "Task_Common.h"
 
 #define TOPBAR_Y                 5U   // 图标行与信息行的 y
 #define TOPBAR_WIFI_X            5U   // WiFi 图标 x

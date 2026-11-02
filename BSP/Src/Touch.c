@@ -1,4 +1,11 @@
 #include "Touch.h"
+#include "BuildConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "Timer.h"
+#include "Usart.h"
+#include "LCD.h"
+#include "Asset.h"
 
 /* 去掉一个最大值和一个最小值之后还要有样本可平均 */
 #if (TOUCH_MAX_SAMPLES < 3U)

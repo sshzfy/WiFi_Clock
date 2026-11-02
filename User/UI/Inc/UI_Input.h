@@ -2,19 +2,6 @@
 #define __UI_INPUT_H__
 
 #include "main.h"
-#include "BuildConfig.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "event_groups.h"
-#include "ui.h"
-#include "lv_port_disp.h"
-#include "lv_port_indev.h"
-#include "LCD.h"
-#include "Touch.h"
-#include "Timer.h"
-#include "Task_Common.h"
-#include "App.h"
-
 
 /* 触摸热区: 左上角并排两个 20x20 图标(WiFi 在 x=5, 定位在 x=26, y 都是 5) */
 #define TOUCH_X_WIFI           5U

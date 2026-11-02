@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx,APP_BUILD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\User\Application\Inc;..\User\Task\Inc;..\User\UI\Inc;..\User\Resource\Inc;..\BSP\Inc;..\Core;..\Core\Startup;..\STM32F4xx_StdPeriph_Driver\inc;..\STM32F4xx_StdPeriph_Driver\src;..\Middlewares\FreeRTOS\include;..\Middlewares\FreeRTOS\portable;..\Middlewares\LittleFS\Inc;..\Middlewares\Lvgl;..\Middlewares\Lvgl\lvgl;..\Middlewares\Lvgl\lvgl\src;..\Middlewares\Lvgl\porting;..\Boot\Inc</IncludePath>
+              <IncludePath>..\User\Application\Inc;..\User\Task\Inc;..\User\UI\Inc;..\User\Resource\Inc;..\BSP\Inc;..\Core;..\STM32F4xx_StdPeriph_Driver\inc;..\Middlewares\FreeRTOS\include;..\Middlewares\FreeRTOS\portable;..\Middlewares\LittleFS\Inc;..\Middlewares\Lvgl;..\Middlewares\Lvgl\lvgl;..\Middlewares\Lvgl\lvgl\src;..\Middlewares\Lvgl\porting;..\Boot\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

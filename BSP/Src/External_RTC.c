@@ -1,4 +1,5 @@
 #include "External_RTC.h"
+#include "Timer.h"
 
 /* ================ DS1302 协议规范 ==================
  * - 命令字节；bit7 必须为 1，bit6 0/1（时钟/日历），

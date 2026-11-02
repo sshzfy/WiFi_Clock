@@ -1,4 +1,9 @@
 #include "Net_Task.h"
+#include "BuildConfig.h"
+#include "Task_Common.h"
+#include "Task_Config.h"
+#include "App.h"
+#include "AT.h"
 #include "OTA_Update.h"
 
 /* 开机网络阶段结果(仅uiTask在EV_NET_READY后读取) */
