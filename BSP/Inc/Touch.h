@@ -41,16 +41,6 @@
 #define TOUCH_CAL_RELEASE_TIMEOUT_MS        5000U  // 等待松手的超时
 #define TOUCH_CAL_POLL_MS                   10U    // 轮询步长
 
-/* ================ 校准参数的存储 ================
- * 存放位置: 外部 Flash(W25Q64) littlefs 的运行数据区 /data/touch_cal.bin,
- * 读写全部走资源层接口, 本驱动不直接碰 Flash:
- *     Asset_SaveData(TOUCH_CAL_NAME, &data, sizeof(data));
- *     Asset_LoadData(TOUCH_CAL_NAME, &data, sizeof(data)); 
- * ================================*/
-#define TOUCH_CAL_NAME           "touch_cal" // 数据名(资源层自动补 /data/ 前缀与 .bin 后缀)
-#define TOUCH_CAL_MAGIC          0x544F5543U // 'TOUC': 判断文件内容是不是本驱动写的
-#define TOUCH_CAL_VERSION        1U          // 布局版本: 结构一改就 +1, 旧数据自动作废
-
 /* 触摸屏控制字 */
 #define TOUCH_CMD_X        0xD0U // 通道 101
 #define TOUCH_CMD_Y        0x90U // 通道 001

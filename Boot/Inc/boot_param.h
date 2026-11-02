@@ -31,23 +31,23 @@ typedef enum
 /* 参数区记录结构体(均为 4 字节对齐) */
 typedef struct
 {
-    uint32_t magic;  // BOOT_PARAM_MAGIC 
+    uint32_t magic;  // BOOT_PARAM_MAGIC，魔数
     uint32_t seq;    // 单调递增，取最大者有效 
-    uint32_t layout; // BOOT_PARAM_LAYOUT 
-    uint32_t state;  // boot_state_t 
+    uint32_t layout; // BOOT_PARAM_LAYOUT，布局版本
+    uint32_t state;  // boot_state_t，升级状态
 
     uint32_t app_size;    // 当前 App 有效字节数（CRC 只算这么多） 
     uint32_t app_crc32;   // 当前 App 的 CRC32 
-    uint32_t app_version; // major<<16 | minor<<8 | patch 
+    uint32_t app_version; // major<<16 | minor<<8 | patch，当前 App 版本
 
     uint32_t ota_size;    // 待升级固件负载大小 
     uint32_t ota_crc32;   // 待升级固件 CRC32 
-    uint32_t ota_version; // 待升级版本 
+    uint32_t ota_version; // 待升级固件版本 
     uint32_t ota_slot;    // 预留：将来若改物理裸分区，记录 A/B 槽 
 
-    uint32_t boot_try;   // 新 App 已尝试启动次数，达到 3 次未确认就回滚 
-    uint32_t flags;      // BOOT_FLAG_* 
-    uint32_t reserved[2]; // 补齐 64 B（17 个 uint32_t 中的最后 2 个预留位） 
+    uint32_t boot_try;    // 新 App 已尝试启动次数，达到 3 次未确认就回滚 
+    uint32_t flags;       // BOOT_FLAG_*，启动标志位
+    uint32_t reserved[2]; // 保留位，补齐 64 B
     uint32_t crc32;       // 前面所有字节的 CRC32，必须放最后 
 } boot_param_t;
 

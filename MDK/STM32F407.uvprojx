@@ -378,6 +378,21 @@
       </TargetOption>
       <Groups>
         <Group>
+          <GroupName>BOOT</GroupName>
+          <Files>
+            <File>
+              <FileName>boot_param.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Boot\Src\boot_param.c</FilePath>
+            </File>
+            <File>
+              <FileName>boot_crc32.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Boot\Src\boot_crc32.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>USER/Config</GroupName>
           <Files>
             <File>
@@ -565,11 +580,6 @@
               <FileType>1</FileType>
               <FilePath>..\User\Task\Src\UI_Task.c</FilePath>
             </File>
-            <File>
-              <FileName>OTA_Task.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\Task\Src\OTA_Task.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -714,11 +724,6 @@
               <FileName>OTA_Store.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\Src\OTA_Store.c</FilePath>
-            </File>
-            <File>
-              <FileName>OTA_Serial.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\Src\OTA_Serial.c</FilePath>
             </File>
             <File>
               <FileName>OTA_Net.c</FileName>
@@ -1769,21 +1774,6 @@
               <FileName>lv_port_fs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Middlewares\Lvgl\porting\lv_port_fs.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>BOOT</GroupName>
-          <Files>
-            <File>
-              <FileName>boot_param.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Boot\Src\boot_param.c</FilePath>
-            </File>
-            <File>
-              <FileName>boot_crc32.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Boot\Src\boot_crc32.c</FilePath>
             </File>
           </Files>
         </Group>

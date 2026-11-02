@@ -21,8 +21,9 @@
  * 4. Bootloader 是单线程裸机，不需要 FreeRTOS 互斥锁。
  * ============================================================ */
 
-static lfs_t s_lfs;            // littlefs 实例
-static bool s_mounted = false; // 是否挂载成功
+static lfs_t s_lfs;                   // littlefs 实例
+static struct lfs_file_config s_fcfg; // 文件配置
+static bool s_mounted = false;
 
 static uint8_t s_read_buf[LFS_CACHE_SIZE];      // 读缓存
 static uint8_t s_prog_buf[LFS_CACHE_SIZE];      // 写缓存(只读模式不用)
@@ -134,20 +135,16 @@ bool Boot_Lfs_IsMounted(void)
  * @brief  只读方式打开文件，并挂上 4 KB cache
  * @param  path 文件路径
  * @return LFS_ERR_OK 成功；其他为 littlefs 错误码
- * @note   同一时刻只允许一个文件打开：搬运流程是严格顺序的，
- *         多个句柄只会浪费 RAM 和增加状态管理成本。
  */
 int Boot_Lfs_FileOpen(const char *path)
 {
-    struct lfs_file_config fcfg; // 文件配置
-
-    if (!s_mounted || s_file_open)
+    if (!s_mounted || s_file_open || path == NULL)
         return LFS_ERR_IO;
 
-    memset(&fcfg, 0, sizeof(fcfg));
-    fcfg.buffer = s_file_buf;
+    memset(&s_fcfg, 0, sizeof(s_fcfg));
+    s_fcfg.buffer = s_file_buf;
 
-    int err = lfs_file_opencfg(&s_lfs, &s_file, path, LFS_O_RDONLY, &fcfg);
+    int err = lfs_file_opencfg(&s_lfs, &s_file, path, LFS_O_RDONLY, &s_fcfg);
     if (err == LFS_ERR_OK)
         s_file_open = true;
 

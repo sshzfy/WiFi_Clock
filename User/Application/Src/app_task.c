@@ -7,15 +7,13 @@
 #include "boot_layout.h"
 #include "boot_param.h"
 #include "OTA.h"
-#include "OTA_Task.h"
 #include "Version.h"
 #include "BuildConfig.h"
 
-/* App 侧配合 Bootloader 的三件事：
+/* App 侧配合 Bootloader 的两件事：
  *   1. 把 VTOR 重新指回 App：SystemInit 会把它改回 0x08000000；
  *   2. 新固件启动 5 秒后写 CONFIRMED 和自身 size/crc/version，
- *      否则 Bootloader 会累加 boot_try，3 次后回滚；
- *   3. OTA_SERIAL_TEST=1 时创建串口离线升级任务。 */
+ *      否则 Bootloader 会累加 boot_try，3 次后回滚。 */
 
 /** @brief  把中断向量表重新指向 App 起始地址 */
 static void Boot_Apply_VectorTable(void)
@@ -27,16 +25,11 @@ static void Boot_Apply_VectorTable(void)
     __ISB();
 }
 
-/**
- * @brief  新固件启动确认任务
- * @param  pvParameters 未使用
- */
+/** @brief  新固件启动确认任务 */
 static void Boot_Confirm_Task(void *pvParameters)
 {
     (void)pvParameters;
 
-    /* 延迟 5 秒，过滤"启动即崩溃"；崩溃时本任务跑不到，
-     * Bootloader 下次启动会累加 boot_try，3 次后回滚。 */
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     /* 计算自身固件大小与 CRC
@@ -51,23 +44,19 @@ static void Boot_Confirm_Task(void *pvParameters)
             (void)Boot_Param_Confirm();
     }
 
-    vTaskDelete(NULL); // 任务完成后删除自己
+    vTaskDelete(NULL);
 }
 
 /**
  * @brief  初始化应用任务（调度器启动前，由 main 调用）
  * @note   顺序：修正 VTOR -> 创建确认任务（优先级 1 最低档，
- *         只延迟等待，不抢业务任务）-> 可选创建 OTA 任务 -> UI 任务。
+ *         只延迟等待，不抢业务任务）-> UI 任务。
  */
 void App_Task_Init(void)
 {
     Boot_Apply_VectorTable();
 
     xTaskCreate(Boot_Confirm_Task, "boot_cfm", 128, NULL, 1, NULL);
-
-#if (OTA_SERIAL_TEST == 1)
-    OTA_Task_Start();
-#endif
 
     UI_Task_Start();
 }

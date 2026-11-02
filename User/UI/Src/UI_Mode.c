@@ -69,22 +69,13 @@ TickType_t UI_Mode_WaitTicks(void)
 
 /** @brief 当前模式的页面事件
  *  @param bits 本轮等待到的事件位
- *  @note  输入界面的开关/保存由 UI_Input 处理; 夜间不刷新页面数据。
+ *  @note  输入界面的开关由 UI_Input 自己处理; 夜间不刷新页面数据。
  */
 void UI_Mode_HandleEvent(EventBits_t bits)
 {
-    bool back_home; // 是否返回主页面
-
-    /* 夜间不允许打开输入界面, 但"返回主页面"仍要处理(清理与保存) */
-    back_home = UI_Input_HandleEvent(bits, !UI_Mode_IsNight());
-
     /* 夜间不刷新页面数据 */
     if (UI_Mode_IsNight())
         return;
-
-    /* 从输入界面回到主页面,整页重绘 */
-    if (back_home)
-        UI_Day_Repaint();
 
     /* 输入界面激活时, 主页面的局部刷新会把画面盖掉, 一律推迟到退出时 */
     if (!UI_Input_IsActive())
@@ -96,7 +87,9 @@ void UI_Mode_Tick(void)
 {
     if (UI_Input_IsActive())
     {
-        UI_Input_Tick();
+        /* 关闭界面(返回主页面)后立刻整页重绘, 否则主页面停在旧画面 */
+        if (UI_Input_Tick())
+            UI_Day_Repaint();
         return;
     }
 

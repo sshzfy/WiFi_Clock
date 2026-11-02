@@ -23,10 +23,8 @@ extern "C" {
  * GLOBAL PROTOTYPES
  **********************/
 
-/* 注册显示驱动: 必须在 lv_init() 之后、创建任何控件之前调用 */
 void lv_port_disp_init(void);
 
-/* 暂停/恢复刷屏(刷屏期间会把缓冲交给 DMA, 需要临时闭屏时用) */
 void disp_enable_update(void);
 void disp_disable_update(void);
 

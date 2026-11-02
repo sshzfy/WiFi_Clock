@@ -14,7 +14,10 @@ static lv_obj_t *s_bar = NULL;  // 进度条
 static bool s_active = false;   // 浮层当前是否在屏上
 static uint32_t s_term_ms = 0U; // 结果状态开始显示的时刻
 
-/** @brief 是否为"结果"状态（显示 3 秒后自动关闭） */
+/** @brief 是否为"结果"状态（显示 3 秒后自动关闭）
+ *  @return ture-结果状态
+ *  @note 结果状态只包括：固件已是最新以及错误状态
+ */
 static bool State_IsTerminal(uint32_t state)
 {
     if (state == OTA_UPD_UP_TO_DATE)
@@ -32,7 +35,7 @@ static const char *State_Text(uint32_t state)
     case OTA_UPD_UP_TO_DATE:
         return "Already up to date";
     case OTA_UPD_DOWNLOADING:
-        return NULL; // 动态显示百分比
+        return NULL;
     case OTA_UPD_APPLYING:
         return "Verifying & backup...";
     case OTA_UPD_REBOOTING:
@@ -80,7 +83,6 @@ void OTA_UI_Init(void)
     lv_bar_set_value(s_bar, 0, LV_ANIM_OFF);
 }
 
-/** @brief  每拍刷新(uiTask 主循环调用；LVGL 未就绪时直接返回)*/
 void OTA_UI_Tick(void)
 {
     uint32_t state;

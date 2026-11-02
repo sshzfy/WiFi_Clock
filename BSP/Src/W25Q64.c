@@ -1,32 +1,41 @@
 #include "W25Q64.h"
 
 /* ================ W25Q64 相关信息 ================
- * 此项目中用来存储字库和图片信息
- * 大小 64 Mbit，8MB（8M 字节 = 8388608 字节）
- * SPI 接口 最大传输速率 75 MHz，支持 SPI 模式 0 和模式 3
- *   模式0: CPOL=0, CPHA=0   (空闲低电平, 第一个边沿采样)
- *   模式3: CPOL=1, CPHA=1   (空闲高电平, 第二个边沿采样)
- * 每页 256 字节，32768 页
- * 每扇区 4KB(4096 字节)，共 2048 个扇区
- * 每块 64KB，共 128 个块
- * 擦除方式：4KB 扇区擦除、32KB 块擦除、64KB 块擦除、整片擦除
- *   —— Flash 的特性：只能按位从 1 变 0，写之前必须先擦除(擦除即全置 1)
- * CLK 上升沿获取数据(主机采样 MISO)，下降沿输出数据(从机在下降沿更新 MISO)，数据均为 MSB 先发送
+ * - 本项目中用来存储字库、图片信息、部分配置信息、OTA 更新文件
+ * - 大小 64 Mbit，8MB（8M 字节）
+ * - 寻址范围：24 位地址（A23 ~ A0），0x000000 ~ 0x7FFFFF
+ * - SPI 接口 最大传输速率 75 MHz，支持 SPI 模式 0 和模式 3
+ *      模式0: CPOL=0, CPHA=0   (空闲低电平, 第一个边沿采样)
+ *      模式3: CPOL=1, CPHA=1   (空闲高电平, 第二个边沿采样)
+ * - 存储结构：
+ *       128 个 Block（块），每块 64KB；
+ *       2048 个 Sector（扇区），每扇区 4KB；
+ *       32768 个 Page（页），每页 256 字节；
+ * - 擦除方式：4KB 扇区擦除、32KB 块擦除、64KB 块擦除、整片擦除
+ * - CLK 上升沿获取数据(主机采样 MISO)，
+ *   下降沿输出数据(从机在下降沿更新 MISO)，数据均为 MSB 先发送
+ *
+ * - 读数据流程：
+ *       拉低 CS -> 发送指令 0x03（快读 0x08） -> 发送 24 位地址 ->
+ *       SPI 读写 -> 拉高 CS
+ * - 写数据流程：
+ *       擦除 -> 拉低 CS -> 发送指令 0x06 -> 拉高 CS -> 拉低 CS ->
+ *       发送指令 0x02 -> 发送 24 位地址 -> 数据 -> 拉高 CS->
+ *       等待忙标志位为 0 (寄存器读取指令 0x05）
+ * - 擦除流程：
+ *       拉低 CS -> 发送指令 0x06 -> 拉高 CS -> 拉低 CS ->
+ *       发送指令 0x20 -> 发送 24 位扇区地址 -> 拉高 CS ->
+ *       等待忙标志位为 0 (寄存器读取指令 0x05)
  * ================================ */
 
-/* 忙等待超时累计次数, 由 W25Q64_GetBusyTimeoutCount() 读取, 便于测试定位硬件问题 */
+#define W25Q64_BUSY_TIMEOUT 1000000U // 忙等待超时(轮询次数上限)，数值要大覆盖扇区擦除时间
+
+/* 忙等待超时累计次数 */
 static volatile uint32_t s_busy_timeout_cnt = 0;
 
-/* ================ static 函数 ================ */
-static inline void W25Q64_CS_Low(void)
-{
-    GPIO_ResetBits(W25Q64_GPIO_PORT, W25Q64_CS_PIN);
-}
+static inline void W25Q64_CS_Low(void) { GPIO_ResetBits(W25Q64_GPIO_PORT, W25Q64_CS_PIN); }
+static inline void W25Q64_CS_High(void) { GPIO_SetBits(W25Q64_GPIO_PORT, W25Q64_CS_PIN); }
 
-static inline void W25Q64_CS_High(void)
-{
-    GPIO_SetBits(W25Q64_GPIO_PORT, W25Q64_CS_PIN);
-}
 static uint8_t W25Q64_SpiReadWriteByte(uint8_t data);
 static void W25Q64_GPIO_Init(void);
 static void W25Q64_SPI_Init(void);
@@ -36,19 +45,21 @@ static uint8_t W25Q64_ReadStatus1(void);
 
 /**
  * @brief 读写字节函数，用于与W25Q64 Flash进行数据交换
- * @param data 要发送的字节（读操作时统一填 0xFF 以产生时钟并避免驱动 MISO 冲突
+ * @param data 要发送的字节，读操作时统一填 0xFF/0x00
  * @return uint8_t 接收的字节
- * */
+ */
 static uint8_t W25Q64_SpiReadWriteByte(uint8_t data)
 {
     /* 等待发送寄存器为空
-     * 发送数据
+     * 读写数据
      * 等待接收完成 */
     while (SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET)
-        ;
+    {
+    }
     SPI_SendData(SPI1, data);
     while (SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE) == RESET)
-        ;
+    {
+    }
 
     /* 返回接收寄存器数据 */
     return SPI_ReceiveData(SPI1);
@@ -57,30 +68,32 @@ static uint8_t W25Q64_SpiReadWriteByte(uint8_t data)
 static void W25Q64_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
+
     GPIO_StructInit(&GPIO_InitStructure);
-    /* 初始化CS引脚，推挽输出，内部上拉 */
     GPIO_InitStructure.GPIO_Pin = W25Q64_CS_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; // 推挽输出
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;   // 内部上拉
     GPIO_Init(W25Q64_GPIO_PORT, &GPIO_InitStructure);
+
     /* 初始化 SPI1 的 CLK MOSI MISO 引脚，复用推挽 */
     GPIO_PinAFConfig(W25Q64_GPIO_PORT, GPIO_PinSource5, GPIO_AF_SPI1);
     GPIO_PinAFConfig(W25Q64_GPIO_PORT, GPIO_PinSource6, GPIO_AF_SPI1);
     GPIO_PinAFConfig(W25Q64_GPIO_PORT, GPIO_PinSource7, GPIO_AF_SPI1);
-    
+
     GPIO_InitStructure.GPIO_Pin = W25Q64_CLK_PIN | W25Q64_MOSI_PIN | W25Q64_MISO_PIN;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF; // 复用推挽输出
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; // 推挽输出
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;   // 内部上拉
     GPIO_Init(W25Q64_GPIO_PORT, &GPIO_InitStructure);
 }
 
 static void W25Q64_SPI_Init(void)
 {
     SPI_InitTypeDef SPI_InitStructure;
+
     SPI_StructInit(&SPI_InitStructure);
     SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex; // 2线全双工模式
     SPI_InitStructure.SPI_Mode = SPI_Mode_Master;                      // 主模式
@@ -92,9 +105,11 @@ static void W25Q64_SPI_Init(void)
     SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;                          // 软件控制NSS引脚
     SPI_InitStructure.SPI_CRCPolynomial = 7;                           // CRC多项式7
     SPI_Init(SPI1, &SPI_InitStructure);
+
     SPI_Cmd(SPI1, ENABLE);
 }
 
+/** @brief 写使能 */
 static void W25Q64_WriteEnable(void)
 {
     W25Q64_CS_Low();
@@ -105,9 +120,7 @@ static void W25Q64_WriteEnable(void)
 /**
  * @brief 轮询状态寄存器直到 BUSY 清零
  * @return true 芯片已空闲, false 超时(芯片无响应)
- * @note  每次读取状态都必须重新拉低再拉高片选: 若退出时 CS 保持低电平,
- *        后续命令会被芯片当作上一条命令的延续而全部失效(写/擦除静默失败)。
- * */
+ */
 static bool W25Q64_WaitBusy(void)
 {
     uint8_t status;
@@ -117,9 +130,8 @@ static bool W25Q64_WaitBusy(void)
     do
     {
         W25Q64_CS_Low();
-        /* 读状态寄存器1 */
-        W25Q64_SpiReadWriteByte(W25Q64_CMD_READ_SR1);
-        status = W25Q64_SpiReadWriteByte(0xFF); // 发送0xFF，读一字节状态
+        W25Q64_SpiReadWriteByte(W25Q64_CMD_READ_SR1); // 读状态寄存器1
+        status = W25Q64_SpiReadWriteByte(0xFF);       // 发送0xFF，读一字节状态
         W25Q64_CS_High();
     } while ((status & W25Q64_SR1_BUSY) && (--timeout != 0U));
 
@@ -133,6 +145,9 @@ static bool W25Q64_WaitBusy(void)
     return true;
 }
 
+/** @brief 读取状态寄存器1
+ *  @return uint8_t 状态寄存器1的字节值
+ */
 static uint8_t W25Q64_ReadStatus1(void)
 {
     uint8_t status;
@@ -144,7 +159,6 @@ static uint8_t W25Q64_ReadStatus1(void)
     return status;
 }
 
-/* ================ public 函数 ================ */
 void W25Q64_Init(void)
 {
     W25Q64_GPIO_Init();
@@ -161,22 +175,26 @@ void W25Q64_Init(void)
         ;
 }
 
+/** @brief 获取忙等待超时累计次数
+ *  @return uint32_t 忙等待超时累计次数
+ */
 uint32_t W25Q64_GetBusyTimeoutCount(void)
 {
     return s_busy_timeout_cnt;
 }
 
+/** @brief 读取 W25Q64 Flash 的 ID
+ *  @return uint16_t 厂商 ID（0xEF） + 器件 ID（0x16）
+ * */
 uint16_t W25Q64_ReadId(void)
 {
     uint16_t id;
 
     W25Q64_CS_Low();
-    /* 发送读取命令
-     * 高中低占位字节 */
     W25Q64_SpiReadWriteByte(W25Q64_CMD_READ_ID);
-    W25Q64_SpiReadWriteByte(0x00);
-    W25Q64_SpiReadWriteByte(0x00);
-    W25Q64_SpiReadWriteByte(0x00);
+    W25Q64_SpiReadWriteByte(0x00);           // 地址占位高字节
+    W25Q64_SpiReadWriteByte(0x00);           // 地址占位中字节
+    W25Q64_SpiReadWriteByte(0x00);           // 地址占位低字节
     id = W25Q64_SpiReadWriteByte(0xFF) << 8; // 读厂商 ID（0xEF）
     id |= W25Q64_SpiReadWriteByte(0xFF);     // 读器件 ID（0x16）
     W25Q64_CS_High();
@@ -184,6 +202,9 @@ uint16_t W25Q64_ReadId(void)
     return id;
 }
 
+/** @brief 读取 W25Q64 Flash 的 JEDEC ID
+ *  @return uint32_t JEDEC ID（0xEF） + 存储类型（0x16） + 容量（0x00）
+ * */
 uint32_t W25Q64_ReadJedecId(void)
 {
     uint32_t id;
@@ -191,24 +212,26 @@ uint32_t W25Q64_ReadJedecId(void)
     W25Q64_CS_Low();
     W25Q64_SpiReadWriteByte(W25Q64_CMD_JEDEC_ID);
     id = W25Q64_SpiReadWriteByte(0xFF) << 16; // 厂商 ID
-    id |= W25Q64_SpiReadWriteByte(0xFF) << 8; // 存储类型
-    id |= W25Q64_SpiReadWriteByte(0xFF);      // 容量
+    id |= W25Q64_SpiReadWriteByte(0xFF) << 8; // 存储器 ID
+    id |= W25Q64_SpiReadWriteByte(0xFF);      // 兼容性 ID
     W25Q64_CS_High();
 
     return id;
 }
 
+/** @brief 检查 W25Q64 Flash 是否忙
+ *  @return true 芯片忙, false 芯片空闲
+ * */
 uint8_t W25Q64_IsBusy(void)
 {
     return (W25Q64_ReadStatus1() & W25Q64_SR1_BUSY) ? 1 : 0;
 }
 
 /**
- * @brief 从W25Q64 Flash读取数据
+ * @brief 从 W25Q64 Flash 读取数据
  * @param addr 起始地址（字节对齐）
  * @param buf 要读取的缓冲区指针
  * @param len 要读取的字节数
- * @note  读取时必须先发送地址字节，再发送数据字节。
  * */
 void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 {
@@ -218,13 +241,14 @@ void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
     W25Q64_SpiReadWriteByte((addr >> 16) & 0xFF);
     W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
     W25Q64_SpiReadWriteByte(addr & 0xFF);
+
     while (len--)
         *buf++ = W25Q64_SpiReadWriteByte(0xFF);
     W25Q64_CS_High();
 }
 
 /**
- * @brief 页编程函数，用于将数据写入W25Q64 Flash的指定页
+ * @brief 页编程函数，用于将数据写入 W25Q64 Flash 的指定 256字节页
  * @param addr 起始地址（字节对齐，可跨页，函数内部自动分页）
  * @param buf 要写入的缓冲区指针
  * @param len 要写入的字节数
@@ -236,8 +260,8 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
 
     while (len > 0)
     {
-        uint32_t page_remain = W25Q64_PAGE_SIZE - (addr & (W25Q64_PAGE_SIZE - 1U)); // 页剩余字节数
-        uint32_t write_len = (len < page_remain) ? len : page_remain;               // 写入字节数
+        uint32_t pagebyte_remain = W25Q64_PAGE_SIZE - (addr & (W25Q64_PAGE_SIZE - 1U)); // 页剩余字节数
+        uint32_t writebyte_len = (len < pagebyte_remain) ? len : pagebyte_remain;       // 写入字节数
 
         W25Q64_WriteEnable(); // 写使能
         W25Q64_CS_Low();
@@ -245,7 +269,7 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
         W25Q64_SpiReadWriteByte((addr >> 16) & 0xFF);
         W25Q64_SpiReadWriteByte((addr >> 8) & 0xFF);
         W25Q64_SpiReadWriteByte(addr & 0xFF);
-        for (uint32_t i = 0; i < write_len; i++) // 逐字节写入
+        for (uint32_t i = 0; i < writebyte_len; i++)
             W25Q64_SpiReadWriteByte(buf[i]);
         W25Q64_CS_High(); // 拉高片选，芯片内部开始编程
 
@@ -254,9 +278,9 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
             ok = false;
 
         /* 推进地址/缓冲区/剩余长度，准备写下一页 */
-        addr += write_len;
-        buf += write_len;
-        len -= write_len;
+        addr += writebyte_len;
+        buf += writebyte_len;
+        len -= writebyte_len;
     }
 
     return ok;
@@ -266,7 +290,6 @@ bool W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint32_t len)
  * @brief 扇区擦除函数，将W25Q64 Flash的指定扇区全部擦除为 0xFF
  * @param addr 扇区起始地址（字节对齐）
  * @return true 完成, false 超时
- * @note  扇区擦除时必须先发送地址字节，再发送命令字节。
  * */
 bool W25Q64_SectorErase(uint32_t addr)
 {
@@ -291,7 +314,6 @@ bool W25Q64_SectorErase(uint32_t addr)
  * @brief 32KB 块擦除函数，将W25Q64 Flash的指定 32KB 块全部擦除为 0xFF
  * @param addr 32KB 块起始地址（字节对齐）
  * @return true 完成, false 超时
- * @note  32KB 块擦除时必须先发送地址字节，再发送命令字节。
  * */
 bool W25Q64_Block32Erase(uint32_t addr)
 {
@@ -315,7 +337,6 @@ bool W25Q64_Block32Erase(uint32_t addr)
 /**
  * @brief 整片擦除
  * @return true 完成, false 超时
- * @note  8MB 芯片典型耗时 20~100s, 会长时间阻塞, 测试时慎用
  * */
 bool W25Q64_ChipErase(void)
 {

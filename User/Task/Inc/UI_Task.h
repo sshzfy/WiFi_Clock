@@ -16,9 +16,8 @@
 #include "UI_Mode.h"
 #include "UI_Input.h"
 
-/* 事件组中 uiTask 关心的位: 其余位(如 ACK、更新请求)只在别的任务之间传递 */
-#define UI_TASK_EVENTS        (EV_WEATHER | EV_DHT22 | EV_WIFI | EV_LOWERPOWER | EV_WAKEUP | \
-                               EV_WIFI_KB | EV_LOCATION_KB | EV_MAIN_SCREEN)
+/* 事件掩码: uiTask 循环里等待的跨任务信号 */
+#define UI_TASK_EVENTS        (EV_WEATHER | EV_DHT22 | EV_WIFI | EV_LOWERPOWER | EV_WAKEUP)
 
 void UI_Task_Start(void);
 

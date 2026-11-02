@@ -22,6 +22,7 @@
                 "d:\\Code\\Keil\\Project4\\Boot\\Inc",
                 "D:\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Keil5\\ARM\\ARMCC\\include\\rw",
+                "d:\\Code\\Keil\\Project4\\Boot\\Src",
                 "d:\\Code\\Keil\\Project4\\User\\Application\\Src",
                 "d:\\Code\\Keil\\Project4\\User\\UI\\Src",
                 "d:\\Code\\Keil\\Project4\\User\\UI\\Src\\screens",
@@ -60,8 +61,7 @@
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\spinner",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\tabview",
                 "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\tileview",
-                "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\win",
-                "d:\\Code\\Keil\\Project4\\Boot\\Src"
+                "d:\\Code\\Keil\\Project4\\Middlewares\\Lvgl\\lvgl\\src\\extra\\widgets\\win"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",

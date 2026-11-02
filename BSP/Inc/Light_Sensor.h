@@ -6,26 +6,21 @@
 #include "stm32f4xx_adc.h"
 #include "stm32f4xx_exti.h"
 
-/* AO/DO 选择: 1 = 模拟量 AO(PC0/ADC123_IN10, 软件阈值判断)
- *                 该模式下并未进行阈值测试校准，仅做功能性实现
- *             0 = 数字量 DO(PC1/EXTI1, 板载电位器调阈值) 
- * */
+/* AO/DO 选择: 1 = 模拟量 AO，0 = 数字量 DO */
 #define AO_DO_SWITCH 0
 
 /* AO 输出引脚 */
 #define LIGHT_SENSOR_GPIO_PORT        GPIOC
 #define LIGHT_SENSOR_GPIO_PIN         GPIO_Pin_0
 
-/* AO 阈值(仅在 AO_DO_SWITCH==1 时使用), 需用裸机 case2 读原始值标定
- * LIGHT_SENSOR_AO_DARK_HIGH: 1=越暗ADC值越大; 0=越暗ADC值越小(极性取决于分压接法) 
- * */
+/* AO 阈值(仅在 AO_DO_SWITCH==1 时使用，未标定) */
 #define LIGHT_SENSOR_AO_DARK_HIGH        1     // 1=越暗ADC值越大; 0=越暗ADC值越小
 #define LIGHT_SENSOR_AO_DARK_TH          3000  // 进入“暗”的阈值(极端侧)
 #define LIGHT_SENSOR_AO_LIGHT_TH         2000  // 回到“亮”的阈值(滞回, 防抖动)
 
 /* ================DO 引脚输出状态 ================
  * 光照强度达到设定值,DO输出低电平,光照强度达不到设定值,DO输出高电平
- * 阈值通过电位移调节,顺时针调节检测亮度增强
+ * 阈值通过电位移调节
  * ================================ */
 
 /* DO 配置 */
@@ -37,10 +32,11 @@
 #define LIGHT_SENSOR_DO_EXTI_IRQn               EXTI1_IRQn
 #define LIGHT_SENSOR_DO_EXTI_IRQHandler         EXTI1_IRQHandler
 
+/* DO 状态 */
 typedef enum
 {
-    LIGHT_SENSOR_DO_STATE_LOW = 0,
-    LIGHT_SENSOR_DO_STATE_HIGH = 1,
+    LIGHT_SENSOR_DO_STATE_LOW = 0,  // 亮状态
+    LIGHT_SENSOR_DO_STATE_HIGH = 1, // 暗状态
 } Light_Sensor_DO_State_t;
 
 extern volatile Light_Sensor_DO_State_t Light_Sensor_DO_State;

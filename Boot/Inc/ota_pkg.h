@@ -12,7 +12,7 @@
  *   +0x04  header_size  固定 64 B 头大小
  *   +0x06  header_crc16 头部前 60 B 的 CRC16-CCITT（防头部损坏）
  *   +0x08  fw_version   major<<16 | minor<<8 | patch
- *   +0x0C  fw_size      payload 字节数
+ *   +0x0C  fw_size      payload 字节数（4字节对齐）
  *   +0x10  fw_crc32     payload 的 CRC32（zlib 标准反射算法）
  *   +0x14  hw_id        板型标识，防止把别的机型的固件刷进来
  *   +0x18  build_time   Unix 时间戳（诊断用）
@@ -20,7 +20,7 @@
  *   +0x20  min_boot_ver 最低 Bootloader 版本
  *   +0x24  reserved[28] 预留（签名等），补齐 64 B
  * payload：
- *   +0x40  payload      App .bin
+ *   +0x40  payload      App .bin（0xFF 填充到4字节对齐）
  * ============================================================ */
 
 #define OTA_PKG_MAGIC              0x4F544131UL
@@ -43,4 +43,4 @@ typedef struct
     uint8_t reserved[28];
 } ota_hdr_t;
 
-#endif
+#endif /* __OTA_PKG_H__ */

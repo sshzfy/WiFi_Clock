@@ -42,14 +42,14 @@ void Board_Init(void)
     Usart2_Debug_Init();
     /* 使能DWT周期计数器, 用于测量渲染耗时 */
     Prof_Init();
+    /* 初始化LCD, 并分配图片乒乓缓冲 */
+    /* 在 LCD_Init 之前把触摸 CS(PE0) 拉高: 否则 ST7789 初始化时钟可能被 XPT2046 误收, 状态机错位后只有断电才能恢复 */
+
+    Touch_Park();
+
+    LCD_Init();
     /* 初始化触摸屏: SPI3 由 LCD_Init 配好, 校准参数从 /data/touch_cal.bin 读 */
     (void)Touch_Init();
-    // /* 抢在 LCD 初始化之前把触摸 CS 拉高: LCD_Init() 会往 SPI3 上打大量 ST7789 初始化
-    //  * 时钟, 此时触摸 CS 若还是复位后的浮空输入, XPT2046 会把这些命令当成自己的收进去,
-    //  * 状态机错位后只有掉电才能恢复(见 Touch_Park 的说明) */
-    // Touch_Park();
-    /* 初始化LCD, 并分配图片乒乓缓冲 */
-    LCD_Init();
     /* 初始化资源层: W25Q64 + littlefs, 字库/图片只读 + 运行数据读写 */
     Asset_Init();
     OLED_Init();

@@ -1,10 +1,10 @@
 #include "Light_Sensor.h"
 
-volatile Light_Sensor_DO_State_t Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光敏传感器DO默认状态（低电平，亮状态），该变量在ISR中修改，需要volatile修饰
+volatile Light_Sensor_DO_State_t Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光敏传感器DO默认状态（低电平，亮状态）
 static Light_Sensor_IRQ_Callback_t s_irq_cb = NULL;                                 // ISR → RTOS 层回调(由 app_task 注册, 可为 NULL): ISR 内仅做通知
 
 /** @brief 注册光敏传感器中断回调函数
- * @param cb 中断回调函数指针, 用于在ISR中通知任务
+ * @param cb 中断回调函数指针, 用于在 ISR 中通知任务
  */
 void Light_Sensor_RegisterCallback(Light_Sensor_IRQ_Callback_t callback)
 {
@@ -18,21 +18,23 @@ static inline void Light_Sensor_Notify(void)
 }
 
 #if AO_DO_SWITCH == 1
+
 /* ==================== AO: ADC + 模拟看门狗(AWD)中断 ==================== */
+
 static volatile bool ao_dark = false; // AWD锁存的昼夜状态
 
 static void Light_Sensor_AO_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_StructInit(&GPIO_InitStruct);
+    GPIO_InitTypeDef GPIO_InitStructre;
+    GPIO_StructInit(&GPIO_InitStructre);
 
-    GPIO_InitStruct.GPIO_Pin = LIGHT_SENSOR_GPIO_PIN;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AN;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructre.GPIO_Pin = LIGHT_SENSOR_GPIO_PIN;
+    GPIO_InitStructre.GPIO_Mode = GPIO_Mode_AN;
+    GPIO_InitStructre.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructre.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructre.GPIO_PuPd = GPIO_PuPd_UP;
 
-    GPIO_Init(LIGHT_SENSOR_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_Init(LIGHT_SENSOR_GPIO_PORT, &GPIO_InitStructre);
 }
 
 /**
@@ -59,7 +61,7 @@ static void Light_Sensor_ADC_Init(void)
 {
     ADC_CommonInitTypeDef ADC_CommonInitStruct;
     ADC_InitTypeDef ADC_InitStruct;
-    NVIC_InitTypeDef NVIC_InitStruct;
+    NVIC_InitTypeDef NVIC_InitStructre;
     ADC_StructInit(&ADC_InitStruct);
 
     ADC_CommonInitStruct.ADC_Mode = ADC_Mode_Independent;                     // 独立模式
@@ -85,11 +87,11 @@ static void Light_Sensor_ADC_Init(void)
     ADC_AnalogWatchdogCmd(ADC1, ADC_AnalogWatchdog_SingleRegEnable);
     ADC_ITConfig(ADC1, ADC_IT_AWD, ENABLE);
 
-    NVIC_InitStruct.NVIC_IRQChannel = ADC_IRQn;
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // 允许FromISR
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStruct);
+    NVIC_InitStructre.NVIC_IRQChannel = ADC_IRQn;
+    NVIC_InitStructre.NVIC_IRQChannelPreemptionPriority = 5; // 允许FromISR
+    NVIC_InitStructre.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructre.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructre);
 
     ADC_Cmd(ADC1, ENABLE);
 }
@@ -134,46 +136,36 @@ void Light_Sensor_Init(void)
 }
 
 #else
+
 /* ==================== DO: EXTI1 中断 ==================== */
-static void Light_Sensor_DO_GPIO_Init(void)
-{
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_StructInit(&GPIO_InitStruct);
-    GPIO_InitStruct.GPIO_Pin = LIGHT_SENSOR_DO_GPIO_PIN;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(LIGHT_SENSOR_DO_GPIO_PORT, &GPIO_InitStruct);
-}
-
-static void Light_Sensor_EXTI_Init(void)
-{
-    EXTI_InitTypeDef EXTI_InitStruct;
-    EXTI_StructInit(&EXTI_InitStruct);
-    /* 端口源与引脚源取自 Light_Sensor.h, 保证与 DO 引脚定义一致 */
-    SYSCFG_EXTILineConfig(LIGHT_SENSOR_DO_EXTI_PORT_SOURCE, LIGHT_SENSOR_DO_EXTI_PIN_SOURCE);
-    EXTI_InitStruct.EXTI_Line = LIGHT_SENSOR_DO_EXTI_LINE;      // 1号中断线
-    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;            // 中断模式
-    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling; // 上升沿或下降沿触发
-    EXTI_InitStruct.EXTI_LineCmd = ENABLE;                      // 使能中断线
-    EXTI_Init(&EXTI_InitStruct);
-}
-
-static void Light_Sensor_NVIC_Init(void)
-{
-    NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = LIGHT_SENSOR_DO_EXTI_IRQn; // 1号中断线
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5;       // =configMAX_SYSCALL: 允许FromISR
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;              // 0级子优先级
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;                 // 使能中断线
-    NVIC_Init(&NVIC_InitStruct);
-}
 
 void Light_Sensor_Init(void)
 {
-    Light_Sensor_DO_GPIO_Init();
-    Light_Sensor_EXTI_Init();
-    Light_Sensor_NVIC_Init();
+    GPIO_InitTypeDef GPIO_InitStructre;
+    EXTI_InitTypeDef EXTI_InitStructre;
+    NVIC_InitTypeDef NVIC_InitStructre;
+
+    GPIO_StructInit(&GPIO_InitStructre);
+    GPIO_InitStructre.GPIO_Pin = LIGHT_SENSOR_DO_GPIO_PIN;
+    GPIO_InitStructre.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructre.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructre.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_Init(LIGHT_SENSOR_DO_GPIO_PORT, &GPIO_InitStructre);
+
+    EXTI_StructInit(&EXTI_InitStructre);
+    SYSCFG_EXTILineConfig(LIGHT_SENSOR_DO_EXTI_PORT_SOURCE, LIGHT_SENSOR_DO_EXTI_PIN_SOURCE);
+    EXTI_InitStructre.EXTI_Line = LIGHT_SENSOR_DO_EXTI_LINE;      // 1 号中断线
+    EXTI_InitStructre.EXTI_Mode = EXTI_Mode_Interrupt;            // 中断模式
+    EXTI_InitStructre.EXTI_Trigger = EXTI_Trigger_Rising_Falling; // 上升沿或下降沿触发
+    EXTI_InitStructre.EXTI_LineCmd = ENABLE;                      // 使能中断线
+    EXTI_Init(&EXTI_InitStructre);
+
+    NVIC_InitStructre.NVIC_IRQChannel = LIGHT_SENSOR_DO_EXTI_IRQn; // 1 号中断线
+    NVIC_InitStructre.NVIC_IRQChannelPreemptionPriority = 5;       // =configMAX_SYSCALL: 允许 FromISR
+    NVIC_InitStructre.NVIC_IRQChannelSubPriority = 0;              // 0级子优先级
+    NVIC_InitStructre.NVIC_IRQChannelCmd = ENABLE;                 // 使能中断线
+    NVIC_Init(&NVIC_InitStructre);
+
     /* 上电先读一次引脚, 初始化状态(否则上电即暗且无跳变时会误判为亮) */
     Light_Sensor_DO_State = (GPIO_ReadInputDataBit(LIGHT_SENSOR_DO_GPIO_PORT, LIGHT_SENSOR_DO_GPIO_PIN) == Bit_RESET)
                                 ? LIGHT_SENSOR_DO_STATE_LOW
@@ -192,11 +184,11 @@ void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
         EXTI_ClearITPendingBit(LIGHT_SENSOR_DO_EXTI_LINE);
         if (GPIO_ReadInputDataBit(LIGHT_SENSOR_DO_GPIO_PORT, LIGHT_SENSOR_DO_GPIO_PIN) == Bit_RESET)
         {
-            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光照强度达到设定值,DO输出低电平
+            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_LOW; // 光照强度达到设定值，DO 输出低电平
         }
         else
         {
-            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // 光照强度低于设定值,DO输出高电平
+            Light_Sensor_DO_State = LIGHT_SENSOR_DO_STATE_HIGH; // 光照强度低于设定值，DO 输出高电平
         }
         /* 通知任务(边沿事件) */
         Light_Sensor_Notify();
@@ -208,7 +200,7 @@ void LIGHT_SENSOR_DO_EXTI_IRQHandler(void)
 /**
  * @brief 统一判定当前是否处于“暗”
  *        DO: 引脚为高(未达光照阈值) = 暗
- *        AO: 返回AWD锁存状态(无采样, 无轮询)
+ *        AO: 返回 AWD 锁存状态(无采样, 无轮询)
  * @return true 暗 / false 亮
  */
 bool Light_Sensor_IsDark(void)

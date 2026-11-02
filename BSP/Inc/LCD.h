@@ -30,18 +30,6 @@
 #define LCD_DC_PIN               GPIO_Pin_4
 #define LCD_BACKLIGHT_PIN        GPIO_Pin_5
 
-/* LCD  局内参数定义 */
-#define GRAM_DMA_MAX_HALFWORD        65535U // DMA NDTR(16bit)单次最大半字数
-#define SCRATCH_H_PX                 48     // 最大渲染行高(对齐Font_48)
-
-/* SPI3 时钟: LCD 用 21MHz; TSC2046(触摸)的 SCLK 上限 2MHz */
-#define LCD_SPI_BR_FAST        SPI_BaudRatePrescaler_2  // 42MHz / 2  = 21MHz
-#define LCD_SPI_BR_SLOW        SPI_BaudRatePrescaler_64 // 42MHz / 64 = 656kHz
-
-/* 图片流式发送的乒乓缓冲 */
-#define PIC_BLOCK_LINES        16                        // 每一块缓冲块行数
-#define PIC_BLOCK_PIXEL        (WIDTH * PIC_BLOCK_LINES) // 每一块缓冲块像素数
-
 /* 颜色 */
 #define COLOR(r, g, b)           ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
 
@@ -128,15 +116,7 @@ void LCD_Write_String(uint16_t x, uint16_t y, char *ch, uint16_t color_font, uin
 void LCD_Draw_Picture(uint16_t x, uint16_t y, const Image_t *image);
 void LCD_Draw_Picture_AutoTransparent(uint16_t x, uint16_t y, const Image_t *image, uint16_t target_bc);
 
-/* 整块像素写入: 把一段 RGB565 数据(按行连续, 左上到右下)刷到矩形区域。
- * 供图形库(LVGL)的 flush 回调使用, 与 LCD_Fill_Color 走同一条窗口+DMA 通路,
- * 因此字节序(高字节先发)与屏幕上的裸绘内容完全一致。 */
 void LCD_Draw_Pixels(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, const uint16_t *pixels);
-
-/* 借用模块内部的整行渲染缓冲(240 x 48 像素, 位于 SRAM、4 字节对齐)。
- * 图形库可以直接拿它当绘制缓冲, 省下一块同等大小的静态内存 ——
- * 本工程主 SRAM 只剩约 2KB, 另开缓冲会直接爆掉。
- * 约定: 调用方只在刷屏期间使用它, 不能与 LCD_Write_String() 并发。 */
 uint16_t *LCD_RenderBuffer(uint32_t *capacity_px);
 
 

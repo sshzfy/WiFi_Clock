@@ -18,40 +18,33 @@
  *   APP_UNCONFIRMED        未确认则 boot_try++，达 3 次回滚
  * ============================================================ */
 
-typedef void (*pFunc)(void);
+typedef void (*pFunc)(void); // 跳转函数指针
 
-/** @brief  App 轻量合法性检查 */
+/** @brief App 轻量合法性检查
+ *  @note 仅检查栈顶、复位向量
+ */
 static bool App_QuickValid(void)
 {
-    uint32_t sp = *(volatile uint32_t *)APP_BASE;        // 栈顶
-    uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U); // 复位向量
-    bool all_erased = true;                              // 假设全擦除
+    const uint32_t sp = *(volatile uint32_t *)APP_BASE;        // 栈顶
+    const uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U); // 复位向量
 
-    /* 检查栈顶在 SRAM/CCM 范围内 */
-    if (!((sp >= 0x20000000UL && sp <= 0x20020000UL) ||
-          (sp >= 0x10000000UL && sp <= 0x10010000UL)))
+    /* 检查栈顶8字节对齐，且在 SRAM/CCM 范围内 */
+    if (!((sp & 0x7U) != 0U ||
+          (sp >= IRAM1_BASE && sp <= IRAM1_END) ||
+          (sp >= IRAM2_BASE && sp <= IRAM2_END)))
         return false;
     /* 复位向量在 App 区内且 bit0=1 */
     if (pc < APP_BASE || pc >= APP_END || (pc & 1U) == 0U)
         return false;
-    /* 前 8 个字不能全是 0xFF(说明从未烧录) */
-    for (uint32_t i = 0U; i < 8U; i++)
-    {
-        if (*(volatile uint32_t *)(APP_BASE + i * 4U) != 0xFFFFFFFFUL)
-        {
-            all_erased = false;
-            break;
-        }
-    }
 
-    return !all_erased;
+    return true;
 }
 
 /** @brief  跳转到 App */
 void Boot_JumpToApp(void)
 {
-    uint32_t sp = *(volatile uint32_t *)APP_BASE;
-    uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U);
+    const uint32_t sp = *(volatile uint32_t *)APP_BASE;
+    const uint32_t pc = *(volatile uint32_t *)(APP_BASE + 4U);
     pFunc jump = (pFunc)pc;
 
     /* 关中断 */
@@ -80,16 +73,12 @@ void Boot_JumpToApp(void)
     /* 设置 App 的栈SP
      * __set_MSP 之后不能再依赖 Bootloader 的栈 */
     __set_MSP(sp);
-    __enable_irq();
 
     /* 跳转到 App */
     jump();
 }
 
-/**
- * @brief  Bootloader 入口
- * @note   启动文件已调用 SystemInit()，进来时时钟 168 MHz。
- */
+/** @brief  Bootloader 入口 */
 int main(void)
 {
     boot_param_t p;
@@ -113,11 +102,12 @@ int main(void)
         Boot_Uart_Puts("[BOOT] param: empty\n");
     }
 
+    /* 根据 state 决定行为 */
     switch (p.state)
     {
     case BOOT_ST_OTA_PENDING:
     case BOOT_ST_OTA_WRITING:
-        /* App 下载完新固件并写了参数。搬运成功则直接跳转（不返回） */
+        /* App 下载完新固件并写了参数。搬运成功则直接跳转 */
         Boot_Uart_Puts("[BOOT] start update\n");
         if (Boot_Update_FromFile(OTA_FW_PATH))
             break;
@@ -139,8 +129,7 @@ int main(void)
         }
 
     case BOOT_ST_APP_UNCONFIRMED:
-        /* 新 App 已写入但未确认。
-         * 快速检查失败（搬运被破坏），或已尝试 3 次仍未确认 -> 回滚 */
+        /* 新 App 已写入但未确认 */
         if (!App_QuickValid() || p.boot_try >= 3U)
         {
             Boot_Uart_Puts("[BOOT] app unconfirmed, rollback\n");

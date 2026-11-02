@@ -11,6 +11,7 @@
 void USART1_Init(void);
 uint16_t Usart1_RX_Count(void);
 int Usart1_RX_Read(void);
+uint16_t Usart1_RX_Ovf(void);
 void Usart1_RX_Flush(void);
 
 void Usart2_Debug_Init(void);

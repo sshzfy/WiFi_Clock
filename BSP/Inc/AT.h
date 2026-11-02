@@ -33,8 +33,8 @@ typedef struct
 /* AT+CWSTATE? / AT+CWJAP? —— WiFi 连接信息 */
 typedef struct
 {
-    char ssid[64];  // SSID, 网络名称  (sscanf %63)
-    char bssid[18]; // BSSID, MAC地址 (sscanf %17)
+    char ssid[64];  // SSID, 网络名称
+    char bssid[18]; // BSSID, MAC地址
     int channel;    // 信道
     int rssi;       // 信号强度(dBm)
     bool connected; // 是否已连接
@@ -43,9 +43,9 @@ typedef struct
 /* HTTP 天气接口 —— 城市 / 天气 / 温度 */
 typedef struct
 {
-    char city[32];      // 城市                    (sscanf %31)
-    char location[128]; // 位置路径(城市,省份,国家)  (sscanf %127)
-    char weather[32];   // 天气描述                (sscanf %31)
+    char city[32];      // 城市
+    char location[128]; // 位置路径(城市,省份,国家)
+    char weather[32];   // 天气描述
     int weather_code;   // 天气码
     float temperature;  // 温度(摄氏度)
 } AT_Weather_Info_t;

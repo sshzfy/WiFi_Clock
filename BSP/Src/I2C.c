@@ -11,7 +11,6 @@
  * 主机接受最后一个字节后发送 nack，通知从机数据接收完成
  * ================================ */
 
-/* ================ static 函数 ================ */
 static inline void Soft_I2C_SDA_HIGH(Soft_I2C_t *Soft_I2C) { GPIO_SetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
 static inline void Soft_I2C_SDA_LOW(Soft_I2C_t *Soft_I2C) { GPIO_ResetBits((Soft_I2C)->SDA_Port, (Soft_I2C)->SDA_Pin); }
 static inline void Soft_I2C_SCL_HIGH(Soft_I2C_t *Soft_I2C) { GPIO_SetBits((Soft_I2C)->SCL_Port, (Soft_I2C)->SCL_Pin); }
@@ -81,7 +80,6 @@ static void Soft_I2C_Send_NACK(Soft_I2C_t *Soft_I2C)
     delay_us(5);
 }
 
-/* ================ public 函数 ================ */
 void Soft_I2C_Init(Soft_I2C_t *Soft_I2C)
 {
     GPIO_InitTypeDef GPIO_InitStruct;

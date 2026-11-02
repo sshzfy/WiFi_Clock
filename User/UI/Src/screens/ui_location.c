@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "App.h"
 #include "Task_Common.h"
+#include "UI_Input.h"
 
 lv_obj_t *ui_location = NULL;
 lv_obj_t *ui_Keyboard2 = NULL;
@@ -51,7 +52,7 @@ void ui_event_Button2(lv_event_t *e)
     if (event_code == LV_EVENT_CLICKED)
     {
         /* 取消输入: 不提交任何内容, 直接退回主界面 */
-        xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
+        UI_Input_RequestBackHome();
     }
 }
 
@@ -68,7 +69,7 @@ void ui_location_screen_init(void)
     lv_obj_add_flag(ui_Keyboard2, LV_OBJ_FLAG_HIDDEN); /// Flags
 
     ui_Label4 = lv_label_create(ui_location);
-    lv_obj_set_width(ui_Label4, 230); /* 原为 170, 放不下整行提示文字 */
+    lv_obj_set_width(ui_Label4, 230); // 为 170, 放不下整行提示文字
     lv_obj_set_height(ui_Label4, 16);
     lv_obj_set_x(ui_Label4, 5);
     lv_obj_set_y(ui_Label4, 5);

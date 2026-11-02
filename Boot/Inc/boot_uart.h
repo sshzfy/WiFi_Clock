@@ -9,4 +9,4 @@ void Boot_Uart_Puts(const char *s);
 void Boot_Uart_PutU32(uint32_t v);
 void Boot_Uart_PutHex(uint32_t v);
 
-#endif
+#endif /* __BOOT_UART_H__ */

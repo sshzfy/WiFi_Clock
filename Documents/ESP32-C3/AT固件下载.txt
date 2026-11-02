@@ -1,1 +1,0 @@
-https://docs.espressif.com/projects/esp-at/zh_CN/latest/esp32c3/Get_Started/Downloading_guide.html

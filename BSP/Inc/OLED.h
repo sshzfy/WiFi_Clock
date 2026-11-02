@@ -9,16 +9,17 @@
 #include "AT.h"
 #include "Asset.h"
 
+/* OLED 引脚定义 */
 #define OLED_GPIO_PORT           GPIOB
 #define OLED_GPIO_SCL_PIN        GPIO_Pin_6
 #define OLED_GPIO_SDA_PIN        GPIO_Pin_7
 
-#define OLED_ADDR               0x3C
-#define OLED_CMD_BYTE           0x00
-#define OLED_DATA_BYTE          0x40
+#define OLED_ADDR               0x3C // OLED 地址
+#define OLED_CMD_BYTE           0x00 // 命令字节
+#define OLED_DATA_BYTE          0x40 // 数据字节
 
-#define OLED_WIDTH              128
-#define OLED_HEIGHT             64
+#define OLED_WIDTH              128 // OLED 宽度
+#define OLED_HEIGHT             64  // OLED 高度
 
 extern Soft_I2C_t oled_i2c;
 

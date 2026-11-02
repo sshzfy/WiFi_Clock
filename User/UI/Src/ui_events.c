@@ -3,13 +3,12 @@
 // LVGL version: 8.3.11
 // Project name: SquareLine_Project
 //
-// 注意: 本文件带手工实现(SquareLine 只生成空壳)。用 SquareLine 重新导出后,
-// 需要把下面两个函数的实现重新补回来。
 
 #include "ui.h"
 #include "BuildConfig.h"
 #include "App.h"
 #include "Task_Common.h"
+#include "UI_Input.h"
 
 /**
  * @brief 读取 WiFi 界面上的名称/密码并提交
@@ -43,7 +42,7 @@ void Get_WiFiInfo(lv_event_t *e)
 		   g_ssid, (unsigned)strlen(g_password));
 
 	xEventGroupSetBits(Task_Events(), EV_WIFI_CRED);
-	xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
+	UI_Input_RequestBackHome();
 }
 
 /**
@@ -72,5 +71,5 @@ void Get_LocationInfo(lv_event_t *e)
 
 	/* 让 netTask 立刻按新定位取一次天气: 否则要等满一个天气周期(1h)才生效 */
 	xEventGroupSetBits(Task_Events(), EV_LOCATION_CRED);
-	xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
+	UI_Input_RequestBackHome();
 }

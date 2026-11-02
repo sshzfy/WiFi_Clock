@@ -9,17 +9,13 @@
  * ------------------------------------------------------------
  * 轮询发送:
  *     Bootloader 只在启动/搬运时打几行日志，字节少、阻塞
- *     几十微秒无所谓，轮询代码最小、行为最确定。
+ *     几十微秒可以接受，轮询代码最小、行为最确定。
  * ============================================================ */
 
-/**
- * @brief  初始化 USART2（PA2/PA3），115200-8N1，不开中断
- * @note   与 App 的调试串口同路；与 OTA 串口（OTA_Serial）互斥。
- */
 void Boot_Uart_Init(void)
 {
-    GPIO_InitTypeDef gpio;
-    USART_InitTypeDef usart;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    USART_InitTypeDef USART_InitStructure;
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
@@ -27,22 +23,22 @@ void Boot_Uart_Init(void)
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_USART2);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
 
-    GPIO_StructInit(&gpio);
-    gpio.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
-    gpio.GPIO_Mode = GPIO_Mode_AF;
-    gpio.GPIO_Speed = GPIO_Speed_50MHz;
-    gpio.GPIO_OType = GPIO_OType_PP;
-    gpio.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA, &gpio);
+    GPIO_StructInit(&GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-    USART_StructInit(&usart);
-    usart.USART_BaudRate = 115200U;
-    usart.USART_WordLength = USART_WordLength_8b;
-    usart.USART_StopBits = USART_StopBits_1;
-    usart.USART_Parity = USART_Parity_No;
-    usart.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
-    usart.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    USART_Init(USART2, &usart);
+    USART_StructInit(&USART_InitStructure);
+    USART_InitStructure.USART_BaudRate = 115200U;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    USART_InitStructure.USART_Parity = USART_Parity_No;
+    USART_InitStructure.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_Init(USART2, &USART_InitStructure);
 
     USART_Cmd(USART2, ENABLE);
 }
@@ -119,5 +115,5 @@ void Boot_Uart_PutHex(uint32_t v)
 
     Boot_Uart_Puts("0x");
     for (int shift = 28; shift >= 0; shift -= 4)
-        Boot_Uart_PutChar(hex[(v >> shift) & 0x0FU]); // 四位二进制表示一位十六进制
+        Boot_Uart_PutChar(hex[(v >> shift) & 0x0FU]);
 }

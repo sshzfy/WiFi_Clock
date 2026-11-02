@@ -5,8 +5,13 @@
 #error "TOUCH_MAX_SAMPLES must be >= 3"
 #endif
 
-static bool s_touch_ready = false;              // SPI3 已就绪(即 Touch_Init 成功过)
-static touch_calpointcb_t s_calpoint_cb = NULL; // 校准点的绘制回调(可选)
+/* 校准参数的存储 */
+#define TOUCH_CAL_NAME "touch_cal"  // 数据名(资源层自动补 /data/ 前缀与 .bin 后缀)
+#define TOUCH_CAL_MAGIC 0x544F5543U // 'TOUC': 判断文件内容是不是本驱动写的
+#define TOUCH_CAL_VERSION 1U        // 布局版本: 结构一改就 +1, 旧数据自动作废
+
+static bool s_touch_ready = false;              // SPI3 已就绪
+static touch_calpointcb_t s_calpoint_cb = NULL; // 校准点的绘制回调
 TouchState_t touch_state = {0};                 // 最近一次 Touch_GetPoint() 的结果; 也可用 Touch_GetPoint(NULL) 直接读它
 CalibrationParams_t calibration_params = {0};   // 当前生效的校准参数
 
@@ -19,7 +24,6 @@ const uint16_t cal_points[5][2] = {
     {TOUCH_WIDTH / 2, TOUCH_HEIGHT / 2}    // 中心点(只用来校验, 不参与拟合)
 };
 
-/* ================ static 函数 ================ */
 static uint8_t Touch_SpiReadWriteByte(uint8_t tx);
 static void Touch_SpiClearRx(void);
 static uint16_t Touch_ReadAd(uint8_t cmd);
@@ -31,24 +35,34 @@ static int16_t Touch_RoundToI16(float v);
 static bool Touch_LoadCalibration(void);
 static bool Touch_SaveCalibration(void);
 
+/**
+ * @brief 与 XPT2046 读写一个字节
+ * @param tx 要发送的字节，0xFF/0x00 表示读取数据
+ * @return uint8_t 读取的字节
+ */
+
+
 static uint8_t Touch_SpiReadWriteByte(uint8_t tx)
 {
     while (SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_TXE) == RESET)
-        ;
+    {
+    }
     SPI_I2S_SendData(TOUCH_SPI, tx);
-
     while (SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_RXNE) == RESET)
-        ;
+    {
+    }
+
     return (uint8_t)SPI_I2S_ReceiveData(TOUCH_SPI);
 }
 
-/* 开始一次触摸事务前清空 SPI3 的接收通道。
- * LCD 是全双工发送且从不读 DR, 所以 RXNE 一直被上一次刷屏留下的数据占着;
- * 不清掉的话这里读到的第一个字节就是旧数据, 24 位时序会整体错位一字节,
- * 算出来的坐标完全不对。顺便用"读 DR 再读 SR"的序列清掉 OVR 溢出标志。 */
+/**
+ * @brief 开始一次触摸事务前清空 SPI3 的接收通道。
+ *        LCD 是全双工发送且从不读 DR, 所以需要清理掉 RXNE 旧数据,
+ *        顺便用"读 DR 再读 SR"的序列清掉 OVR 溢出标志。
+ */
 static void Touch_SpiClearRx(void)
 {
-    volatile uint16_t dummy = 0; // 读取的 dummy 数据
+    volatile uint16_t dummy = 0;
 
     /* 清空接收通道 */
     while (SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_RXNE) != RESET)
@@ -57,11 +71,14 @@ static void Touch_SpiClearRx(void)
     /* 读 DR, 再读 SR, 清 OVR */
     dummy = TOUCH_SPI->DR;
     (void)SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_RXNE);
-    (void)dummy; // 丢弃数据
+    (void)dummy;
 }
 
-/* 读一次 AD 结果(12 位): 1 个命令字节 + 2 个数据字节共 24 个时钟,
- * 其中命令字节回读的数据无效, 有效数据是 bit11..bit0 */
+/**
+ * @brief 读取 XPT2046 的 AD 结果(12 位)
+ * @param cmd 命令字节
+ * @return uint16_t AD 结果(12 位)
+ */
 static uint16_t Touch_ReadAd(uint8_t cmd)
 {
     uint8_t byte_h, byte_l;
@@ -75,43 +92,46 @@ static uint16_t Touch_ReadAd(uint8_t cmd)
     return ad_result;
 }
 
-// /**
-//  * @brief 重新同步 XPT2046 的 SPI 状态机
-//  * @note  上一次会话若被中途打断(典型是 MCU 复位期间 CS 浮空、SCK 上有噪声), 它会停在
-//  *        "等数据"的中间状态, 之后每笔事务都错位, 读回来的坐标自然全是垃圾。
-//  *        一个完整的 24 时钟事务 + CS 上升沿能把它拉回"等待命令"的状态
-//  */
-// static void Touch_SpiResync(void)
-// {
-//     LCD_Bus_Acquire();
-//     Touch_SpiClearRx();
-//     TOUCH_CS_LOW();
-//     (void)Touch_SpiReadWriteByte(TOUCH_CMD_SCREEN_X); /* 命令 + 2 字节数据 = 一笔完整事务 */
-//     (void)Touch_SpiReadWriteByte(0x00);
-//     (void)Touch_SpiReadWriteByte(0x00);
-//     TOUCH_CS_HIGH();
-//     LCD_Bus_Release();
-// }
+/**
+ * @brief 重新同步 XPT2046 的 SPI 状态机
+ * @note  上一次会话若被中途打断(典型是 MCU 复位期间 CS 浮空、SCK 上有噪声), 它会停在
+ *        "等数据"的中间状态, 之后每笔事务都错位, 读回来的坐标自然全是垃圾。
+ *        一个完整的 24 时钟事务 + CS 上升沿能把它拉回"等待命令"的状态
+ */
+//static void Touch_SpiResync(void)
+//{
+//    LCD_Bus_Acquire();
+//    Touch_SpiClearRx();
+//    TOUCH_CS_LOW();
+//    (void)Touch_SpiReadWriteByte(TOUCH_CMD_SCREEN_X); /* 命令 + 2 字节数据 = 一笔完整事务 */
+//    (void)Touch_SpiReadWriteByte(0x00);
+//    (void)Touch_SpiReadWriteByte(0x00);
+//    TOUCH_CS_HIGH();
+//    /* keep bus: caller releases after its CS-low transaction */
+
 
 static void Touch_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
+
     GPIO_StructInit(&GPIO_InitStructure);
-    /* CS: 空闲拉高, 不选中触摸时把 MISO 让给总线 */
-    GPIO_SetBits(TOUCH_PORT, TOUCH_CS_PIN);
+    GPIO_SetBits(TOUCH_PORT, TOUCH_CS_PIN); // 初始化 CS 高电平
     GPIO_InitStructure.GPIO_Pin = TOUCH_CS_PIN;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;  // 输出模式
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; // 推挽输出
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;   // 上拉
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(TOUCH_PORT, &GPIO_InitStructure);
-    /* PENIRQ: XPT2046 的 PENIRQ 是开漏输出, 低电平表示按下 */
+
     GPIO_InitStructure.GPIO_Pin = TOUCH_IRQ_PIN;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN; // 输入模式
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP; // 上拉
     GPIO_Init(TOUCH_PORT, &GPIO_InitStructure);
 }
 
+/** @brief 空闲等待, 避免占用 CPU 时间
+ *  @param ms 等待时间, 单位毫秒
+ */
 static void Touch_Idle(uint32_t ms)
 {
     if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
@@ -121,9 +141,9 @@ static void Touch_Idle(uint32_t ms)
 }
 
 /** @brief 等 PENIRQ 变成期望的状态; 超时返回 false, 避免死等饿死其它任务
- * @param pressed 期望的状态: true 表示按下, false 表示松开
- * @param timeout_ms 超时时间, 单位毫秒
- * @return true 成功, false 超时
+ *  @param pressed 期望的状态: true 表示按下, false 表示松开
+ *  @param timeout_ms 超时时间, 单位毫秒
+ *  @return true 成功, false 超时
  */
 static bool Touch_WaitState(bool pressed, uint32_t timeout_ms)
 {
@@ -140,8 +160,8 @@ static bool Touch_WaitState(bool pressed, uint32_t timeout_ms)
 }
 
 /** @brief 比例系数的合理性检查
- * @param k 比例系数
- * @return true 合理, false 无效
+ *  @param k 比例系数
+ *  @return true 合理, false 无效
  */
 static bool Touch_ScaleValid(float k)
 {
@@ -149,8 +169,8 @@ static bool Touch_ScaleValid(float k)
 }
 
 /** @brief 四舍五入后转 int16(偏移量只有整数精度)
- * @param v 浮点数
- * @return 整数部分
+ *  @param v 浮点数
+ *  @return 整数部分
  */
 static int16_t Touch_RoundToI16(float v)
 {
@@ -158,8 +178,7 @@ static int16_t Touch_RoundToI16(float v)
 }
 
 /** @brief 从外部 Flash 读回校准参数
- * @return true 读到一组可用参数; false 没存过/内容不合法(保持未校准状态)
- * @note 读的是 /data/touch_cal.bin, 必须已挂载 littlefs(Asset_Init 之后)
+ *  @return true 读到一组可用参数; false 没存过/内容不合法(保持未校准状态)
  */
 static bool Touch_LoadCalibration(void)
 {
@@ -174,7 +193,7 @@ static bool Touch_LoadCalibration(void)
 
     memset(&data, 0, sizeof(data));
 
-    /* 还没存过时返回负错误码(资源层不刷日志), 这里直接当"未校准" */
+    /* 还没存过时返回负错误码, 这里直接当"未校准" */
     n = Asset_LoadData(TOUCH_CAL_NAME, &data, (uint32_t)sizeof(data));
     if (n != (int)sizeof(TouchCalData_t))
         return false;
@@ -204,9 +223,7 @@ static bool Touch_LoadCalibration(void)
 }
 
 /** @brief 把校准参数写到外部 Flash: /data/touch_cal.bin
- * @return true 已落盘; false 资源层不可用或写入失败(参数只在 RAM 里有效)
- * @note littlefs 写入是写时复制: 中途掉电保留旧值, 不会写出半个文件;
- *       擦除单位是 4KB 扇区(几十 ms), 不像内部 Flash 那样要擦 128KB
+ *  @return true 已落盘; false 资源层不可用或写入失败(参数只在 RAM 里有效)
  */
 static bool Touch_SaveCalibration(void)
 {
@@ -234,20 +251,14 @@ static bool Touch_SaveCalibration(void)
     return true;
 }
 
-/* ================ public 函数 ================ */
-
-// /**
-//  * @brief 抢在 LCD 初始化之前把触摸片选(CS)固定为高, 让 XPT2046 全程不被选中
-//  * @note  必须在 LCD_Init() 之前调用。MCU 复位后 PE0 是**浮空输入**, 而 LCD_Init()
-//  *        会初始化 SPI3 并往总线上打大量 ST7789 初始化时钟; 只要这时 CS 恰好为低,
-//  *        XPT2046 就会把这些 LCD 命令当成自己的命令收进去, 内部状态机错位之后
-//  *        **只有掉电才能恢复** —— 这正是"Keil 下载完触摸就失灵、拔电源才正常"的原因:
-//  *        下载只复位 STM32, 触摸控制器一直有电; 拔电源会让它一起掉电复位
-//  */
-// void Touch_Park(void)
-// {
-//     Touch_GPIO_Init();
-// }
+/** @brief Park the touch CS (PE0) high BEFORE LCD_Init drives SPI3 with
+ *  ST7789 init traffic. If CS floats low while SCK toggles, the XPT2046
+ *  latches garbage commands and desyncs; only a power cycle recovers it.
+ */
+void Touch_Park(void)
+{
+    Touch_GPIO_Init();
+}
 
 bool Touch_Init(void)
 {
@@ -263,8 +274,7 @@ bool Touch_Init(void)
 
     s_touch_ready = true;
 
-    // /* 先把 XPT2046 的状态机拉回已知状态, 再读校准与坐标 */
-    // Touch_SpiResync();
+    /* 先把 XPT2046 的状态机拉回已知状态, 再读校准与坐标 */
 
     /* 校准参数在外部 Flash 上: 资源层没挂载好时读不到也存不了,
      * 仍然可以读原始坐标, 只是要重新校准 */
@@ -277,8 +287,8 @@ bool Touch_Init(void)
     if (calibration_params.calibrated)
     {
         DBG_PRINTF("[TOUCH] kx=%.4f ky=%.4f bx=%d by=%d\r\n",
-               calibration_params.kx, calibration_params.ky,
-               (int)calibration_params.bx, (int)calibration_params.by);
+                   calibration_params.kx, calibration_params.ky,
+                   (int)calibration_params.bx, (int)calibration_params.by);
     }
     else
         DBG_PRINTF("[TOUCH] no calibration data, run Touch_Calibrate()\r\n");
@@ -292,13 +302,16 @@ bool Touch_Init(void)
  */
 bool Touch_IsPressed(void)
 {
+#if (TOUCH_BLIND_READ == 1)
+    return true; /* diagnostic: PENIRQ dead, blind-read coordinates */
+#else
     return (GPIO_ReadInputDataBit(TOUCH_PORT, TOUCH_IRQ_PIN) == Bit_RESET);
+#endif
 }
 
 /**
  * @brief  读取触摸屏的原始坐标(一次 CS 周期内读完 X/Y)
- * @param  x: 指向X轴坐标的指针
- * @param  y: 指向Y轴坐标的指针
+ * @param  x: 指向X轴坐标的指针，y: 指向Y轴坐标的指针
  * @retval true-读取成功, false-未初始化或参数为空
  */
 bool Touch_ReadRaw(uint16_t *x, uint16_t *y)
@@ -306,21 +319,13 @@ bool Touch_ReadRaw(uint16_t *x, uint16_t *y)
     if ((x == NULL) || (y == NULL) || (!s_touch_ready))
         return false;
 
-    /* 抢总线锁 */
-    LCD_Bus_Acquire();
-
-    /* 清空接收缓冲区
-     * 拉低 CS 选中触摸
-     * 读取x, y轴坐标
-     * 拉高 CS 释放触摸 */
     Touch_SpiClearRx();
+    LCD_Bus_Acquire();
     TOUCH_CS_LOW();
-    *x = Touch_ReadAd(TOUCH_CMD_SCREEN_X);
+    *x = Touch_ReadAd(TOUCH_CMD_SCREEN_X); // 读取X轴坐标
     delay_us(TOUCH_CMD_GAP_US);
-    *y = Touch_ReadAd(TOUCH_CMD_SCREEN_Y);
+    *y = Touch_ReadAd(TOUCH_CMD_SCREEN_Y); // 读取Y轴坐标
     TOUCH_CS_HIGH();
-
-    /* 释放总线锁 */
     LCD_Bus_Release();
 
     return true;
@@ -328,8 +333,7 @@ bool Touch_ReadRaw(uint16_t *x, uint16_t *y)
 
 /**
  * @brief  读取触摸屏的滤波坐标(多次采样, 去掉最大最小值后平均)
- * @param  x: 指向X轴坐标的指针
- * @param  y: 指向Y轴坐标的指针
+ * @param  x: 指向X轴坐标的指针，y: 指向Y轴坐标的指针
  * @retval true-坐标可信, false-采样途中松手/抖动过大/未初始化
  */
 bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
@@ -342,16 +346,10 @@ bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
     if ((x == NULL) || (y == NULL) || (!s_touch_ready))
         return false;
 
-    /* 抢总线锁
-     * 清空接收缓冲区
-     * 拉低 CS 选中触摸
-     * 读取x, y轴坐标（采样过程中检测是否有松手）
-     * 拉高 CS 释放触摸
-     * 释放总线锁 */
-    LCD_Bus_Acquire();
     Touch_SpiClearRx();
+    LCD_Bus_Acquire();
     TOUCH_CS_LOW();
-
+    /* 采样坐标 */
     for (uint16_t i = 0; i < TOUCH_MAX_SAMPLES; i++)
     {
         xs[i] = Touch_ReadAd(TOUCH_CMD_SCREEN_X);
@@ -366,7 +364,6 @@ bool Touch_ReadFiltered(uint16_t *x, uint16_t *y)
             break;
         }
     }
-
     TOUCH_CS_HIGH();
     LCD_Bus_Release();
 
@@ -450,7 +447,6 @@ bool Touch_GetPoint(TouchState_t *touch)
     /* 计算校准后的坐标 */
     if (calibration_params.calibrated)
     {
-        /* 用 int32 中转: 屏幕坐标可能是负的(还没钳位), 直接塞进 int16 会溢出 */
         int32_t xd = (int32_t)(calibration_params.kx * (float)x_raw + (float)calibration_params.bx);
         int32_t yd = (int32_t)(calibration_params.ky * (float)y_raw + (float)calibration_params.by);
 
@@ -469,7 +465,7 @@ bool Touch_GetPoint(TouchState_t *touch)
         data->x_display = (int16_t)xd;
         data->y_display = (int16_t)yd;
     }
-    /* 没校准过就给出原始坐标, 至少能看到有响应 */
+    /* 没校准过就给出原始坐标 */
     else
     {
         data->x_display = (int16_t)x_raw;
@@ -480,7 +476,7 @@ bool Touch_GetPoint(TouchState_t *touch)
 }
 
 /** @brief 设置校准点的绘制回调(界面层用来在屏幕上画出要点击的位置)
- * @param cb 回调函数; 传 NULL 表示只走串口提示 */
+ *  @param cb 回调函数; 传 NULL 表示只走串口提示 */
 void Touch_SetPoints_RegisterCallback(touch_calpointcb_t cb)
 {
     s_calpoint_cb = cb;
@@ -490,8 +486,8 @@ void Touch_SetPoints_RegisterCallback(touch_calpointcb_t cb)
  * @brief  五点校准触摸屏, 成功后把参数写入 Flash
  * @retval true-校准完成并保存, false-超时/采样异常/保存失败
  * @note   校准公式:
- *          x = kx * 原始 x + 偏移量 x
- *          y = ky * 原始 y + 偏移量 y
+ *         x = kx * 原始 x + 偏移量 x
+ *         y = ky * 原始 y + 偏移量 y
  */
 bool Touch_Calibrate(void)
 {
@@ -514,7 +510,7 @@ bool Touch_Calibrate(void)
     while (i < 5U)
     {
         DBG_PRINTF("[TOUCH] click point %u at (%u,%u)\r\n", (unsigned)(i + 1U),
-               (unsigned)cal_points[i][0], (unsigned)cal_points[i][1]);
+                   (unsigned)cal_points[i][0], (unsigned)cal_points[i][1]);
 
         /* 让界面把这个校准点画出来(清屏 + 画十字) */
         if (s_calpoint_cb != NULL)
@@ -526,17 +522,15 @@ bool Touch_Calibrate(void)
             DBG_PRINTF("[TOUCH] calibration timeout: no press detected\r\n");
             return false;
         }
-        /* 等触摸稳定 */
-        Touch_Idle(20);
+        Touch_Idle(20); // 等触摸稳定
 
         if (!Touch_ReadFiltered(&raw_x[i], &raw_y[i]))
         {
             DBG_PRINTF("[TOUCH] sample rejected, click the same point again\r\n");
             continue; // i 不递增, 重点这个点
         }
-
         DBG_PRINTF("[TOUCH] point %u raw = (%u,%u)\r\n", (unsigned)(i + 1U),
-               (unsigned)raw_x[i], (unsigned)raw_y[i]);
+                   (unsigned)raw_x[i], (unsigned)raw_y[i]);
 
         /* 等松开; 带超时, 避免死等 */
         if (!Touch_WaitState(false, TOUCH_CAL_RELEASE_TIMEOUT_MS))
@@ -544,8 +538,7 @@ bool Touch_Calibrate(void)
             DBG_PRINTF("[TOUCH] calibration timeout: release not detected\r\n");
             return false;
         }
-        /* 等松手稳定 */
-        Touch_Idle(20);
+        Touch_Idle(20); // 等松手稳定
 
         i++;
     }
@@ -590,16 +583,16 @@ bool Touch_Calibrate(void)
     calibration_params.ky = ky;
     calibration_params.bx = Touch_RoundToI16(bx_f);
     calibration_params.by = Touch_RoundToI16(by_f);
-    calibration_params.calibrated = true; // 校准成功, 标记为已校准
+    calibration_params.calibrated = true;
 
-    /* 用中心点校验一下(它不参与拟合): 误差大说明轴交换/方向反了 */
+    /* 用中心点校验一下(不参与拟合): 误差大说明轴交换/方向反了 */
     DBG_PRINTF("[TOUCH] center check: expect (%u,%u) got (%.1f,%.1f)\r\n",
-           (unsigned)(TOUCH_WIDTH / 2U), (unsigned)(TOUCH_HEIGHT / 2U),
-           (kx * (float)raw_x[4] + bx_f), (ky * (float)raw_y[4] + by_f));
+               (unsigned)(TOUCH_WIDTH / 2U), (unsigned)(TOUCH_HEIGHT / 2U),
+               (kx * (float)raw_x[4] + bx_f), (ky * (float)raw_y[4] + by_f));
 
     DBG_PRINTF("[TOUCH] kx=%.4f ky=%.4f bx=%d by=%d\r\n",
-           calibration_params.kx, calibration_params.ky,
-           (int)calibration_params.bx, (int)calibration_params.by);
+               calibration_params.kx, calibration_params.ky,
+               (int)calibration_params.bx, (int)calibration_params.by);
 
     if (!Touch_SaveCalibration())
     {

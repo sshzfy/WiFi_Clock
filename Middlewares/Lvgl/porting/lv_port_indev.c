@@ -3,7 +3,6 @@
  *
  * LVGL 输入端口: 把触摸屏驱动的坐标喂给 LVGL 的指针设备。
  *
- * 说明:
  *   - 触摸读取由本回调在 lv_timer_handler() 内按 LV_INDEV_DEF_READ_PERIOD(15ms) 触发,
  *     也就是跑在 uiTask 里; 触摸驱动内部自己会抢/放 SPI3 总线锁, 与刷屏不会互相打断。
  *   - Touch_GetPoint() 一帧的滤波采样约 0.8ms, 松开或采样不可信时返回 false,
@@ -17,7 +16,7 @@
 /**********************
  *  STATIC VARIABLES
  **********************/
-static lv_indev_t *s_indev_touchpad = NULL;
+static lv_indev_t *s_indev_touchpad = NULL; // 触摸屏输入设备句柄
 
 /**********************
  *   STATIC FUNCTIONS
@@ -45,10 +44,8 @@ static void touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
     else
     {
         /* 还没校准: Touch_GetPoint() 给的是 0~4095 的原始坐标。
-         * 既不能直接钳位(所有点都会落到右下角, 也就是键盘 O K / 回车键附近), 也不能
-         * 干脆不报按下(那样触摸会彻底没反应, 用户连校准入口都进不去)。
-         * 这里按比例折算到屏幕上: 位置当然不准, 但它不会恒定砸在功能键上,
-         * 触摸仍有反馈, 主线流程不会因为一次校准没做完就整个废掉。 */
+         * 这里按比例折算到屏幕上: 位置不准，触摸仍有反馈, 
+         * 主线流程不会因为一次校准没做完就整个废掉。 */
         x = (lv_coord_t)(((uint32_t)ts.x * (uint32_t)TOUCH_WIDTH) / 4096U);
         y = (lv_coord_t)(((uint32_t)ts.y * (uint32_t)TOUCH_HEIGHT) / 4096U);
     }

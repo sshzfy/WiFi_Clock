@@ -10,9 +10,9 @@ static void Net_Task(void *pvParameters)
 
     DBG_PRINTF("[NET] Net_Task start\r\n");
 
-    uint32_t sntp_cnt, wifi_cnt, weathercnt; // 三个周期计数器, 1s心跳时递减, 0时触发对应服务
-    bool wifi_up;                            // 是否连接成功
-    bool wifi_sleeping = false;              // 模组当前是否处于省电档位(仅本任务访问)
+    uint32_t sntp_cnt, wifi_cnt, weathercnt;
+    bool wifi_up;               // 是否连接成功
+    bool wifi_sleeping = false; // 模组当前是否处于省电档位(仅本任务访问)
 
     DBG_PRINTF("[NET] Init Start\r\n");
 
@@ -20,48 +20,43 @@ static void Net_Task(void *pvParameters)
      * 这里直接使用 App 层已就绪的 g_ssid/g_password */
 
     /* 开机阶段: AT/WiFi初始化 + 连接 */
-    s_boot.wifi_ok = Wireless_Init(); // 此处 s_boot.wifi_ok 表示初始化无线网络是否成功
+    s_boot.wifi_ok = Wireless_Init();
     if (s_boot.wifi_ok)
-        s_boot.wifi_ok = Service_WiFi_Connect(); // 此处 s_boot.wifi_ok 表示连接WiFi是否成功
+        s_boot.wifi_ok = Service_WiFi_Connect();
     wifi_up = s_boot.wifi_ok;
 
-    /* 开机阶段: SNTP + 天气(需WiFi) */
+    /* 开机阶段: SNTP + 天气 */
     if (wifi_up)
         AT_SNTP_Init();
-    bool time_ok = wifi_up && Service_Time_Sync();         // SNTP同步是否成功
-    bool weather_ok = wifi_up && Service_Weather_Update(); // 天气更新是否成功
+    bool time_ok = wifi_up && Service_Time_Sync();
+    bool weather_ok = wifi_up && Service_Weather_Update();
 
     s_boot.service_ok = wifi_up && time_ok && weather_ok; // 是否所有服务都启动成功
 
     /* 通知UI: 开机阶段完成(无论成败), 之后后台继续重试 */
     xEventGroupSetBits(Task_Events(), EV_NET_READY);
 
-    /*  周期调度初值  */
-    wifi_cnt = wifi_up ? WIFI_PERIOD_S : RETRY_WIFI_S;            // WiFi检查周期,连接上30min,未连10s
-    sntp_cnt = time_ok ? SNTP_PERIOD_S : RETRY_SNTP_S;            // SNTP周期,成功后4h,未成功5s
-    weathercnt = weather_ok ? WEATHER_PERIOD_S : RETRY_WEATHER_S; // 天气周期,成功后1h,未成功60s
+    /* 周期调度初值 */
+    wifi_cnt = wifi_up ? WIFI_PERIOD_S : RETRY_WIFI_S;
+    sntp_cnt = time_ok ? SNTP_PERIOD_S : RETRY_SNTP_S;
+    weathercnt = weather_ok ? WEATHER_PERIOD_S : RETRY_WEATHER_S;
 
     for (;;)
     {
-        /* 1s 心跳; 同时等待"退出低功耗立即补更"与"键盘提交了新凭据/新定位"三个请求 */
-        /* EV_OTA_CHECK 必须放进等待掩码: 否则它既不会被 xClearOnExit
-         * 清除, 又会在超时返回的 bits 里出现, 导致每秒重复触发 OTA。 */
+        /* 1s 心跳; 同时等待"退出低功耗立即补更"与"键盘提交了新凭据/新定位/请求 OTA 更新"四个请求 */
         EventBits_t bits = xEventGroupWaitBits(Task_Events(),
-                                               EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED |
-                                                   EV_OTA_CHECK,
+                                               EV_NET_UPDATE_NOW | EV_WIFI_CRED | EV_LOCATION_CRED | EV_OTA_CHECK,
                                                pdTRUE, pdFALSE, pdMS_TO_TICKS(1000));
 
-        /* 低功耗状态变化 → 同步模组的Wi-Fi省电档位。
-         * 必须放在补更之前: 退出夜间时先让模组恢复全速, 再执行 WiFi/SNTP/天气 */
+        /* 低功耗状态变化 → 同步模组的Wi-Fi省电档位 */
         if (APP_IS_LOWPOWER() != wifi_sleeping)
         {
             if (Service_WiFi_Sleep(APP_IS_LOWPOWER()))
-                wifi_sleeping = APP_IS_LOWPOWER(); /* 失败则保持原状态, 下个周期自动重试 */
+                wifi_sleeping = APP_IS_LOWPOWER(); // 失败则保持原状态, 下个周期重试
         }
 
         if (bits & EV_NET_UPDATE_NOW)
         {
-            /* 三个计数器置 1: 下一拍连续执行 WiFi 检查 + SNTP + 天气 */
             wifi_cnt = 1U;
             sntp_cnt = 1U;
             weathercnt = 1U;
@@ -69,8 +64,7 @@ static void Net_Task(void *pvParameters)
             DBG_PRINTF("[NET] LowPower exit, reset update\r\n");
         }
 
-        /* OTA 检查更新请求: 阻塞执行(下载期间独占 AT 模组)。
-         * 低功耗/未连 WiFi 时直接回结果, 不折腾模组。 */
+        /* OTA 检查更新请求: 阻塞执行(下载期间独占 AT 模组) */
         if (bits & EV_OTA_CHECK)
         {
             if (!wifi_up)
@@ -81,21 +75,20 @@ static void Net_Task(void *pvParameters)
             {
                 OTA_Update_Run();
             }
-            xEventGroupSetBits(Task_Events(), EV_OTA_DONE);
         }
 
         /* 低功耗期间: 冻结周期计数器, 不执行任何 update */
         if (APP_IS_LOWPOWER())
             continue;
 
-        /* 键盘刚提交了新定位: 不必等满天气周期, 立即按新定位取一次天气 */
+        /* 键盘刚提交了新定位: 立即按新定位取一次天气 */
         if (bits & EV_LOCATION_CRED)
         {
             DBG_PRINTF("[NET] location updated, refresh weather now\r\n");
             weathercnt = 1U;
         }
 
-        /* 键盘刚提交了新凭据: 用新凭据强制重连一次(落盘由 uiTask 负责) */
+        /* 键盘刚提交了新凭据: 用新凭据强制重连一次 */
         if (bits & EV_WIFI_CRED)
         {
             DBG_PRINTF("[NET] WiFi credentials updated, reconnect now\r\n");
@@ -107,24 +100,27 @@ static void Net_Task(void *pvParameters)
             weathercnt = 1U;
 
             if (ok)
-                AT_SNTP_Init(); /* 换网后路由/时区可能变, 重新配置SNTP */
+                AT_SNTP_Init(); // 换网后路由/时区可能变, 重新配置SNTP
 
-            xEventGroupSetBits(Task_Events(), EV_WIFI); /* 无论成败都刷一次顶部状态条 */
+            xEventGroupSetBits(Task_Events(), EV_WIFI); // 刷新顶部状态条
         }
         else if (--wifi_cnt == 0U)
         {
             bool was_up = wifi_up;
             int ret = Service_WiFi_Update();
-            if (ret < 0) /* 连接失败 */
+            /* 连接失败 */
+            if (ret < 0)
             {
                 wifi_up = false;
                 wifi_cnt = RETRY_WIFI_S;
             }
-            else /* 连接成功 */
+            /* 连接成功 */
+            else
             {
                 wifi_up = true;
                 wifi_cnt = WIFI_PERIOD_S;
-                if (ret > 0) /* 刚重连成功: 重新配置SNTP并立即补SNTP+天气 */
+                /* 刚重连成功: 重新配置SNTP并立即补SNTP+天气 */
+                if (ret > 0)
                 {
                     AT_SNTP_Init();
                     sntp_cnt = 1U;
@@ -132,7 +128,7 @@ static void Net_Task(void *pvParameters)
                 }
             }
             if (ret != 0 || !was_up)
-                xEventGroupSetBits(Task_Events(), EV_WIFI); /* 状态变化/首次连上: 刷顶部条 */
+                xEventGroupSetBits(Task_Events(), EV_WIFI); // 状态变化/首次连上: 刷顶部条
         }
 
         if (--sntp_cnt == 0U)
@@ -141,7 +137,7 @@ static void Net_Task(void *pvParameters)
             {
                 sntp_cnt = 1U; // WiFi未连, 每秒顺延, 等wifi恢复后触发
             }
-            else if (Service_Time_Sync()) /* SNTP同步成功 */
+            else if (Service_Time_Sync())
             {
                 sntp_cnt = SNTP_PERIOD_S;
             }
@@ -157,10 +153,10 @@ static void Net_Task(void *pvParameters)
             {
                 weathercnt = 1U; // WiFi未连, 每秒顺延, 等wifi恢复后触发
             }
-            else if (Service_Weather_Update()) /* 天气更新 */
+            else if (Service_Weather_Update())
             {
                 weathercnt = WEATHER_PERIOD_S;
-                xEventGroupSetBits(Task_Events(), EV_WEATHER); /* 天气更新成功: 刷新天气部分UI */
+                xEventGroupSetBits(Task_Events(), EV_WEATHER);
             }
             else
             {

@@ -1,5 +1,6 @@
 #include "OTA_Net.h"
 #include "BuildConfig.h"
+#include "Secrets.h"
 
 #include "Usart.h"
 #include "Timer.h"
@@ -12,31 +13,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* ============================================================
- * 内部常量
- * ============================================================ */
+/* 内部常量 */
 #define OTA_NET_SSL_PORT 443U
-#define OTA_NET_CONN_TIMEOUT 15000U  /* CIPSTART 等待 */
-#define OTA_NET_SEND_RETRY 3U        /* CIPSEND 重试(连接/握手未就绪) */
-#define OTA_NET_PROMPT_TIMEOUT 5000U /* 等 CIPSEND 的 '>' */
-#define OTA_NET_BODY_TIMEOUT 10000U  /* 两次数据间的最大间隔 */
-#define OTA_NET_TOTAL_TIMEOUT 60000U /* 整次会话总超时(ms) */
-#define OTA_NET_HDR_MAX 4096U        /* 响应头最大字节数（Gitee 的 302 头可超 1 KB） */
-#define OTA_NET_REDIRECT_MAX 3U      /* 302 最大跟随次数 */
+#define OTA_NET_CONN_TIMEOUT 15000U  // CIPSTART 等待
+#define OTA_NET_SEND_RETRY 3U        // CIPSEND 重试(连接/握手未就绪)
+#define OTA_NET_PROMPT_TIMEOUT 5000U // 等 CIPSEND 的 '>'
+#define OTA_NET_BODY_TIMEOUT 10000U  // 两次数据间的最大间隔
+#define OTA_NET_TOTAL_TIMEOUT 60000U // 整次会话总超时(ms)
+#define OTA_NET_HDR_MAX 4096U        // 响应头最大字节数（Gitee 的 302 头可超 1 KB）
+#define OTA_NET_REDIRECT_MAX 3U      // 302 最大跟随次数
 
-/* ============================================================
- * 会话状态
- * ============================================================ */
-static char s_hdr[OTA_NET_HDR_MAX]; /* 响应头缓冲 */
-static uint32_t s_hdr_len;          /* 响应头已收字节数 */
+/* 会话状态 */
+static char s_hdr[OTA_NET_HDR_MAX]; // 响应头缓冲
+static uint32_t s_hdr_len;          // 响应头已收字节数
 
-static ota_http_resp_t s_resp; /* 解析结果 */
+static ota_http_resp_t s_resp; // 解析结果
 static ota_net_sink_t s_sink;
 static void *s_sink_arg;
-static uint32_t s_body_got; /* 已交给回调的字节数 */
-static bool s_hdr_done;     /* \r\n\r\n 已到 */
-static bool s_finished;     /* 响应体收完 */
-static bool s_aborted;      /* 回调请求中止 */
+static uint32_t s_body_got; // 已交给回调的字节数
+static bool s_hdr_done;     // \r\n\r\n 已到
+static bool s_finished;     // 响应体收完
+static bool s_aborted;      // 回调请求中止
 
 /* chunked: 0=大小行 1=数据 2=数据CR 3=数据LF 4=trailer行 */
 static int s_ch_state;
@@ -44,12 +41,12 @@ static uint32_t s_ch_remain;
 static uint32_t s_ch_size_len;
 static char s_ch_size[16];
 
-/* ============================================================
- * 底层收发
- * ============================================================ */
+/* ================ 底层收发 ================ */
 
 /**
  * @brief 向 AT 模组发送原始字节（轮询 TXE，带 1 秒保护）
+ * @param data 待发送数据
+ * @param len  数据长度
  * @return true = 全部发出；false = TXE 长时间不置位（USART 异常）
  */
 static bool Net_SendRaw(const char *data, uint32_t len)
@@ -64,21 +61,30 @@ static bool Net_SendRaw(const char *data, uint32_t len)
         }
         USART_SendData(USART1, (uint16_t)(uint8_t)data[i]);
     }
+
     return true;
 }
 
-/** @brief 发送一行 AT 命令 */
-static bool Net_SendLine(const char *line)
+/** @brief 发送一行 AT 命令
+ *  @param cmd 不含 "\r\n"，函数会自动加上
+ *  @return true = 发送成功；false = USART 异常
+ */
+static bool Net_SendCmd(const char *cmd)
 {
-    if (!Net_SendRaw(line, (uint32_t)strlen(line)))
+    if (!Net_SendRaw(cmd, (uint32_t)strlen(cmd)))
         return false;
+
     return Net_SendRaw("\r\n", 2U);
 }
 
-/** @brief 等待子串在接收流中出现（吃掉的字节不返还） */
+/** @brief 等待子串在接收流中出现（吃掉的字节不返还）
+ *  @param str 待匹配子串
+ *  @param timeout_ms 超时时间（ms）
+ *  @return true = 找到子串；false = 超时
+ */
 static bool Net_WaitStr(const char *str, uint32_t timeout_ms)
 {
-    uint32_t matched = 0U;
+    uint32_t matched = 0U; // 已匹配的前缀长度
     uint64_t start = TIM5_Get_ms();
 
     while (true)
@@ -88,35 +94,31 @@ static bool Net_WaitStr(const char *str, uint32_t timeout_ms)
         if (TIM5_Get_ms() - start >= timeout_ms)
             return false;
 
+        int ch = Usart1_RX_Read();
+        if (ch < 0)
         {
-            int ch = Usart1_RX_Read();
-            if (ch < 0)
-            {
-                vTaskDelay(1);
-                continue;
-            }
+            vTaskDelay(1);
+            continue;
+        }
 
-            if ((char)ch == str[matched])
-            {
-                matched++;
-                if (str[matched] == '\0')
-                    return true;
-            }
-            else if ((char)ch == str[0])
-            {
-                matched = 1U;
-            }
-            else
-            {
-                matched = 0U;
-            }
+        if ((char)ch == str[matched])
+        {
+            matched++;
+            if (str[matched] == '\0')
+                return true;
+        }
+        else if ((char)ch == str[0])
+        {
+            matched = 1U;
+        }
+        else
+        {
+            matched = 0U;
         }
     }
 }
 
-/* ============================================================
- * AT 原始回复记录（失败时打印，便于定位模组差异）
- * ============================================================ */
+/* AT 原始回复记录（失败时打印，便于定位模组差异） */
 static char s_at_log[256];
 static uint32_t s_at_log_len;
 
@@ -188,9 +190,7 @@ static bool Net_WaitStrLogged(const char *str, uint32_t timeout_ms)
     }
 }
 
-/* ============================================================
- * 连接管理
- * ============================================================ */
+/* ================ 连接管理 ================ */
 
 /**
  * @brief  连接失败后的网络诊断：固件版本 / PING / TCP 80
@@ -205,7 +205,7 @@ static void Net_Diagnose(const char *host)
     /* 1. 固件版本：确认模组型号与 AT 版本 */
     Net_LogReset();
     Usart1_RX_Flush();
-    Net_SendLine("AT+GMR");
+    Net_SendCmd("AT+GMR");
     (void)Net_WaitStrLogged("OK", 3000U);
     DBG_PRINTF("[OTA] GMR: %s\r\n", s_at_log);
 
@@ -213,7 +213,7 @@ static void Net_Diagnose(const char *host)
     Net_LogReset();
     Usart1_RX_Flush();
     snprintf(cmd, sizeof(cmd), "AT+PING=\"%s\"", host);
-    Net_SendLine(cmd);
+    Net_SendCmd(cmd);
     (void)Net_WaitStrLogged("OK", 8000U);
     DBG_PRINTF("[OTA] PING: %s\r\n", s_at_log);
 
@@ -221,11 +221,11 @@ static void Net_Diagnose(const char *host)
     Net_LogReset();
     Usart1_RX_Flush();
     snprintf(cmd, sizeof(cmd), "AT+CIPSTART=\"TCP\",\"%s\",80", host);
-    Net_SendLine(cmd);
+    Net_SendCmd(cmd);
     (void)Net_WaitStrLogged("OK", 10000U);
     DBG_PRINTF("[OTA] TCP80: %s\r\n", s_at_log);
     Usart1_RX_Flush();
-    Net_SendLine("AT+CIPCLOSE");
+    Net_SendCmd("AT+CIPCLOSE");
     (void)Net_WaitStr("OK", 1000U);
     Usart1_RX_Flush();
 }
@@ -252,25 +252,24 @@ static ota_net_err_t Net_ConnectAndSend(const char *host, uint16_t port,
 
     /* ---- 0. 单连接模式 + 清理可能残留的链路 ---- */
     Usart1_RX_Flush();
-    if (!Net_SendLine("AT+CIPMUX=0"))
+    if (!Net_SendCmd("AT+CIPMUX=0"))
         return OTA_NET_ERR_SEND;
     DBG_PRINTF("[OTA] net: mux sent\r\n");
     (void)Net_WaitStr("OK", 2000U);
     DBG_PRINTF("[OTA] net: mux wait done\r\n");
     Usart1_RX_Flush();
-    if (!Net_SendLine("AT+CIPCLOSE")) /* 无连接时回 ERROR, 忽略 */
+    if (!Net_SendCmd("AT+CIPCLOSE")) /* 无连接时回 ERROR, 忽略 */
         return OTA_NET_ERR_SEND;
     (void)Net_WaitStr("OK", 1000U);
     DBG_PRINTF("[OTA] net: close wait done\r\n");
     Usart1_RX_Flush();
 
     /* ---- 1. 建立连接：按协议选择 AT 语法 ----
-     *   SSL : ESP-AT 2.x  "CIPSTART=\"SSL\""
-     *         失败回退 ESP8266 1.x "CIPSSL=1 + CIPSTART=\"TCP\""
+     *   SSL : "CIPSTART=\"SSL\""（ESP32-C3 AT 固件语法）
      *   TCP : 直接 "CIPSTART=\"TCP\""（局域网/明文服务器）
-     * 失败时打印模组原始回复，便于判断固件差异。 */
+     * 失败时打印模组原始回复，便于判断 DNS/网络/TLS 问题。 */
     {
-        bool connected = false;
+        bool connected;
 
         Net_LogReset();
         if (use_ssl)
@@ -282,45 +281,14 @@ static ota_net_err_t Net_ConnectAndSend(const char *host, uint16_t port,
             snprintf(cmd, sizeof(cmd), "AT+CIPSTART=\"TCP\",\"%s\",%u", host, port);
         }
         DBG_PRINTF("[OTA] net: dial %s\r\n", cmd);
-        if (!Net_SendLine(cmd))
+        if (!Net_SendCmd(cmd))
             return OTA_NET_ERR_SEND;
         DBG_PRINTF("[OTA] net: dial waiting OK...\r\n");
 
-        if (Net_WaitStrLogged("OK", OTA_NET_CONN_TIMEOUT))
-        {
-            connected = true;
-        }
-        else if (use_ssl)
-        {
-            /* ESP8266 1.x 语法回退 */
-            DBG_PRINTF("[OTA] CIPSTART(SSL) no OK, AT: %s\r\n", s_at_log);
-
-            Usart1_RX_Flush();
-            Net_SendLine("AT+CIPSSL=1");
-            (void)Net_WaitStr("OK", 2000U);
-            Usart1_RX_Flush();
-
-            Net_LogReset();
-            snprintf(cmd, sizeof(cmd), "AT+CIPSTART=\"TCP\",\"%s\",%u", host, port);
-            DBG_PRINTF("[OTA] net: dial(fallback) %s\r\n", cmd);
-            if (!Net_SendLine(cmd))
-                return OTA_NET_ERR_SEND;
-            if (Net_WaitStrLogged("OK", OTA_NET_CONN_TIMEOUT))
-            {
-                connected = true;
-            }
-            else
-            {
-                DBG_PRINTF("[OTA] CIPSTART(TCP+SSL) no OK, AT: %s\r\n", s_at_log);
-            }
-        }
-        else
-        {
-            DBG_PRINTF("[OTA] CIPSTART(TCP) no OK, AT: %s\r\n", s_at_log);
-        }
-
+        connected = Net_WaitStrLogged("OK", OTA_NET_CONN_TIMEOUT);
         if (!connected)
         {
+            DBG_PRINTF("[OTA] CIPSTART no OK, AT: %s\r\n", s_at_log);
             Net_Diagnose(host);
             return OTA_NET_ERR_CONNECT;
         }
@@ -365,7 +333,7 @@ static ota_net_err_t Net_ConnectAndSend(const char *host, uint16_t port,
             Usart1_RX_Flush();
             snprintf(cipsend, sizeof(cipsend), "AT+CIPSEND=%d", req_len);
             DBG_PRINTF("[OTA] net: cipsend try=%u\r\n", (unsigned)try_cnt);
-            if (!Net_SendLine(cipsend))
+            if (!Net_SendCmd(cipsend))
                 return OTA_NET_ERR_SEND;
 
             /* 等 '>' 提示符（新固件先回 OK 再 '>'，老固件直接 '>'） */
@@ -389,9 +357,7 @@ static ota_net_err_t Net_ConnectAndSend(const char *host, uint16_t port,
     return OTA_NET_OK;
 }
 
-/* ============================================================
- * HTTP 响应解析
- * ============================================================ */
+/* ================ HTTP 响应解析 ================*/
 
 /** @brief 不区分大小写的字符串比较（AC5 库兼容） */
 static bool Net_StrIStartsWith(const char *s, const char *prefix)
@@ -573,9 +539,7 @@ static bool Http_BodyByte(uint8_t c)
     return Http_SinkPush(&c, 1U);
 }
 
-/* ============================================================
- * 接收循环：+IPD 拆包 → HTTP 状态机
- * ============================================================ */
+/* ================ 接收循环：+IPD 拆包 → HTTP 状态机 ================ */
 
 /**
  * @brief  会话执行接收循环，直到响应体收完/连接关闭/出错
@@ -733,14 +697,12 @@ static ota_net_err_t Net_RecvLoop(void)
 static void Net_Close(void)
 {
     Usart1_RX_Flush();
-    Net_SendLine("AT+CIPCLOSE");
+    Net_SendCmd("AT+CIPCLOSE");
     (void)Net_WaitStr("OK", 1500U);
     Usart1_RX_Flush();
 }
 
-/* ============================================================
- * public API
- * ============================================================ */
+/* ================ public API ================ */
 
 ota_net_err_t OTA_Net_HttpGet(const char *host, uint16_t port, bool use_ssl,
                               const char *path,

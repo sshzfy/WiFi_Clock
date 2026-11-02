@@ -17,7 +17,7 @@
 /* ============================================================
  * 固件搬运（升级 / 回滚共用）
  * ------------------------------------------------------------
- * 搬运 = 把 littlefs 里的 .ota 文件内容写进内部 Flash 的 App 区。
+ * 把 littlefs 里的 .ota 文件内容写进内部 Flash 的 App 区。
  *
  * 顺序：
  *   1. 先校验后破坏 —— 擦 App 之前必须确认文件头合法、payload CRC 正确；
@@ -45,18 +45,18 @@ static uint32_t s_buf[UPDATE_BUF_SIZE / 4U]; // 搬运缓冲：既作 littlefs 读目标，
  */
 static int File_ReadFull(void *buf, uint32_t len)
 {
-    uint8_t *p = (uint8_t *)buf; // 读入缓冲指针
-    uint32_t got = 0U;           // 已读入字节数
+    uint8_t *read_buf = (uint8_t *)buf; // 读入缓冲指针
+    uint32_t readed = 0U;               // 已循环读入字节数
 
-    while (got < len)
+    while (readed < len)
     {
-        int r_byte = Boot_Lfs_FileRead(p + got, len - got);
+        int r_byte = Boot_Lfs_FileRead(read_buf + readed, len - readed);
         if (r_byte <= 0)
             return -1;
-        got += (uint32_t)r_byte;
+        readed += (uint32_t)r_byte;
     }
 
-    return (int)got;
+    return (int)readed;
 }
 
 /**
@@ -71,7 +71,7 @@ static bool Flash_EraseApp(void)
     for (uint32_t i = 0U; i < 4U; i++)
     {
         Boot_Uart_Puts("[BOOT] erase sector ");
-        Boot_Uart_PutU32(i + 4U); // 打印逻辑扇区号 4/5/6/7
+        Boot_Uart_PutU32(i + 4U);
         Boot_Uart_Puts("\n");
 
         if (FLASH_EraseSector(sectors[i], VoltageRange_3) != FLASH_COMPLETE)
@@ -86,8 +86,8 @@ static bool Flash_EraseApp(void)
 }
 
 /**
- * @brief  写一段数据到内部 Flash
- * @param  addr 目标地址（4 字节对齐）
+ * @brief  写数据到内部 Flash
+ * @param  addr 目标地址
  * @param  buf  数据缓冲
  * @param  len  字节数（4 的倍数）
  * @return true = 全部写入成功
@@ -175,16 +175,18 @@ static bool Payload_Check(const char *path, const ota_hdr_t *h)
 /**
  * @brief  通用搬运流程，升级与回滚共用
  * @param  path           源文件路径
- * @param  success_state  成功后参数 state（升级/回滚不同）
+ * @param  success_state  成功后参数 state（升级/回滚）
  * @param  success_flags  成功后参数 flags
  * @return false = 失败（文件打不开/包头错/CRC 错/擦写失败）
  */
 static bool Update_Run(const char *path, uint32_t success_state, uint32_t success_flags)
 {
-    ota_hdr_t hdr;     // OTA 包头
-    boot_param_t p;    // Bootloader 参数
-    uint32_t remain;   // payload 字节数
-    uint32_t last_pct; // 上次打印的进度
+    ota_hdr_t hdr;   // OTA 包头
+    boot_param_t p;  // Bootloader 参数
+    uint32_t remain; // payload 字节数
+
+    if (path == NULL)
+        return false;
 
     /* 1.挂载文件系统 */
     Boot_Uart_Puts("[BOOT] mount littlefs ...\n");
@@ -270,7 +272,6 @@ static bool Update_Run(const char *path, uint32_t success_state, uint32_t succes
     }
 
     remain = hdr.fw_size; // payload 字节数
-    last_pct = 0xFFFFFFFFUL;
     {
         uint32_t off = 0U; // 已写入节数
 
@@ -334,6 +335,9 @@ static bool Update_Run(const char *path, uint32_t success_state, uint32_t succes
     p.app_version = hdr.fw_version;
     p.boot_try = (success_state == BOOT_ST_APP_UNCONFIRMED) ? 1U : 0U;
     p.flags = success_flags | BOOT_FLAG_OTA_VERIFIED;
+    p.ota_size = 0U;
+    p.ota_crc32 = 0U;
+    p.ota_version = hdr.fw_version;
     if (!Boot_Param_Save(&p))
     {
         Boot_Uart_Puts("[BOOT] param save failed\n");
@@ -343,6 +347,7 @@ static bool Update_Run(const char *path, uint32_t success_state, uint32_t succes
     /* 10.跳转到 App 区 */
     Boot_Uart_Puts("[BOOT] done, jump\n");
     Boot_JumpToApp();
+    Boot_Uart_Puts("[BOOT] jump failed\n");
 
     return true;
 }

@@ -86,12 +86,12 @@ static void UI_Task(void *pvParameters)
         if (bits & EV_LOWERPOWER)
         {
             UI_Mode_SwitchToNight();
-            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // 确认夜间切换
+            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // 通知光敏任务: 夜间模式已生效
         }
         if (bits & EV_WAKEUP)
         {
             UI_Mode_SwitchToDay();
-            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // 确认白天切换
+            xEventGroupSetBits(Task_Events(), EV_LOWPOWER_ACK); // 通知光敏任务: 白天模式已生效
         }
 
         /* 输入界面开关 / 页面数据刷新(由当前模式决定是否执行) */

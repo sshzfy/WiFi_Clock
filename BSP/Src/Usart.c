@@ -19,24 +19,21 @@ static volatile uint16_t rx_ovf = 0U;  // 溢出丢字节次数
 
 void USART1_Init(void)
 {
-
-    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitTypeDef GPIO_InitStructre;
     USART_InitTypeDef USART_InitStructure;
-    NVIC_InitTypeDef NVIC_InitStruct;
+    NVIC_InitTypeDef NVIC_InitStructre;
 
-    /* 初始化GPIOA */
     GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource9, GPIO_AF_USART1);
     GPIO_PinAFConfig(AT_USART1_GPIO_PORT, GPIO_PinSource10, GPIO_AF_USART1);
 
-    GPIO_StructInit(&GPIO_InitStruct);
-    GPIO_InitStruct.GPIO_Pin = AT_USART1_GPIO_PIN_TX | AT_USART1_GPIO_PIN_RX;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF; // 复用模式
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP; // 推挽输出
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;   // 上拉
-    GPIO_Init(AT_USART1_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_StructInit(&GPIO_InitStructre);
+    GPIO_InitStructre.GPIO_Pin = AT_USART1_GPIO_PIN_TX | AT_USART1_GPIO_PIN_RX;
+    GPIO_InitStructre.GPIO_Mode = GPIO_Mode_AF; // 复用模式
+    GPIO_InitStructre.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructre.GPIO_OType = GPIO_OType_PP; // 推挽输出
+    GPIO_InitStructre.GPIO_PuPd = GPIO_PuPd_UP;   // 上拉
+    GPIO_Init(AT_USART1_GPIO_PORT, &GPIO_InitStructre);
 
-    /* 初始化USART1 */
     USART_StructInit(&USART_InitStructure);
     USART_InitStructure.USART_BaudRate = 115200;                                    // 波特率 115200bps
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;                     // 字长 8位
@@ -48,25 +45,32 @@ void USART1_Init(void)
 
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE); // RXNE中断 → Usart.c环形缓冲
 
-    /* 初始化NVIC */
-    NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;         // 使能USART1_IRQn
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 5; // 抢占优先级
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0;        // 子优先级
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStruct);
-
-    USART_Cmd(USART1, ENABLE);
+    NVIC_InitStructre.NVIC_IRQChannel = USART1_IRQn;         // 使能USART1_IRQn
+    NVIC_InitStructre.NVIC_IRQChannelPreemptionPriority = 5; // 抢占优先级
+    NVIC_InitStructre.NVIC_IRQChannelSubPriority = 0;        // 子优先级
+    NVIC_InitStructre.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructre);
 
     rx_head = 0U;
     rx_tail = 0U;
     rx_ovf = 0U;
+
+    USART_Cmd(USART1, ENABLE);
 }
 
 void USART1_IRQHandler(void)
 {
-    if (USART_GetITStatus(USART1, USART_IT_RXNE) == SET)
+    uint32_t sr = USART1->SR;
+    char c = (char)USART1->DR; // 读DR: 同时清RXNE与ORE
+
+    /* 硬件接收溢出: 至少丢了1个字节, 计入丢包统计 */
+    if (sr & USART_SR_ORE)
     {
-        char c = (char)USART_ReceiveData(USART1);
+        rx_ovf++;
+    }
+
+    if (sr & USART_SR_RXNE)
+    {
         uint16_t next = (uint16_t)((rx_head + 1) % USART1_RX_RING_SIZE);
 
         /* 非满则入队 */
@@ -110,6 +114,12 @@ int Usart1_RX_Read(void)
     return c;
 }
 
+/** @brief  缓冲满导致丢字节的次数 */
+uint16_t Usart1_RX_Ovf(void)
+{
+    return rx_ovf;
+}
+
 /** @brief 丢弃USART1接收环形缓冲中尚未取走的全部字节 */
 void Usart1_RX_Flush(void)
 {
@@ -123,8 +133,7 @@ void Usart1_RX_Flush(void)
 #if (DEBUG_SUPPORT == 1)
 
 /* ==================== USART2 调试输出(printf 经 DMA) ====================
- * - printf 每个字符先入行缓冲, 遇 '\n' 或缓冲满时经 DMA1_Stream6(USART2_TX)
- *   一次性发送。
+ * - printf 每个字符先入行缓冲, 遇 '\n' 或缓冲满时经 DMA 一次性发送。
  * - 整行由一个互斥量保护: 每行首个字符抢锁并记录所属任务, 换行后释放,
  *   避免多任务 printf 互相穿插(整行原子输出)。
  * - 调度器未运行 / 中断上下文中退化为逐字节轮询(ISR 内不应 printf)。
@@ -138,7 +147,6 @@ static SemaphoreHandle_t dbg_mtx = NULL;   // 行缓冲区互斥量,保护整行输出
 static TaskHandle_t dbg_line_owner = NULL; // 当前持有锁的任务句柄
 static bool dbg_dma_ready = false;         // DMA是否初始化
 
-/* ================ static 函数 ================ */
 static bool Dbg_Can_Block(void);
 static void Dbg_Byte_Poll(uint8_t c);
 static void Dbg_Dma_Init(void);
@@ -150,10 +158,11 @@ static void Dbg_Flush(void);
  * */
 static bool Dbg_Can_Block(void)
 {
-    if (xPortIsInsideInterrupt() == pdTRUE) /* 检测当前代码是否在 ISR , 中断中断上下文不能阻塞 */
+    if (xPortIsInsideInterrupt() == pdTRUE)
         return false;
-    if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) /* 调度器未运行 */
+    if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
         return false;
+
     return true;
 }
 
@@ -173,7 +182,6 @@ static void Dbg_Dma_Init(void)
 {
     if (dbg_dma_ready)
         return;
-    dbg_dma_ready = true;
 
     DMA_DeInit(DMA1_Stream6);
     DMA_InitTypeDef DMA_InitStructure;
@@ -194,6 +202,8 @@ static void Dbg_Dma_Init(void)
     DMA_Init(DMA1_Stream6, &DMA_InitStructure);
 
     USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
+
+    dbg_dma_ready = true;
 }
 
 /**
@@ -209,20 +219,16 @@ static void Dbg_Flush(void)
 
     dbg_len = 0; // 立即重置长度（持有锁，安全），防止下次重复搬运
 
-    /* 初始化DMA
-     * 禁用DMA1_Stream6, 允许安全修改 DMA 参数 */
+    /* 修改 DMA 参数 */
     Dbg_Dma_Init();
-    DMA_Cmd(DMA1_Stream6, DISABLE);
+    DMA_Cmd(DMA1_Stream6, DISABLE); // 禁用 DMA1_Stream6, 允许安全修改 DMA 参数
+    uint64_t _t0 = TIM5_Get_ms();
+    while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE)
     {
-        uint64_t _t0 = TIM5_Get_ms();
-        while (DMA_GetCmdStatus(DMA1_Stream6) != DISABLE)
-        {
-            if (TIM5_Get_ms() - _t0 > 1000U)
-                break; /* 1 秒保护：异常时放弃本行输出, 防止整系统卡死 */
-        }
+        if (TIM5_Get_ms() - _t0 > 1000U)
+            return; /* 1 秒保护：异常时放弃本行输出, 防止整系统卡死 */
     }
 
-    /* 设置DMA参数 */
     DMA1_Stream6->NDTR = n;                 // 设置要搬运的字节数
     DMA1_Stream6->M0AR = (uint32_t)dbg_buf; // 设置内存地址为行缓冲区
     DMA1_Stream6->CR |= DMA_SxCR_MINC;      // 确保内存地址递增（逐字节读取）
@@ -230,34 +236,36 @@ static void Dbg_Flush(void)
     /* 清除残留标志，防止旧状态干扰后续 while 循环对本次传输完成的判断 */
     USART_ClearFlag(USART2, USART_FLAG_TC);
     DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_FEIF6 | DMA_FLAG_TCIF6 | DMA_FLAG_TEIF6);
+    DMA_Cmd(DMA1_Stream6, ENABLE); // 启用 DMA1_Stream6, 开始传输
 
-    /* 启用DMA1_Stream6, 开始传输 */
-    DMA_Cmd(DMA1_Stream6, ENABLE);
-
-    /* 等所有字节由DMA搬入DR,传输未完成则让出CPU */
+    /* 等所有字节由 DMA 搬入 USART2_DR 寄存器,传输未完成则让出 CPU */
+    bool dma_tc = false;
+    uint64_t _t1 = TIM5_Get_ms();
+    while (DMA_GetFlagStatus(DMA1_Stream6, DMA_FLAG_TCIF6) == RESET)
     {
-        uint64_t _t1 = TIM5_Get_ms();
-        while (DMA_GetFlagStatus(DMA1_Stream6, DMA_FLAG_TCIF6) == RESET)
-        {
-            if (Dbg_Can_Block())
-                vTaskDelay(1);
-            if (TIM5_Get_ms() - _t1 > 2000U)
-                break; /* 2 秒保护 */
-        }
+        if (Dbg_Can_Block())
+            vTaskDelay(1);
+        if (TIM5_Get_ms() - _t1 > 2000U)
+            break; /* 2 秒保护 */
     }
-    /* 清除DMA1_Stream6_TCIF6标志位, 确保下一次发送从头开始 */
-    DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_TCIF6);
+    dma_tc = (DMA_GetFlagStatus(DMA1_Stream6, DMA_FLAG_TCIF6) == SET); // 确认 DMA 传输完成
+    DMA_ClearFlag(DMA1_Stream6, DMA_FLAG_TCIF6);                       // 清除 DMA1_Stream6_TCIF6标志位, 确保下一次发送从头开始
+
+    /* DMA 传输未完成，停流避免 dbg_buf 和后续 printf 冲突 */
+    if (!dma_tc)
+    {
+        DMA_Cmd(DMA1_Stream6, DISABLE); // 禁用 DMA1_Stream6
+        return;
+    }
 
     /* 等最后一个字节真正移出(整行发送完成), 传输未完成则让出CPU */
+    uint64_t _t2 = TIM5_Get_ms();
+    while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET)
     {
-        uint64_t _t2 = TIM5_Get_ms();
-        while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET)
-        {
-            if (Dbg_Can_Block())
-                vTaskDelay(1);
-            if (TIM5_Get_ms() - _t2 > 2000U)
-                break; /* 2 秒保护 */
-        }
+        if (Dbg_Can_Block())
+            vTaskDelay(1);
+        if (TIM5_Get_ms() - _t2 > 2000U)
+            break; /* 2 秒保护 */
     }
 }
 
@@ -266,8 +274,9 @@ int fputc(int ch, FILE *stream)
     uint8_t c = (uint8_t)ch;
     (void)stream;
 
-    /* 调度器未运行 / 中断上下文: 退化为逐字节轮询 */
-    if (!Dbg_Can_Block())
+    /* 调度器未运行 / 中断上下文: 退化为逐字节轮询
+     * 互斥量在 Usart2_Debug_Init() 里创建, 正常流程不会走到这里的轮询分支。 */
+    if (!Dbg_Can_Block() || dbg_mtx == NULL)
     {
         Dbg_Byte_Poll(c);
         return ch;
@@ -275,14 +284,11 @@ int fputc(int ch, FILE *stream)
 
     TaskHandle_t me = xTaskGetCurrentTaskHandle(); // 获取当前任务（调用printf函数的任务）句柄
 
-    /* 懒加载创建互斥量（仅首次调用时创建） */
-    if (dbg_mtx == NULL)
-        dbg_mtx = xSemaphoreCreateMutex();
-
     /* 整行互斥: 首个字符抢锁并记录行属主, 换行释放 */
     if (dbg_line_owner != me)
     {
-        xSemaphoreTake(dbg_mtx, portMAX_DELAY); // 抢锁, 将锁的所有权交给当前任务, 如果锁被占用, 则阻塞等待任务释放锁
+        xSemaphoreTake(dbg_mtx, portMAX_DELAY); // 抢锁, 将锁的所有权交给当前任务
+                                                // 如果锁被占用, 则阻塞等待任务释放锁
         dbg_line_owner = me;                    // 登记属主，后续字符免检
     }
 
@@ -293,14 +299,14 @@ int fputc(int ch, FILE *stream)
     /* 行缓冲区未满, 写入字符到行缓冲区 */
     dbg_buf[dbg_len++] = c;
 
-    /* 遇到换行符：必须等待整行物理发送完毕，再释放锁和清空属主 */
+    /* 遇到换行符：先重置行属主为 NULL, 再释放锁：
+     * 防止任务 B 在 Give 之后立刻拿到锁并登记自己为 owner
+     * 随后任务 A 的 dbg_line_owner = NULL 将其覆盖，导致死锁*/
     if (c == '\n')
     {
-        /* 阻塞等待 DMA 和 USART 完全发完
-         * 释放锁，允许其他任务打印新行 */
         Dbg_Flush();
+        dbg_line_owner = NULL;
         xSemaphoreGive(dbg_mtx);
-        dbg_line_owner = NULL; // 重置行属主为 NULL
     }
 
     return ch;

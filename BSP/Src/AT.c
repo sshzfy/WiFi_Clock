@@ -2,8 +2,8 @@
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0])) // 数组元素个数
 
-static char rx_buf[1024]; // 接收缓冲区
-
+static char rx_buf[1024]; // 1KB 接收缓冲区
+/* 匹配 AT 指令回复 */
 static const AT_ACK_Match_t AT_ACK_Match[] =
     {
         {AT_ACK_OK, "OK\r\n"},
@@ -12,7 +12,6 @@ static const AT_ACK_Match_t AT_ACK_Match[] =
         {AT_ACK_READY, "ready\r\n"},
 };
 
-/* ================ static 函数 ================ */
 static void AT_USART_Init(void);
 static void AT_Usart_Send(const char *data);
 static AT_ACK_t AT_Match_Internal_ACK(const char *str);
@@ -24,33 +23,33 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
 static uint8_t Month2Num(const char *month_str);
 static uint8_t Weekday3Num(const char *weekday_str);
 
-/* ================ AT 初始化相关函数 ================ */
+/* ================ AT 初始化 ================ */
 static void AT_USART_Init(void)
 {
     USART1_Init();
 }
 
-/* ================ AT底层通信相关函数 ================ */
+/* ================ AT 底层通信 ================ */
 
 /**
  * @brief 通过Usart向ESP32发送AT指令
- * @param data 指令字符串
+ * @param cmd 指令字符串
  */
-static void AT_Usart_Send(const char *data)
+static void AT_Usart_Send(const char *cmd)
 {
     /* 发送AT指令 */
-    while (data && *data)
+    while (cmd && *cmd)
     {
         while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
         {
         }
-        USART_SendData(USART1, *data++);
+        USART_SendData(USART1, *cmd++);
         while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
         {
         }
     }
 
-    /* 补充AT命令末尾的\r\n（AT命令格式：AT+命令\r\n） */
+    /* 补充 AT 命令末尾的 \r\n（AT 命令格式：AT+命令\r\n） */
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
     {
     }
@@ -74,7 +73,7 @@ static void AT_Usart_Send(const char *data)
  */
 static AT_ACK_t AT_Match_Internal_ACK(const char *str)
 {
-    /* 遍历AT_ACK_Match数组, 匹配回复字符串 */
+    /* 遍历 AT_ACK_Match 数组, 匹配回复字符串 */
     for (uint32_t i = 0; i < ARRAY_SIZE(AT_ACK_Match); i++)
     {
         if (strcmp(str, AT_ACK_Match[i].string) == 0)
@@ -85,13 +84,13 @@ static AT_ACK_t AT_Match_Internal_ACK(const char *str)
 }
 
 /**
- * @brief 通过Usart等待接收AT指令回复
- * @param timeout 超时时间, 单位ms
+ * @brief 通过 USART1 等待接收 AT 指令回复
+ * @param timeout 超时时间, 单位 ms
  * @return AT_ACK_t 回复结果
  */
 static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
 {
-    const char *line = rx_buf; // 指向当前行的指针
+    const char *line = rx_buf; // 指向当前行的指针（每行以'\n'划分）
     uint32_t rx_len = 0;
     rx_buf[0] = '\0';
 
@@ -105,9 +104,8 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
             if (TIM5_Get_ms() - start >= timeout)
                 return AT_ACK_NONE;
             if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
-                vTaskDelay(1); // 让出CPU, 字节由中断环形缓冲缓存, 不会丢失
+                vTaskDelay(pdMS_TO_TICKS(1)); // 让出CPU, 字节由中断环形缓冲缓存, 不会丢失
         }
-
         /* 读取接收数据 */
         int ch = Usart1_RX_Read();
 
@@ -124,7 +122,7 @@ static AT_ACK_t AT_Usart_Wait_Receive(uint32_t timeout)
             if (ack != AT_ACK_NONE)
                 return ack;
 
-            line = rx_buf + rx_len; // 指向下一行(每行以'\n'划分)
+            line = rx_buf + rx_len; // 指向下一行
         }
     }
 
@@ -159,7 +157,7 @@ static bool Parse_CWSTATE_Response(const char *response, AT_WiFi_Info_t *info)
 {
     // 命令和命令回复内容：
     //     "AT+CWSTATE?\r\n"
-    //     "+CWSTATE:2,\"Laptop -S\"\r\n"
+    //     "+CWSTATE:2,\"ssid\"\r\n"
     //     "\r\n"
     //     "OK\r\n";
     response = strstr(response, "+CWSTATE:");
@@ -188,7 +186,7 @@ static bool Parse_CWJAP_Response(const char *response, AT_WiFi_Info_t *info)
 {
     // 命令和命令回复内容：
     //     "AT+CWJAP?\r\n"
-    //     "+CWJAP:\"Laptop-S\",\"7e:b5:66:b3:56:55\",1,-59,0,1,3,0,1\r\n"
+    //     "+CWJAP:\"ssid\",\"bssid\",1,-59,0,1,3,0,1\r\n"
     //     "\r\n"
     //     "OK\r\n";
     response = strstr(response, "+CWJAP:");
@@ -234,10 +232,10 @@ static bool Parse_CIPSNTPTIME_Response(const char *response, AT_Date_Info_t *dat
     return true;
 }
 
-/* ================ SNTP相关底层函数 ================ */
+/* ================ SNTP 相关 ================ */
 
 /**
- * @brief 月份字符串转换为月份数字
+ * @brief 月份字符串转数字
  * @param month_str 月份字符串
  * @return 月份数字
  */
@@ -255,9 +253,9 @@ static uint8_t Month2Num(const char *month_str)
 }
 
 /**
- * @brief 星期几字符串转换为星期几数字
- * @param weekday_str 星期几字符串
- * @return 星期几数字
+ * @brief 星期字符串转数字
+ * @param weekday_str 星期字符串
+ * @return 星期数字
  */
 static uint8_t Weekday3Num(const char *weekday_str)
 {
@@ -271,7 +269,7 @@ static uint8_t Weekday3Num(const char *weekday_str)
     return 0;
 }
 
-// /* ================ HTTP 逆地理编码(经纬度 → 省/市) ================ */
+/* ================ HTTP 逆地理编码(经纬度 → 省/市) ================ */
 
 // /* AMAP_KEY(高德"Web服务"类型key, 逆地理编码用)在 User/Inc/Secrets.h(不入库) */
 
@@ -350,15 +348,11 @@ static uint8_t Weekday3Num(const char *weekday_str)
 //     return (info->province[0] != '\0') || (info->city[0] != '\0');
 // }
 
-/* ================ public 函数 ================ */
 bool AT_Init(void)
 {
     /* 外设初始化 */
     AT_USART_Init();
-    /* 等模组能应答 "AT": 拿到 OK 就说明它已经启动完成、可以接收命令了。
-     * 这里不下发 AT+RESTORE: 恢复出厂会擦掉模组保存的配置并强制重启,
-     * 而那次重启是"模组还没准备好, 先回 busy p... / ready"这类偶发失败的来源
-     * 需要恢复出厂时, 由上层在异常路径上调用 AT_Factory_Reset() */
+
     if (!AT_Wait_Boot(3000))
         return false;
 
@@ -366,11 +360,32 @@ bool AT_Init(void)
 }
 
 /**
+ * @brief 等待模组输出 "ready"
+ * @param timeout 超时时间, 单位ms
+ * @return true 收到 ready
+ */
+bool AT_Wait_Ready(uint32_t timeout)
+{
+    uint64_t start = TIM5_Get_ms();
+
+    while ((uint32_t)(TIM5_Get_ms() - start) < timeout)
+    {
+        uint32_t remain = timeout - (uint32_t)(TIM5_Get_ms() - start);
+
+        AT_ACK_t ack = AT_Usart_Wait_Receive(remain);
+
+        if (ack == AT_ACK_READY)
+            return true;
+        if (ack == AT_ACK_NONE)
+            return false; // 剩余时间已耗尽
+    }
+
+    return false;
+}
+
+/**
  * @brief 恢复模组出厂设置, 并等它重启完成
  * @return true 成功
- * @note  AT+RESTORE 会擦掉模组内保存的配置(Wi-Fi 模式、已保存的 AP 等)并**强制重启**。
- *        重启期间模组先吐的是 ready / busy p..., 而不是 OK
- *        只作为"模组不应答或配置疑似损坏"时的恢复手段, 由上层按需调用。
  */
 bool AT_Factory_Reset(void)
 {
@@ -387,10 +402,6 @@ bool AT_Factory_Reset(void)
  * @param command 指令字符串
  * @param timeout 超时时间, 单位ms(含重发等待)
  * @return true 成功,false 失败
- * @note  收到 "busy p..." 说明模组暂时拒绝该命令(常见于刚上电/重启后
- *        Wi-Fi协议栈还在初始化), 只要总时间还没用完就重发一次;
- *        其它 ACK(ERROR / ready / 超时)一律判失败, 不重发。
- *        发送前先清空环形缓冲, 避免上一次命令的残留被当成本次回复。
  */
 bool AT_Send_Command(const char *command, uint32_t timeout)
 {
@@ -422,41 +433,13 @@ bool AT_Send_Command(const char *command, uint32_t timeout)
     }
 }
 
-/**
- * @brief 等待模组输出 "ready"
- * @param timeout 超时时间, 单位ms
- * @return true 收到 ready
- * @note  AT_Usart_Wait_Receive() 匹配到**任意**已知 ACK 就会返回, 直接拿它
- *        当"等 ready"用是错的: 模组重启途中先冒出的 OK / ERROR / busy 会让
- *        本函数立刻失败(实测 AT_Init() 因此只花约100ms就报失败, 而真正的超时
- *        应该是秒级)。这里显式忽略这些过渡 ACK, 一直等到 ready 或总超时。
- */
-bool AT_Wait_Ready(uint32_t timeout)
-{
-    uint64_t start = TIM5_Get_ms();
-
-    while ((uint32_t)(TIM5_Get_ms() - start) < timeout)
-    {
-        uint32_t remain = timeout - (uint32_t)(TIM5_Get_ms() - start);
-
-        AT_ACK_t ack = AT_Usart_Wait_Receive(remain);
-
-        if (ack == AT_ACK_READY)
-            return true;
-        if (ack == AT_ACK_NONE)
-            return false; // 剩余时间已耗尽
-    }
-
-    return false;
-}
-
 /** @brief 获取AT指令回复 */
 const char *AT_Get_Response(void)
 {
     return rx_buf;
 }
 
-/* ================ AT WiFi public 函数 ================ */
+/* ================ AT WiFi ================ */
 
 bool AT_WiFi_Init(void)
 {
@@ -513,7 +496,7 @@ bool AT_Is_WiFi_Conected(void)
     return info.connected;
 }
 
-/* ================ AT 简单低功耗 public 函数 ================ */
+/* ================ AT 简单低功耗 ================ */
 
 /**
  * @brief 设置ESP32-C3的Wi-Fi睡眠模式
@@ -534,7 +517,7 @@ bool AT_Set_Sleep(uint8_t mode)
     return true;
 }
 
-/* ================ SNTP相关 public 函数 ================ */
+/* ================ SNTP 相关 ================ */
 
 /**
  * @brief 初始化SNTP模块
@@ -572,7 +555,7 @@ bool AT_SNTP_Get_Time(AT_Date_Info_t *date_info)
     return true;
 }
 
-/* ================ HTTP 天气相关 public 函数 ================ */
+/* ================ HTTP 天气相关================ */
 
 /**
  * @brief 发送HTTP请求
@@ -605,12 +588,11 @@ const char *AT_Get_HTTP(const char *url)
 bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
 {
     // 命令和命令回复内容：
-    //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=KEY&location=101.30.184.223&language=en&unit=c\",,,2\r\n"
-    //     "+HTTPCLIENT:267,{\"results\":[{\"location\":{\"id\":\"WWYMRT0VRMUG\",\"name\":\"Dalian\",\"country\":\"CN\",\"path\":\"Dalian,Dalian,Liaoning,China\",\"timezone\":\"Asia/Shanghai\",\"timezone_offset\":\"+08:00\"},\"now\":
+    //     "AT+HTTPCLIENT=2,1,\"https://api.seniverse.com/v3/weather/now.json?key=KEY&location= &language=en&unit=c\",,,2\r\n"
+    //     "+HTTPCLIENT:267,{\"results\":[{\"location\":{\"id\":\"WWYMRT0VRMUG\",\"name\":\"city\",\"country\":\"CN\",\"path\":\"city,city,province,China\",\"timezone\":\"Asia/Shanghai\",\"timezone_offset\":\"+08:00\"},\"now\":
     //                      {\"text\":\"Cloudy\",\"code\":\"4\",\"temperature\":\"29\"},\"last_update\":\"2026-08-16T16:45:45+08:00\"}]}\r\n"
     //     "\r\n"
     //     "OK\r\n";
-    // 注: location 由上层按公网IP动态填入(见 User/Src/App.c 的 Weather_Update_Location), 上例给的是IP形式
     response = strstr(response, "\"results\":");
 
     if (response == NULL)
@@ -658,15 +640,14 @@ bool Parse_Http_Response(const char *response, AT_Weather_Info_t *info)
     return true;
 }
 
-/* ================ HTTP 获取公网 IP 相关 public 函数 ================ */
-#define AT_IP_URL "https://ipv4.icanhazip.com" // 公网IP查询接口, 直接返回纯文本IP, 不需要key
+/* ================ HTTP 获取公网 IP ================ */
+
+#define AT_IP_URL "https://ipv4.icanhazip.com" // 公网IP查询接口
 
 /**
  * @brief 查询本机公网IP
  * @param ip 输出缓冲区(至少16字节), 成功时写入点分十进制IP字符串
  * @return true 成功,false 失败
- * @note  content-type 用 0(纯文本), 与 Parse_Http_IP_Response 的示例命令保持一致;
- *        命令回复形如 "+HTTPCLIENT:15,101.30.184.223", 由解析函数负责取出IP
  */
 bool AT_Get_IP(char *ip)
 {
@@ -694,7 +675,7 @@ bool Parse_Http_IP_Response(const char *response, char *ip)
 {
     // 命令和命令回复内容：
     //     "AT+HTTPCLIENT=2,0,"https://ipv4.icanhazip.com",,,2"
-    //     "+HTTPCLIENT:15,101.30.184.223\r\n"
+    //     "+HTTPCLIENT: \r\n"
     //     "\r\n"
     //     "OK\r\n";
     response = strstr(response, "+HTTPCLIENT:");

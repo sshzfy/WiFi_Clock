@@ -3,7 +3,7 @@
 """ota_pack.py — 把 App 的 .bin 打包成 .ota 固件包。
 
 用法:
-    python ota_pack.py <app.bin> <out.ota> --version 1.0.1
+    py ota_pack.py <app.bin> <out.ota> --version 1.0.1
 
 .ota 格式（与 Boot/Inc/ota_pkg.h 一致，全部小端）:
     +0x00  magic        'OTA1' = 0x4F544131
@@ -50,25 +50,33 @@ def main():
     ap.add_argument("--hw-id", type=lambda x: int(x, 0), default=HW_ID)
     args = ap.parse_args()
 
-    fw = open(args.bin, "rb").read()
+    fw = open(args.bin, "rb").read() # 
 
-    pad = (-len(fw)) % 4
+    pad = (-len(fw)) % 4 # 4字节对齐所差的字节数
     if pad:
-        fw += b"\xFF" * pad
+        fw += b"\xFF" * pad # 使用0xFF 来补齐4字节
 
     maj, mino, pat = (int(x) for x in args.version.split("."))
     version = (maj << 16) | (mino << 8) | pat
     fw_crc = zlib.crc32(fw) & 0xFFFFFFFF
 
-    hdr = struct.pack("<IHHIIIIIII28s",
-                      MAGIC, HEADER_SIZE, 0,
-                      version, len(fw), fw_crc, args.hw_id,
-                      int(time.time()), 0, 0, b"\x00" * 28)
+    hdr = struct.pack("<IHHIIIIIII28s", # <：小端模式，I：uint32（4字节），H：uint16（2字节），28s：28字节字段
+                      MAGIC, 			# MAGIC
+					  HEADER_SIZE, 		# OTA 头部大小
+					  0,				# 头部 CRC16结果，占位待回填
+                      version, 			# 版本号
+					  len(fw), 			# payload 长度（4字节对齐）
+					  fw_crc, 			# payload 的 CRC32校验结果
+					  args.hw_id,		# 硬件 ID
+                      int(time.time()), # 打包时的 UNIX 时间戳
+					  0, 				# falgs 位保留
+					  0,				# min_boot_ver 位保留
+					  b"\x00" * 28)		# 28字节填充位
 
-    hdr_crc = crc16_ccitt(hdr[:60])
-    hdr = hdr[:6] + struct.pack("<H", hdr_crc) + hdr[8:]
+    hdr_crc = crc16_ccitt(hdr[:60]) # 头部 CRC16校验结果
+    hdr = hdr[:6] + struct.pack("<H", hdr_crc) + hdr[8:] # 回填 CRC16结果
 
-    body = hdr + fw
+    body = hdr + fw # 最终输出：头部+固件
     with open(args.out, "wb") as f:
         f.write(body)
 

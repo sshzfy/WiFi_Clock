@@ -6,46 +6,27 @@
 #include "ota_pkg.h"
 #include "Version.h"
 #include "OTA_Store.h"
-#include "OTA_Serial.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include "lfs.h"
 #include "BuildConfig.h"
+#include "Secrets.h"
 
 #include <string.h>
 
 /* ============================================================
- * 离线 OTA 状态机（App 侧）
+ * OTA 提交与自检（App 侧，网络升级共用）
  * ------------------------------------------------------------
- * 职责：通过 USART2 接收 PC 发来的 .ota 文件，写入 littlefs，
- * 校验无误后备份当前固件、写参数请求 Bootloader 搬运，最后复位。
- *
- * 协议（PC 工具 ota_send.py 与此保持一致）：
- *
- *   PC -> MCU: 0x55 0xAA 'O' 'T' 'A'            握手
- *   MCU -> PC: 0xAA 0x55 'O' 'K'                 就绪
- *   PC -> MCU: 元数据帧（ota_meta_t，20 B，小端）
- *   MCU -> PC: 0xAA 0x55 'O' 'K'                 元数据通过
- *   PC -> MCU: 裸 .ota 文件字节流（total_len 字节）
- *   MCU -> PC: 0xAA 0x55 'D' 'O' 'N' 'E'         成功（随后复位）
- *          或 0xAA 0x55 'F' 'A' 'I' 'L'         失败（由 OTA_Task 发送）
- *
- * 先写 .tmp 再 rename:
- *   Bootloader 只认 /ota/firmware.bin。如果下载到一半掉电，
- *   .bin 是半个固件，Bootloader 会拿到 CRC 错误的文件（虽然
- *   不会搬，但要等它校验才知道）。用 .tmp 接收、校验通过后
- *   原子地 rename 成 .bin，Bootloader 任何时候看到的 .bin
- *   都是完整文件。
+ * 把已下载并校验通过的 /ota/firmware.tmp 提交为正式固件：
+ *   rename -> 备份当前固件 -> 写参数请求 Bootloader 搬运 -> 复位。
+ * 另提供自身固件大小/CRC 的自检函数，供启动确认任务使用。
  * ============================================================ */
 
-#define OTA_META_SIZE 20U // 元数据帧大小
-#define OTA_CHUNK 4096U   // 4 KB 收发缓冲
+#define OTA_CHUNK 4096U // 4 KB 缓冲
 
-static const uint8_t s_ack_ok[4] = {0xAA, 0x55, 'O', 'K'};
-static const uint8_t s_ack_done[6] = {0xAA, 0x55, 'D', 'O', 'N', 'E'};
-static uint8_t s_buf[OTA_CHUNK]; // 4 KB 收发缓冲
+static uint8_t s_buf[OTA_CHUNK]; // 4 KB 缓冲区
 
 /**
  * @brief  计算自身固件大小（备份/回滚/自检共用）
@@ -62,7 +43,7 @@ uint32_t OTA_AppSelfSize(void)
         p.app_size >= 0x1000U && p.app_size <= APP_SIZE)
         size = p.app_size;
 
-    /* 二级来源：BuildConfig.h 中手动维护的常量兜底 */
+    /* 二级来源：BuildConfig.h 中手动维护的常量 */
     if (size == 0U)
         size = APP_FW_SIZE_FALLBACK;
 
@@ -81,7 +62,7 @@ uint32_t OTA_AppSelfSize(void)
  */
 bool OTA_CalcAppInfo(uint32_t *size, uint32_t *crc32)
 {
-    uint32_t sz = OTA_AppSelfSize(); // 固件大小
+    uint32_t sz = OTA_AppSelfSize();
     uint32_t crc = 0xFFFFFFFFUL;
 
     if (sz == 0U || sz > APP_SIZE)
@@ -104,7 +85,7 @@ bool OTA_CalcAppInfo(uint32_t *size, uint32_t *crc32)
 }
 
 /**
- * @brief  CRC16-CCITT（poly 0x1021，init 0xFFFF）
+ * @brief  CRC16-CCITT OTA t头部校验（poly 0x1021，init 0xFFFF）
  * @param  data 数据首地址
  * @param  len  字节数
  * @return 16 位校验值
@@ -129,45 +110,13 @@ static uint16_t Ota_Crc16(const uint8_t *data, uint32_t len)
 }
 
 /**
- * @brief  等待收满 len 字节
- * @param  buf        接收缓冲
- * @param  len        期望字节数
- * @param  timeout_ms 超时
- * @return true = 收满；false = 超时
- * @note   用 vTaskDelay(1) 让出 CPU：字节由 USART2 中断写进
- *         环形缓冲，任务只需轮询缓冲，不需要忙等。
- */
-static bool Wait_Bytes(uint8_t *buf, uint32_t len, uint32_t timeout_ms)
-{
-    uint32_t got = 0U;
-    uint32_t start = (uint32_t)xTaskGetTickCount();
-
-    while (got < len)
-    {
-        uint16_t n = OTA_Serial_Read(buf + got, (uint16_t)(len - got));
-        got += n;
-
-        if (got >= len)
-            return true;
-
-        if ((uint32_t)((uint32_t)xTaskGetTickCount() - start) >=
-            (timeout_ms / portTICK_PERIOD_MS))
-            return false;
-
-        vTaskDelay(1);
-    }
-
-    return true;
-}
-
-/**
  * @brief  备份当前固件为 .ota 格式写入 backup.bin
  * @return OTA_OK 成功；OTA_ERR_BACKUP 失败
  */
 static ota_result_t Backup_Current(void)
 {
     ota_hdr_t hdr;
-    uint32_t size = OTA_AppSelfSize(); // 固件大小
+    uint32_t size = OTA_AppSelfSize();
     uint32_t crc = 0xFFFFFFFFUL;
     int err;
 
@@ -230,130 +179,6 @@ fail:
 }
 
 /**
- * @brief  执行一次完整 OTA 会话
- * @return 错误码；成功路径以 NVIC_SystemReset 结束，OTA_OK 不会返回
- */
-ota_result_t OTA_Run(void)
-{
-    ota_meta_t meta;
-    uint32_t remaining;
-    uint32_t crc;
-    uint32_t skipped;
-    uint32_t fw_size;
-    int err;
-
-    /* 会话开始先清空接收缓冲：上次残留的字节会破坏帧同步 */
-    OTA_Serial_Flush();
-
-    /* 1. 握手
-     * 五字节魔数，用于和串口助手乱发的内容区分。
-     * 超时给 60 s：等待用户操作 PC 工具。 */
-    uint8_t hs[5];
-
-    if (!Wait_Bytes(hs, sizeof(hs), 60000U))
-        return OTA_ERR_TIMEOUT;
-
-    if (memcmp(hs, "\x55\xAAOTA", 5) != 0)
-        return OTA_ERR_PROTO;
-
-    OTA_Serial_Send(s_ack_ok, sizeof(s_ack_ok));
-
-    /* 2. 元数据
-     * 先拿到包大小/CRC/版本，一切合法才允许 PC 开始发数据。 */
-    if (!Wait_Bytes((uint8_t *)&meta, OTA_META_SIZE, 10000U))
-        return OTA_ERR_TIMEOUT;
-
-    if (meta.magic != 0x55AAU || meta.len != OTA_META_SIZE)
-        return OTA_ERR_PROTO;
-    if (meta.hw_id != OTA_PKG_HW_ID)
-        return OTA_ERR_HWID;
-    if (meta.total_len <= OTA_PKG_HEADER_SIZE ||
-        meta.total_len > OTA_PKG_HEADER_SIZE + APP_SIZE)
-        return OTA_ERR_SIZE;
-    if (meta.version <= APP_VERSION) // 只允许升级到更高版本；如需降级测试可临时放开
-        return OTA_ERR_VERSION;
-
-    fw_size = meta.total_len - (uint32_t)OTA_PKG_HEADER_SIZE;
-    OTA_Serial_Send(s_ack_ok, sizeof(s_ack_ok));
-
-    /* 3. 目录与空间
-     * 需要容纳：新固件 + 即将写入的备份 + 64 KB 余量 */
-    if (OTA_Store_EnsureDir() != LFS_ERR_OK)
-        return OTA_ERR_STORE;
-    if (OTA_Store_FreeBytes() < meta.total_len * 2U + 65536U)
-        return OTA_ERR_SIZE;
-
-    /* 4. 接收并写入 firmware.tmp，边收边算 payload CRC
-     * CRC 跳过前 64 B 包头(包头有自己的 header_crc16)
-     * 接收超时 5s/块：115200 下 4KB 约 0.36s，5s 足够。 */
-    if (OTA_Store_OpenWrite(OTA_FW_TMP_PATH) != LFS_ERR_OK)
-        return OTA_ERR_STORE;
-
-    remaining = meta.total_len;
-    crc = 0xFFFFFFFFUL;
-    skipped = 0U; // 已经跳过的头字节
-
-    while (remaining > 0U)
-    {
-        uint32_t n = (remaining > OTA_CHUNK) ? OTA_CHUNK : remaining; // 每次接收 OTA_CHUNK 字节
-
-        /* 接收数据 */
-        if (!Wait_Bytes(s_buf, n, 5000U))
-        {
-            (void)OTA_Store_Close();
-            return OTA_ERR_TIMEOUT;
-        }
-        /* 写入数据 */
-        if (OTA_Store_Write(s_buf, n) != (int)n)
-        {
-            (void)OTA_Store_Close();
-            return OTA_ERR_STORE;
-        }
-
-        /* 收流 = 64 B 头 + payload；头不参与 payload CRC */
-        if (skipped < OTA_PKG_HEADER_SIZE)
-        {
-            uint32_t skip = (uint32_t)OTA_PKG_HEADER_SIZE - skipped; // 没有跳过的头字节数
-
-            /* 本块全是头字节 */
-            if (n <= skip)
-            {
-                skipped += n;
-            }
-            /* 本块头字节和 payload 字节混合 */
-            else
-            {
-                crc = Boot_CRC32_Update(crc, s_buf + skip, n - skip);
-                skipped = (uint32_t)OTA_PKG_HEADER_SIZE;
-            }
-        }
-        /* 已经跳过头字节 */
-        else
-        {
-            crc = Boot_CRC32_Update(crc, s_buf, n);
-        }
-
-        remaining -= n;
-    }
-
-    err = OTA_Store_Close();
-    if (err != LFS_ERR_OK)
-        return OTA_ERR_STORE;
-
-    /* 5. CRC 校验，失败清理 tmp，旧固件不受影响 */
-    if ((~crc) != meta.crc32)
-    {
-        (void)OTA_Store_Remove(OTA_FW_TMP_PATH);
-        return OTA_ERR_CRC;
-    }
-
-    /* 6~9. 先回执 DONE 给 PC，再走与网络升级共用的提交流程 */
-    OTA_Serial_Send(s_ack_done, sizeof(s_ack_done));
-
-    return OTA_CommitFirmware(fw_size, meta.crc32, meta.version);
-}
-
-/**
  * @brief  提交已下载好的 /ota/firmware.tmp：改名 -> 备份 -> 写参数 -> 复位
  * @param  fw_size    固件 payload 字节数（不含 64 B 包头）
  * @param  fw_crc32   payload CRC32（调用前必须已校验通过）
@@ -394,7 +219,7 @@ ota_result_t OTA_CommitFirmware(uint32_t fw_size, uint32_t fw_crc32, uint32_t fw
     if (!Boot_Param_Save(&p))
         return OTA_ERR_PARAM;
 
-    /* 4. 留 1 秒给 UI/串口回执，然后复位进 Bootloader 搬运 */
+    /* 4. 留 1 秒给 UI 回执，然后复位进 Bootloader 搬运 */
     vTaskDelay(pdMS_TO_TICKS(1000));
     NVIC_SystemReset();
 

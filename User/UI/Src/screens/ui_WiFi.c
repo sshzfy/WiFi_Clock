@@ -7,6 +7,7 @@
 #include "App.h"
 #include "Task_Common.h"
 #include "Version.h"
+#include "UI_Input.h"
 
 lv_obj_t *ui_WiFi = NULL;
 lv_obj_t *ui_TextArea1 = NULL;
@@ -86,7 +87,7 @@ void ui_event_Button1(lv_event_t *e)
     if (event_code == LV_EVENT_CLICKED)
     {
         /* 取消输入: 不提交任何内容, 直接退回主界面 */
-        xEventGroupSetBits(Task_Events(), EV_MAIN_SCREEN);
+        UI_Input_RequestBackHome();
     }
 }
 
@@ -151,13 +152,13 @@ void ui_WiFi_screen_init(void)
     lv_obj_set_style_bg_color(ui_Button1, lv_color_hex(0x484545), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Button1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    /* 取消键上放一个 X, 免得只看到一个灰方块 */
+    /* 取消键上放一个 X */
     lv_obj_t *cancel_label = lv_label_create(ui_Button1);
     lv_label_set_text(cancel_label, "X");
     lv_obj_set_style_text_color(cancel_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_center(cancel_label);
 
-    /* Phase 2: "检查更新"按钮（SquareLine 之外手动追加） */
+    /*  "检查更新"按钮 */
     ui_CheckUpdate = lv_btn_create(ui_WiFi);
     lv_obj_set_width(ui_CheckUpdate, 160);
     lv_obj_set_height(ui_CheckUpdate, 36);
@@ -165,14 +166,14 @@ void ui_WiFi_screen_init(void)
     lv_obj_set_y(ui_CheckUpdate, 130);
     lv_obj_set_style_bg_color(ui_CheckUpdate, lv_color_hex(0x2B7FDC), LV_PART_MAIN | LV_STATE_DEFAULT);
     {
-        lv_obj_t * cu_label = lv_label_create(ui_CheckUpdate);
+        lv_obj_t *cu_label = lv_label_create(ui_CheckUpdate);
         lv_label_set_text(cu_label, "Check Update");
         lv_obj_set_style_text_color(cu_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_center(cu_label);
     }
     lv_obj_add_event_cb(ui_CheckUpdate, ui_event_CheckUpdate, LV_EVENT_ALL, NULL);
 
-    /* Phase 3: 当前固件版本（取自 Version.h，升级后随固件一起变化） */
+    /* 当前固件版本（取自 Version.h，升级后随固件一起变化） */
     {
         lv_obj_t *ver_label = lv_label_create(ui_WiFi);
         lv_label_set_text_fmt(ver_label, "FW v%s", APP_VERSION_STR);

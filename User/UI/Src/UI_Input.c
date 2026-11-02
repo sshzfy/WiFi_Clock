@@ -3,14 +3,15 @@
 
 /* 新增图标时只要在这张表里加一行, 不用改命中判断 */
 static const UI_Hotspot_t s_hotspots[] = {
-    {TOUCH_X_WIFI, TOUCH_Y_WIFI, TOUCH_SIZE_WIFI, EV_WIFI_KB},
-    {TOUCH_X_LOC, TOUCH_Y_LOC, TOUCH_SIZE_LOC, EV_LOCATION_KB},
+    {TOUCH_X_WIFI, TOUCH_Y_WIFI, TOUCH_SIZE_WIFI, UI_SCR_WIFI},
+    {TOUCH_X_LOC, TOUCH_Y_LOC, TOUCH_SIZE_LOC, UI_SCR_LOCATION},
 };
 
 /* ==================== 模块内状态(仅uiTask访问) ==================== */
 static bool s_lvgl_ready = false;                 // LVGL 是否已初始化(只初始化一次)
 static uint32_t s_lvgl_tick_ms = 0;               // 上次喂给 LVGL 心跳的毫秒数
 static UI_Screen_t s_active_screen = UI_SCR_MAIN; // 当前打开的输入界面
+static volatile bool s_back_home_req = false;     // LVGL 回调请求返回主界面(下一拍 Tick 收尾)
 
 /* ==================== static 函数 ==================== */
 static void UI_Input_LvglInit(void);
@@ -75,7 +76,9 @@ void UI_Input_Calibrate(void)
     }
 }
 
-/** @brief 轮询一次触摸, 命中左上角图标则置位对应事件 */
+/** @brief 轮询一次触摸, 命中左上角图标则直接打开对应输入界面
+ *  @note  与界面处理同属 uiTask, 直接调用即可, 不再经事件组中转
+ */
 void UI_Input_PollTouch(void)
 {
     TouchState_t status;
@@ -96,7 +99,7 @@ void UI_Input_PollTouch(void)
         if (x >= spot->x && x < (uint16_t)(spot->x + spot->size) &&
             y >= spot->y && y < (uint16_t)(spot->y + spot->size))
         {
-            xEventGroupSetBits(Task_Events(), spot->event);
+            UI_Input_Open(spot->screen);
             return;
         }
     }
@@ -104,8 +107,10 @@ void UI_Input_PollTouch(void)
 
 /* ==================== LVGL 输入界面 ==================== */
 
-/** @brief 推进 LVGL 心跳并处理一次它的定时器(读触摸 + 刷屏都在这里发生) */
-void UI_Input_Tick(void)
+/** @brief 推进 LVGL 心跳并处理一次它的定时器(读触摸 + 刷屏都在这里发生)
+ *  @return true 表示本拍关闭了输入界面, 调用方需要重绘主页面
+ */
+bool UI_Input_Tick(void)
 {
     uint32_t now = (uint32_t)TIM5_Get_ms();
     uint32_t elapsed = now - s_lvgl_tick_ms;
@@ -117,6 +122,25 @@ void UI_Input_Tick(void)
     }
 
     lv_timer_handler();
+
+    /* "返回/提交"按钮只置标志, 等 LVGL 事件处理结束后再统一收尾 */
+    if (!s_back_home_req)
+        return false;
+
+    s_back_home_req = false;
+    UI_Input_Close();
+
+    /* 界面提交过新内容就保存进 Flash */
+    if (WiFi_Config_IsDirty())
+    {
+        (void)WiFi_Config_Save();
+    }
+    if (Location_Config_IsDirty())
+    {
+        (void)Location_Config_Save();
+    }
+
+    return true;
 }
 
 /** @brief 首次进入键盘界面时初始化 LVGL 并建立界面 */
@@ -126,7 +150,7 @@ static void UI_Input_LvglInit(void)
     lv_port_disp_init();  // 注册显示: 刷屏借 LCD 的整行缓冲, 不额外占 SRAM
     lv_port_indev_init(); // 注册触摸: XPT2046 → 指针设备
     ui_init();            // SquareLine 生成的界面
-    OTA_UI_Init();       // Phase 2: 更新进度浮层
+    OTA_UI_Init();        // Phase 2: 更新进度浮层
 
     s_lvgl_tick_ms = (uint32_t)TIM5_Get_ms();
     s_lvgl_ready = true;
@@ -148,7 +172,7 @@ void UI_Input_Open(UI_Screen_t screen)
     /* 打开 WiFi 配网界面 */
     if (screen == UI_SCR_WIFI)
     {
-        /* 无条件载屏: 不依赖 ui_init() 内部那一句, 保证一定停在目标界面 */
+        /* 无条件载屏: 保证一定停在目标界面 */
         lv_disp_load_scr(ui_WiFi);
 
         lv_obj_clear_state(ui_TextArea1, LV_STATE_FOCUSED);
@@ -229,45 +253,11 @@ bool UI_Input_IsActive(void)
     return (s_active_screen != UI_SCR_MAIN);
 }
 
-/** @brief 处理输入界面的开关与输入结果落地
- *  @param bits       本轮等待到的事件位
- *  @param allow_open 是否允许打开输入界面(夜间为 false)
- *  @return true 表示本轮收到了"返回主页面"请求, 调用方需要重绘主页面
+/** @brief 请求返回主界面(LVGL 事件回调里调用)
+ *  @note  回调运行在 lv_timer_handler() 内部, 不能当场改动界面对象;
+ *         这里只置标志, 由 UI_Input_Tick() 在事件处理结束后统一收尾。
  */
-bool UI_Input_HandleEvent(EventBits_t bits, bool allow_open)
+void UI_Input_RequestBackHome(void)
 {
-    bool back_home = false; // 是否返回主页面
-
-    /* 打开输入界面,只有在主界面时才允许 */
-    if (allow_open && !UI_Input_IsActive())
-    {
-        if (bits & EV_WIFI_KB)
-        {
-            UI_Input_Open(UI_SCR_WIFI);
-        }
-        else if (bits & EV_LOCATION_KB)
-        {
-            UI_Input_Open(UI_SCR_LOCATION);
-        }
-    }
-
-    /* 关闭输入界面 */
-    if (bits & EV_MAIN_SCREEN)
-    {
-        UI_Input_Close();
-
-        /* 界面提交过新内容就保存进 Flash */
-        if (WiFi_Config_IsDirty())
-        {
-            (void)WiFi_Config_Save();
-        }
-        if (Location_Config_IsDirty())
-        {
-            (void)Location_Config_Save();
-        }
-
-        back_home = true;
-    }
-
-    return back_home;
+    s_back_home_req = true;
 }

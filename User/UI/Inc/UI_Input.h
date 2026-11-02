@@ -35,18 +35,18 @@ typedef enum
 /* 一个可点击区域: 命中后置位对应事件 */
 typedef struct
 {
-    uint16_t x;        // 左上角 x
-    uint16_t y;        // 左上角 y
-    uint16_t size;     // 边长
-    EventBits_t event; // 命中后置位的事件
+    uint16_t x;         // 热区左上角 X
+    uint16_t y;         // 热区左上角 Y
+    uint16_t size;      // 热区边长
+    UI_Screen_t screen; // 命中后打开的界面
 } UI_Hotspot_t;
 
 void UI_Input_Calibrate(void);
 void UI_Input_PollTouch(void);
-bool UI_Input_HandleEvent(EventBits_t bits, bool allow_open);
+void UI_Input_RequestBackHome(void);
 void UI_Input_Open(UI_Screen_t screen);
 void UI_Input_Close(void);
 bool UI_Input_IsActive(void);
-void UI_Input_Tick(void);
+bool UI_Input_Tick(void);
 
 #endif /* __UI_INPUT_H__ */

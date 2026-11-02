@@ -25,10 +25,10 @@ static void Light_IRQ_Notify(void)
 /** @brief 提交一次昼夜切换: 置事件位通知 UI, 并等待 UI 确认 */
 static void App_Apply_Night(bool night)
 {
-    /* 通知UI切换昼夜
-     * 并等待UI确认 */
+    /* 先清掉上次可能残留的确认位, 再发请求, 避免误判"已完成" */
+    (void)xEventGroupClearBits(Task_Events(), EV_LOWPOWER_ACK);
     xEventGroupSetBits(Task_Events(), night ? EV_LOWERPOWER : EV_WAKEUP);
-    xEventGroupWaitBits(Task_Events(), EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000));
+    (void)xEventGroupWaitBits(Task_Events(), EV_LOWPOWER_ACK, pdTRUE, pdFALSE, pdMS_TO_TICKS(2000));
 }
 
 /** @brief 处理按键的"手动切换昼夜"请求

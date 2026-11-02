@@ -26,7 +26,6 @@ static uint32_t s_pos[ASSET_FID_COUNT];    // 记录当前文件位置, 位置相同就跳过 s
 
 static uint32_t s_imageMask = 0; // 图片自检结果位图(最多 32 张)
 
-/* ================ static 函数 ================ */
 static int Asset_MapErr(int err);
 static int Asset_MkdirLocked(const char *path);
 static void Asset_EnsureDirs(void);
@@ -56,7 +55,10 @@ static int Asset_MapErr(int err)
     }
 }
 
-/* 创建目录(调用者必须已持有 LittleFS_Lock); 已存在视为成功 */
+/** @brief 创建目录(调用者必须已持有 LittleFS_Lock); 已存在视为成功
+ *  @param path 目录路径
+ *  @return int 错误码
+ */
 static int Asset_MkdirLocked(const char *path)
 {
     struct lfs_info info;
@@ -84,7 +86,7 @@ static int Asset_MkdirLocked(const char *path)
     return ASSET_OK;
 }
 
-/* 确保字库/图片/数据三个目录存在(格式化后目录会全丢, 需要能重建) */
+/** @brief 确保字库/图片/数据三个目录存在(格式化后目录会全丢, 需要能重建) */
 static void Asset_EnsureDirs(void)
 {
     LittleFS_Lock();
@@ -96,7 +98,7 @@ static void Asset_EnsureDirs(void)
     LittleFS_Unlock();
 }
 
-/* 关闭全部常开字库句柄 */
+/** @brief 关闭全部常开字库句柄 */
 static void Asset_CloseFonts(void)
 {
     LittleFS_Lock();
@@ -115,7 +117,7 @@ static void Asset_CloseFonts(void)
     LittleFS_Unlock();
 }
 
-/* 打开全部字库文件并常开句柄 */
+/** @brief 打开全部字库文件并常开句柄 */
 static void Asset_OpenFonts(void)
 {
     LittleFS_Lock();
@@ -164,8 +166,8 @@ static void Asset_SelfCheck(void)
             if (err == LFS_ERR_OK)
             {
                 DBG_PRINTF("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
-                       s_fontFiles[i].path, (unsigned long)info.size,
-                       (unsigned long)s_fontFiles[i].size);
+                           s_fontFiles[i].path, (unsigned long)info.size,
+                           (unsigned long)s_fontFiles[i].size);
             }
             /* 文件不存在 */
             else
@@ -193,7 +195,7 @@ static void Asset_SelfCheck(void)
             if (err == LFS_ERR_OK)
             {
                 DBG_PRINTF("[ASSET] BADSIZE %s size=%lu want=%lu\r\n",
-                       im->path, (unsigned long)info.size, (unsigned long)want);
+                           im->path, (unsigned long)info.size, (unsigned long)want);
             }
             /* 文件不存在 */
             else
@@ -253,8 +255,6 @@ static int Asset_DataPathAssemble(const char *name, char *out, uint32_t out_size
     return ASSET_OK;
 }
 
-/* ================ public函数 ================ */
-
 /* ================ 初始化与状态 ================ */
 
 /**
@@ -304,7 +304,7 @@ int Asset_Init(void)
     }
     s_mounted = true; // 标记为已挂载
     DBG_PRINTF("[ASSET] littlefs mounted: %lu blocks x %lu B\r\n",
-           (unsigned long)g_lfs_config.block_count, (unsigned long)g_lfs_config.block_size);
+               (unsigned long)g_lfs_config.block_count, (unsigned long)g_lfs_config.block_size);
 
     /* 3. 目录: 字库与图片目录由烧录固件创建, 这里只是补齐缺失的 */
     Asset_EnsureDirs();
@@ -313,7 +313,7 @@ int Asset_Init(void)
     Asset_OpenFonts();
     Asset_SelfCheck();
     DBG_PRINTF("[ASSET] selfcheck: checked=%lu, missing=%lu\r\n",
-           (unsigned long)s_checked, (unsigned long)s_missing);
+               (unsigned long)s_checked, (unsigned long)s_missing);
     /* 全部缺失是最常见的情形: 资源从未烧录进 W25Q64 */
     if ((s_missing > 0U) && (s_missing == s_checked))
     {
@@ -709,7 +709,7 @@ int Asset_LoadData(const char *name, void *buf, uint32_t buf_size)
         (void)lfs_file_close(&g_lfs, &file);
         LittleFS_Unlock();
         DBG_PRINTF("[ASSET] load %s: need %lu bytes, buffer = %lu\r\n",
-               path, (unsigned long)size, (unsigned long)buf_size);
+                   path, (unsigned long)size, (unsigned long)buf_size);
         return ASSET_ERR_SPACE;
     }
 

@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 
-/** @brief  第 slot 个槽的 Flash 地址 */
+/** @brief 找第 slot 个槽的 Flash 地址并返回 */
 static uint32_t Param_Addr(uint32_t slot)
 {
     return BOOT_PARAM_BASE + slot * BOOT_PARAM_SLOT_SIZE;
@@ -18,16 +18,14 @@ static uint32_t Param_Addr(uint32_t slot)
 /**
  * @brief  填充一份默认记录
  * @param  p 输出结构体
- * @note   参数区为空（首次上电/刚烧录）时使用：
- *         state=IDLE、seq=0,magic,layout。
- *         第一条有效记录为 seq = 1。
+ * @note   只写 state=IDLE，seq=0，magic，layout。
  */
 void Boot_Param_Default(boot_param_t *p)
 {
     if (p == NULL)
         return;
 
-    memset(p, 0, sizeof(*p)); // 清空所有字段
+    memset(p, 0, sizeof(*p));
     p->magic = BOOT_PARAM_MAGIC;
     p->layout = BOOT_PARAM_LAYOUT;
     p->state = BOOT_ST_IDLE;
@@ -37,7 +35,6 @@ void Boot_Param_Default(boot_param_t *p)
  * @brief  从参数区加载最新一条有效记录
  * @param  p 输出结构体
  * @return true = 找到有效记录；false = 参数区为空(seq=0)或全部损坏
- * @note   扫描全部 32 条取 seq 最大者；每条需通过 magic/layout/CRC 三重过滤。
  */
 bool Boot_Param_Load(boot_param_t *p)
 {
@@ -47,7 +44,7 @@ bool Boot_Param_Load(boot_param_t *p)
     if (p == NULL)
         return false;
 
-    Boot_Param_Default(p);
+    Boot_Param_Default(p); // 初始化默认记录
 
     for (uint32_t i = 0U; i < BOOT_PARAM_SLOT_COUNT; i++)
     {
@@ -112,13 +109,13 @@ bool Boot_Param_Save(boot_param_t *p)
         slot = 0U;
     }
 
-    /* 处理的参数记录内容(magic/layout/crc32) */
+    /* 记录内容(magic/layout/crc32) */
     p->magic = BOOT_PARAM_MAGIC;
     p->layout = BOOT_PARAM_LAYOUT;
     p->crc32 = Boot_CRC32(p, offsetof(boot_param_t, crc32));
 
     /* 写入记录到 Flash 的参数区 */
-    uint32_t addr = Param_Addr(slot);
+    uint32_t addr = Param_Addr(slot); // 第 slot 个槽的 Flash 地址
     uint32_t primask = __get_PRIMASK();
     __disable_irq();
 
@@ -126,7 +123,7 @@ bool Boot_Param_Save(boot_param_t *p)
     for (uint32_t off = 0U; off < sizeof(*p); off += 4U)
     {
         uint32_t word = 0U;
-        memcpy(&word, (const uint8_t *)p + off, sizeof(word)); // 逐个写 boot_param_t 字段(均为 4 字节对齐,使用 memcpy 取 word 避免非对齐访问)
+        memcpy(&word, (const uint8_t *)p + off, sizeof(word)); // 写 boot_param_t 字段(使用 memcpy 避免非对齐访问)
 
         if (FLASH_ProgramWord(addr + off, word) != FLASH_COMPLETE)
         {
@@ -160,7 +157,6 @@ bool Boot_Param_Confirm(void)
     }
     else
     {
-        /* 参数区为空（例如刚用 ST-Link 烧完）：seq 从 1 开始 */
         p.seq = 1U;
     }
 
@@ -186,7 +182,7 @@ bool Boot_Param_IsConfirmed(void)
 
 /**
  * @brief  确认的同时写入自身固件 size/crc/version
- * @param  size    固件字节数（OTA_AppSelfSize 的结果）
+ * @param  size    固件字节数
  * @param  crc32   固件 CRC32
  * @param  version 版本号编码
  * @return true = 已记录（或本次写入成功）
@@ -197,19 +193,19 @@ bool Boot_Param_SetAppInfo(uint32_t size, uint32_t crc32, uint32_t version)
 {
     boot_param_t p;
 
-    Boot_Param_Default(&p);
     if (Boot_Param_Load(&p))
     {
-        /* 已确认且 size/crc 与本次计算结果一致：不重复写。
-         * 仅比较"app_size 非零"不够：ST-Link 烧录新固件后参数区
-         * 里是旧固件的 size，必须用新值覆盖，否则备份会截断。 */
+        /* 内容与版本完全一致，且已确认 → 无需写新记录 */
         if ((p.flags & BOOT_FLAG_CONFIRMED) != 0U &&
-            p.app_size == size && p.app_crc32 == crc32)
+            p.app_size == size &&
+            p.app_crc32 == crc32 &&
+            p.app_version == version)
             return true;
         p.seq++;
     }
     else
     {
+        Boot_Param_Default(&p);
         p.seq = 1U;
     }
 

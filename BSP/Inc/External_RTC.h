@@ -22,6 +22,7 @@
 #define DS1302_REG_WP                   0x8E // 写保护寄存器
 #define DS1302_REG_TRICKLK              0x90 // 涓流充电寄存器
 
+/* DS1302 时间结构体定义 */
 typedef struct
 {
     uint8_t sec;
