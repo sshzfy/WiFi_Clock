@@ -48,7 +48,6 @@ static bool Touch_SaveCalibration(void);
  * @return uint8_t 读取的字节
  */
 
-
 static uint8_t Touch_SpiReadWriteByte(uint8_t tx)
 {
     while (SPI_I2S_GetFlagStatus(TOUCH_SPI, SPI_I2S_FLAG_TXE) == RESET)
@@ -98,24 +97,6 @@ static uint16_t Touch_ReadAd(uint8_t cmd)
 
     return ad_result;
 }
-
-/**
- * @brief 重新同步 XPT2046 的 SPI 状态机
- * @note  上一次会话若被中途打断(典型是 MCU 复位期间 CS 浮空、SCK 上有噪声), 它会停在
- *        "等数据"的中间状态, 之后每笔事务都错位, 读回来的坐标自然全是垃圾。
- *        一个完整的 24 时钟事务 + CS 上升沿能把它拉回"等待命令"的状态
- */
-//static void Touch_SpiResync(void)
-//{
-//    LCD_Bus_Acquire();
-//    Touch_SpiClearRx();
-//    TOUCH_CS_LOW();
-//    (void)Touch_SpiReadWriteByte(TOUCH_CMD_SCREEN_X); /* 命令 + 2 字节数据 = 一笔完整事务 */
-//    (void)Touch_SpiReadWriteByte(0x00);
-//    (void)Touch_SpiReadWriteByte(0x00);
-//    TOUCH_CS_HIGH();
-//    /* keep bus: caller releases after its CS-low transaction */
-
 
 static void Touch_GPIO_Init(void)
 {
@@ -258,10 +239,7 @@ static bool Touch_SaveCalibration(void)
     return true;
 }
 
-/** @brief Park the touch CS (PE0) high BEFORE LCD_Init drives SPI3 with
- *  ST7789 init traffic. If CS floats low while SCK toggles, the XPT2046
- *  latches garbage commands and desyncs; only a power cycle recovers it.
- */
+/** @brief 把触摸屏的 CS 拉高, 避免 LCD_Init() 时被误收 */
 void Touch_Park(void)
 {
     Touch_GPIO_Init();

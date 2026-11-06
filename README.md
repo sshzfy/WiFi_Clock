@@ -2,7 +2,7 @@
 
 基于 **STM32F407VET6 + FreeRTOS** 的桌面天气时钟与室内环境监测终端。设备白天使用 2.4 英寸彩屏显示时间、日期、天气和室内温湿度，夜间切换到 OLED 只显示时间，并降低系统活动以节省功耗。
 
-项目包含一套完整的 **Bootloader + OTA** 方案：应用可以从 Gitee Releases 检查更新、下载固件并写入外部 Flash，重启后由 Bootloader 搬运到内部 Flash；新固件启动后需要主动确认，连续 3 次启动失败会自动回滚到旧版本。
+项目包含一套完整的 **Bootloader + OTA** 方案：应用可以从 Gitee Releases 检查更新、下载固件并写入外部 Flash，重启后由 Bootloader 搬运到内部 Flash。
 
 ---
 
@@ -11,14 +11,14 @@
 | 项目     | 说明                                                                  |
 | -------- | --------------------------------------------------------------------- |
 | 主控     | STM32F407VET6，Cortex-M4F，168MHz，512KB Flash，128KB SRAM + 64KB CCM |
-| 操作系统 | FreeRTOS V10.4.3 LTS Patch 3，1kHz tick，heap_4                       |
-| 显示     | ST7789 240×320 SPI 彩屏；SSD1306 128×64 OLED                          |
-| 交互     | 2046 电阻触摸、单用户按键、光敏电阻                                   |
-| 联网     | ESP32-C3-MINI-1，AT 指令，USART1                                      |
-| 传感器   | DHT22 温湿度、DS1302 外部 RTC                                         |
+| 操作系统 | FreeRTOS                                                              |
+| 显示     | ST7789 240×320 SPI 彩屏；0.96英寸 OLED                                |
+| 交互     | TSC2046 电阻触摸、单用户按键、光敏电阻                                |
+| 联网     | ESP32-C3                                                              |
+| 传感器   | DHT22 温湿度、光照传感器                                              |
 | 存储     | W25Q64 8MB SPI Flash，littlefs 文件系统                               |
 | 图形库   | LVGL 8.3.11，用于配网、定位输入和 OTA 界面                            |
-| 开发环境 | Keil MDK 5 + ARMCC V5.06                                              |
+| 开发环境 | Keil MDK 5 + VSCode                                                   |
 | 当前版本 | App `1.0.0`                                                           |
 
 ### 主要功能
@@ -75,17 +75,15 @@
 
 ### 任务模型
 
-| 任务 | 优先级 | 栈 | 主要职责 |
-| --- | --- | --- | --- |
-| `ui` | 3 | 2KB | 开机流程、LCD 唯一写者、昼夜页面切换、OTA 浮层刷新 |
-| `dht22` | 4 | 1KB | 单总线温湿度采集，优先级高于 UI 以保证时序 |
-| `net` | 2 | 3KB | 独占 USART1：WiFi、SNTP、天气、OTA 下载 |
-| `light_sensor` | 2 | 512B | 光照采样、去抖、发起昼夜切换 |
-| `key` | 2 | 512B | 按键手势识别 |
-| `boot_cfm` | 1 | 512B | 新固件启动 5 秒后写入启动确认，然后自删除 |
-| `monitor` | 1 | 512B | 可选内存和任务栈监测，默认关闭 |
-
-任务创建顺序：`App_Task_Init()` 在启动调度器前创建 `boot_cfm` 和 `ui`；`ui` 在开机阶段创建 `dht22` 和 `net`，等网络阶段结束后再创建 `light_sensor`、`key`，最后按配置创建 `monitor`。
+| 任务           | 优先级 | 栈   | 主要职责                                           |
+| -------------- | ------ | ---- | -------------------------------------------------- |
+| `ui`           | 3      | 2KB  | 开机流程、LCD 唯一写者、昼夜页面切换、OTA 浮层刷新 |
+| `dht22`        | 4      | 1KB  | 单总线温湿度采集，优先级高于 UI 以保证时序         |
+| `net`          | 2      | 3KB  | 独占 USART1：WiFi、SNTP、天气、OTA 下载            |
+| `light_sensor` | 2      | 512B | 光照采样、去抖、发起昼夜切换                       |
+| `key`          | 2      | 512B | 按键手势识别                                       |
+| `boot_cfm`     | 1      | 512B | 新固件启动 5 秒后写入启动确认，然后自删除          |
+| `monitor`      | 1      | 512B | 可选内存和任务栈监测，默认关闭                     |
 
 ### 关键设计约束
 
@@ -94,23 +92,6 @@
 - **共享数据整块替换**。WiFi、天气、室内温湿度和软件时钟在临界区内整体赋值。
 - **中断只做通知**。TIM5 累加毫秒，USART1 写入环形缓冲，EXTI 通过任务通知唤醒任务。
 - **外部 Flash 统一访问**。资源、配置和 OTA 文件分别位于 littlefs 的不同目录，共用文件系统锁。
-
-### 数据流
-
-```text
-ESP32-C3 ──USART1──> net 任务 ──> wifi_info / weather_info ──> ui 任务
-                         │
-                         ├─ SNTP ──> 软件时钟 ──> 彩屏 / OLED
-                         ├─ 公网 IP / 定位 ──> 天气请求
-                         └─ OTA_Update ──> Gitee ──> /ota/firmware.tmp
-
-DHT22 ──> dht22 任务 ──> room_info ──> ui 任务
-
-光敏 / 按键 ──> light_sensor / key ──> 事件组 ──> ui 任务切换昼夜模式
-
-W25Q64 ──SPI1──> Asset 层 ──> 字库 / 图片 ──SPI3+DMA──> ST7789
-```
-
 ---
 
 ## Flash 分区与升级
@@ -201,26 +182,4 @@ Project4/
 ├── ota_pack.py                  App bin → OTA 包打包工具
 └── README.md
 ```
-
----
-
-## 构建与烧录
-
-1. 使用 Keil MDK 5 打开 `Bootloader/STM32F407_Boot.uvprojx`，编译并烧录到 `0x08000000`。
-2. 打开 `MDK/STM32F407.uvprojx`，编译并烧录 App 到 `0x08010000`。
-3. 首次使用需要在 `User/Application/Inc/BuildConfig.h` 中开启 `RESOURCE_PROVISION`，分 3 批把字库和图片写入 W25Q64；完成后恢复为 `0` 并重新编译正式固件。
-4. 需要串口日志时，将 `DEBUG_SUPPORT` 设为 `1`；正式固件保持 `0`。
-
----
-
-## 配置入口
-
-| 文件 | 用途 |
-| --- | --- |
-| `User/Application/Inc/BuildConfig.h` | FreeRTOS/裸机、调试输出、资源烧录、OTA 兜底大小 |
-| `User/Task/Inc/Task_Config.h` | 任务优先级、栈大小、周期、按键和低功耗参数 |
-| `User/Application/Inc/Version.h` | App 版本号 |
-| `Boot/Inc/boot_layout.h` | Flash 分区、OTA 文件路径 |
-| `Boot/Inc/ota_pkg.h` | OTA 包头格式、硬件 ID |
-
 ---

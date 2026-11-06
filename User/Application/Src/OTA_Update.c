@@ -25,14 +25,12 @@
  *   Location: https://gitee.com/<owner>/<repo>/releases/tag/v1.0.7 */
 #define OTA_LATEST_PATH "/" OTA_GITEE_OWNER "/" OTA_GITEE_REPO "/releases/latest"
 
-#define OTA_DL_EXTRA 65536U /* 空间预检: 固件 x2 + 本值 */
-#define OTA_TAG_MAX 32U     /* tag 缓冲，"v255.255.255" 足够 */
-#define OTA_URL_MAX 256U    /* 附件地址缓冲，实测约 85 字节 */
+#define OTA_DL_EXTRA 65536U // 空间预检: 固件 x2 + 本值
+#define OTA_TAG_MAX 32U     // tag 缓冲，"v255.255.255" 足够
+#define OTA_URL_MAX 256U    // 附件地址缓冲
 
 /* 进度共享区 */
 ota_prog_t g_ota_prog = {0};
-
-/* ================ 小工具 ================ */
 
 /**
  * @brief  解析版本字符串 "v1.0.6"/"1.0.6" -> 编码 0x010006
@@ -40,8 +38,6 @@ ota_prog_t g_ota_prog = {0};
  * @param  ver   输出编码值（可为 NULL）
  * @param  out   输出规范文本（可为 NULL，缓冲至少 16 字节）
  * @return true = 成功
- * @note   版本号只允许三段十进制，每段 <= 255。设备端不做前导零
- *         归一化，所以 tag 必须写成 v1.0.7 这种形式。
  */
 static bool Ver_Parse(const char *s, uint32_t *ver, char *out)
 {
@@ -63,14 +59,12 @@ static bool Ver_Parse(const char *s, uint32_t *ver, char *out)
 }
 
 /**
- * @brief  从 302 的 Location 里抠出最新 tag
+ * @brief  从 302 的 Location 里解析出最新 tag
  * @param  loc     Location 头内容，形如
  *                 https://gitee.com/o/r/releases/tag/v1.0.7
  * @param  tag     输出 tag 文本（保留 'v' 前缀）
  * @param  tag_len 输出缓冲大小
  * @return true = 提取成功
- * @note   只认 "/releases/tag/" 之后的第一段，遇到 '?' '#' '/'
- *         或字符串结尾就停，避免把查询参数带进文件名。
  */
 static bool OTA_ParseTag(const char *loc, char *tag, uint32_t tag_len)
 {
@@ -93,7 +87,7 @@ static bool OTA_ParseTag(const char *loc, char *tag, uint32_t tag_len)
     }
     tag[n] = '\0';
 
-    return n > 1U; /* 至少 "v1" 才值得继续解析 */
+    return n > 1U; // 至少 "v1" 才值得继续解析
 }
 
 /**
@@ -120,15 +114,22 @@ static bool OTA_BuildAssetUrl(const char *tag, const char *tag_ver,
 /* ================ 下载：sink 上下文 ================ */
 typedef struct
 {
-    uint8_t hdr[64];  /* .ota 包头缓存（前 64 字节） */
-    uint32_t hdr_got; /* 包头已收字节 */
-    uint32_t got;     /* 已收总字节 */
-    uint32_t expect;  /* 期望总字节（0 = 长度未知） */
-    uint32_t crc;     /* payload CRC 累加 */
-    uint32_t skipped; /* 头字节跳过计数 */
-    bool store_ok;    /* littlefs 写入是否正常 */
+    uint8_t hdr[64];  // .ota 包头缓存（前 64 字节）
+    uint32_t hdr_got; // 包头已收字节
+    uint32_t got;     // 已收总字节
+    uint32_t expect;  // 期望总字节（0 = 长度未知）
+    uint32_t crc;     // payload CRC 累加
+    uint32_t skipped; // 头字节跳过计数
+    bool store_ok;    // littlefs 写入是否正常
 } dl_ctx_t;
 
+/** @brief  下载数据接收回调
+ *  @param  data  输入数据
+ *  @param  len   数据长度
+ *  @param  arg   上下文指针
+ *  @return true = 成功
+ *  @note   该函数在 FreeRTOS 任务上下文调用，必须快速返回
+ */
 static bool Dl_Sink(const uint8_t *data, uint32_t len, void *arg)
 {
     dl_ctx_t *ctx = (dl_ctx_t *)arg;
@@ -138,14 +139,12 @@ static bool Dl_Sink(const uint8_t *data, uint32_t len, void *arg)
         return false;
 
     /* 缓存包头 */
+    uint32_t need = (ctx->hdr_got < 64U) ? (64U - ctx->hdr_got) : 0U;
+    uint32_t take = (need > len) ? len : need;
+    if (take > 0U)
     {
-        uint32_t need = (ctx->hdr_got < 64U) ? (64U - ctx->hdr_got) : 0U;
-        uint32_t take = (need > len) ? len : need;
-        if (take > 0U)
-        {
-            memcpy(ctx->hdr + ctx->hdr_got, data, take);
-            ctx->hdr_got += take;
-        }
+        memcpy(ctx->hdr + ctx->hdr_got, data, take);
+        ctx->hdr_got += take;
     }
 
     /* 写入 littlefs */
@@ -182,23 +181,14 @@ static bool Dl_Sink(const uint8_t *data, uint32_t len, void *arg)
 
 /* ================ 主流程 ================ */
 
-/**
- * @brief  执行一次"检查并更新"
- * @note   阻塞运行，成功路径不复返（OTA_CommitFirmware 内部复位）。
- *
- *         与旧实现的关键差别：版本比较提前到下载之前。旧版是
- *         "先下 160 KB 再比版本"，已是最新也要空跑 45 秒；现在
- *         只读一个 302 头（56 字节），几秒就能判定。
- */
+/** @brief  执行一次"检查并更新" */
 void OTA_Update_Run(void)
 {
-    /* 大缓冲用 static：本流程只在 netTask 单线程执行，放 .bss 可把
-     * 约 700 B 从任务栈挪走（栈曾在 1KB 时溢出导致死机） */
-    static ota_http_resp_t resp;
-    static dl_ctx_t ctx;
+    static ota_http_resp_t resp; // 响应头
+    static dl_ctx_t ctx;         // 下载上下文
     static char tag[OTA_TAG_MAX];
     static char tag_ver[16];
-    static char url[OTA_URL_MAX];
+    static char url[OTA_URL_MAX]; // 下载地址
 
     ota_net_err_t err;
     ota_hdr_t *hdr;
@@ -207,7 +197,7 @@ void OTA_Update_Run(void)
     memset(&resp, 0, sizeof(resp));
     memset(&ctx, 0, sizeof(ctx));
 
-    /* ---- 1. 探测最新 tag ---- */
+    /* 探测最新 tag */
     g_ota_prog.state = OTA_UPD_CHECKING;
     g_ota_prog.total = 0U;
     g_ota_prog.got = 0U;
@@ -248,7 +238,7 @@ void OTA_Update_Run(void)
 
     DBG_PRINTF("[OTA] latest tag=%s ver=%s\r\n", tag, tag_ver);
 
-    /* ---- 2. 版本比较：不新就直接结束，不下载 ---- */
+    /* 版本比较：不新就直接结束，不下载 */
     if (latest_ver <= APP_VERSION)
     {
         DBG_PRINTF("[OTA] up to date (cur=0x%06X)\r\n", (unsigned)APP_VERSION);
@@ -256,7 +246,7 @@ void OTA_Update_Run(void)
         return;
     }
 
-    /* ---- 3. 按约定拼附件地址 ---- */
+    /* 按约定拼附件地址 */
     if (!OTA_BuildAssetUrl(tag, tag_ver, url, sizeof(url)))
     {
         g_ota_prog.state = OTA_UPD_ERR_NO_ASSET;
@@ -264,14 +254,14 @@ void OTA_Update_Run(void)
     }
     DBG_PRINTF("[OTA] asset %s\r\n", url);
 
-    /* ---- 4. 空间预检：固件 + 备份 + 余量 ---- */
+    /* 空间预检：固件 + 备份 + 余量 */
     if (OTA_Store_FreeBytes() < (APP_FW_SIZE_FALLBACK * 2U + OTA_DL_EXTRA))
     {
         g_ota_prog.state = OTA_UPD_ERR_SPACE;
         return;
     }
 
-    /* ---- 5. 下载 ---- */
+    /* 下载 */
     (void)OTA_Store_Remove(OTA_FW_TMP_PATH);
     if (OTA_Store_OpenWrite(OTA_FW_TMP_PATH) != LFS_ERR_OK)
     {
@@ -279,9 +269,9 @@ void OTA_Update_Run(void)
         return;
     }
 
-    ctx.expect = 0U; /* 长度未知，边收边算 */
+    ctx.expect = 0U; // 长度未知，边收边算
     ctx.store_ok = true;
-    ctx.crc = 0xFFFFFFFFUL; /* CRC32 初值，缺了会校验失败 */
+    ctx.crc = 0xFFFFFFFFUL; // CRC32 初值，缺了会校验失败
 
     g_ota_prog.state = OTA_UPD_DOWNLOADING;
     g_ota_prog.total = 0U;
@@ -307,7 +297,7 @@ void OTA_Update_Run(void)
         return;
     }
 
-    /* ---- 6. 包头静态校验（含"附件版本必须与 tag 一致"） ---- */
+    /* 包头静态校验（含"附件版本必须与 tag 一致"） */
     hdr = (ota_hdr_t *)ctx.hdr;
     if (hdr->magic != OTA_PKG_MAGIC ||
         hdr->header_size != OTA_PKG_HEADER_SIZE ||
@@ -325,7 +315,7 @@ void OTA_Update_Run(void)
     DBG_PRINTF("[OTA] hdr ver=0x%06X size=%u\r\n",
                (unsigned)hdr->fw_version, (unsigned)hdr->fw_size);
 
-    /* ---- 7. payload CRC ---- */
+    /* payload CRC */
     if ((~ctx.crc) != hdr->fw_crc32)
     {
         DBG_PRINTF("[OTA] crc mismatch\r\n");
@@ -334,7 +324,7 @@ void OTA_Update_Run(void)
         return;
     }
 
-    /* ---- 8. 提交：改名/备份/写参数/复位（成功不复返） ---- */
+    /* 提交：改名/备份/写参数/复位（成功不复返） */
     g_ota_prog.state = OTA_UPD_APPLYING;
     if (OTA_CommitFirmware(hdr->fw_size, hdr->fw_crc32, hdr->fw_version) != OTA_OK)
     {

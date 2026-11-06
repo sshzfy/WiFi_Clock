@@ -1,19 +1,9 @@
 #ifndef __OTA_UPDATE_H__
 #define __OTA_UPDATE_H__
 
-/* ============================================================
- * OTA_Update —— 网络升级（Gitee Releases）
- * ------------------------------------------------------------
- * 流程：读 /releases/latest 的 302 头拿到最新 tag -> 版本比较
- *       -> 拼出 fw_<ver>.ota 地址 -> SSL 流式下载到 littlefs
- *       -> 校验 -> 复用 Phase 1 的备份/写参数/复位。
- * 全部在 netTask 内阻塞执行（下载期间独占 AT 模组），进度由
- * g_ota_prog 暴露给 uiTask 轮询刷新。
- * ============================================================ */
-
 #include <stdint.h>
 
-/* 更新阶段/结果（UI 按此显示文案与进度）*/
+/* 更新阶段/结果 */
 typedef enum
 {
     OTA_UPD_IDLE = 0,     // 未开始
@@ -33,7 +23,7 @@ typedef enum
     OTA_UPD_ERR_PARAM,    // 参数区写入失败
 } ota_upd_state_t;
 
-/* 进度共享区（OTA_Update 写, uiTask 读）*/
+/* 进度共享区*/
 typedef struct
 {
     volatile uint32_t state; // ota_upd_state_t
